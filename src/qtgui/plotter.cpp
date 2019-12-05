@@ -34,6 +34,8 @@
 #else
 #include <Windows.h>
 #include <cstdint>
+#include <algorithm>
+#include <iterator>
 
 int gettimeofday(struct timeval * tp, struct timezone * tzp)
 {
@@ -1144,6 +1146,10 @@ void CPlotter::setNewFftData(float *fftData, int size)
 
 void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
 {
+// #define MAX_FFT_SIZE 1048576
+#define MAX_FFT_SIZE 32768
+
+
     /** FIXME **/
     if (!m_Running)
         m_Running = true;
@@ -1151,6 +1157,39 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     m_wfData = wfData;
     m_fftData = fftData;
     m_fftDataSize = size;
+
+    float lowestValue;
+    static float minAvg;
+    static float fftCopy[MAX_FFT_SIZE];
+    long i, offset;
+
+    offset = (long) size * 0.15;
+
+    // automatic determination of the noise level
+    // ignore the first and last offset bins
+    for (i=offset; i<=size-offset; i++) {
+        fftCopy[i-offset] = wfData[i];      // we use the wfData that is not averaged
+    }
+
+    // sort bins
+    std::sort(std::begin(fftCopy), std::end(fftCopy));
+    // somewhere here is the noise floor
+
+    // FIXME not clear why the first n values are strange values and not crrectly sorted
+    lowestValue = fftCopy[offset/2];
+
+    // do a moving averge of abt. n
+    int n = 10;
+    minAvg -= minAvg/n;
+    minAvg += lowestValue/n;
+
+    // set the panadapter limits
+    // FIXME could me done with sliders as well...
+    if (m_autoRangeActive) {
+        setFftRange(minAvg - 0, minAvg + 50);
+        setWaterfallRange(minAvg - 0, minAvg + 50);
+        // qDebug() << "fft min" << lowestValue << minAvg;
+    }
 
     draw();
 }
@@ -1689,6 +1728,13 @@ void CPlotter::setPeakHold(bool enabled)
 {
     m_PeakHoldActive = enabled;
     m_PeakHoldValid = false;
+}
+
+/** Set auto range on or off. */
+void CPlotter::setAutoRange(bool enabled)
+{
+    m_autoRangeActive = enabled;
+    qDebug() << "auto range: " << m_autoRangeActive;
 }
 
 /**

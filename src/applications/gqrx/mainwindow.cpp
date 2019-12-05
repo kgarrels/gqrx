@@ -248,6 +248,7 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     connect(uiDockFft, SIGNAL(fftFillToggled(bool)), this, SLOT(setFftFill(bool)));
     connect(uiDockFft, SIGNAL(fftPeakHoldToggled(bool)), this, SLOT(setFftPeakHold(bool)));
     connect(uiDockFft, SIGNAL(peakDetectionToggled(bool)), this, SLOT(setPeakDetection(bool)));
+    connect(uiDockFft, SIGNAL(autoButtonToggled(bool)), this, SLOT(setAutoRange(bool)));
     connect(uiDockRDS, SIGNAL(rdsDecoderToggled(bool)), this, SLOT(setRdsDecoder(bool)));
 
     // Bookmarks
@@ -1670,6 +1671,11 @@ void MainWindow::setPeakDetection(bool enabled)
     ui->plotter->setPeakDetection(enabled ,2);
 }
 
+void MainWindow::setAutoRange(bool enabled)
+{
+    ui->plotter->setAutoRange(enabled);
+}
+
 /**
  * @brief Force receiver reconfiguration.
  *
@@ -1898,6 +1904,8 @@ void MainWindow::on_plotter_newDemodFreq(qint64 freq, qint64 delta)
 
     if (rx->is_rds_decoder_active())
         rx->reset_rds_parser();
+
+    qDebug() << "new demod freq" << freq << delta;
 }
 
 /* CPlotter::NewfilterFreq() is emitted or bookmark activated */
@@ -1920,6 +1928,8 @@ void MainWindow::on_plotter_newCenterFreq(qint64 f)
 {
     rx->set_rf_freq(f);
     ui->freqCtrl->setFrequency(f);
+
+    qDebug() << "new center freq" << f;
 }
 
 /** Full screen button or menu item toggled. */

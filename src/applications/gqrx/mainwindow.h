@@ -187,6 +187,7 @@ private slots:
     void setFftColor(const QColor color);
     void setFftFill(bool enable);
     void setPeakDetection(bool enabled);
+    void setAutoRange(bool enabled);
     void setFftPeakHold(bool enable);
     void setWfTimeSpan(quint64 span_ms);
 
