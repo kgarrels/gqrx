@@ -1146,8 +1146,7 @@ void CPlotter::setNewFftData(float *fftData, int size)
 
 void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
 {
-// #define MAX_FFT_SIZE 1048576
-#define MAX_FFT_SIZE 32768
+#define MAX_FFT_SIZE 1048576
 
 
     /** FIXME **/
@@ -1173,8 +1172,8 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
 
     // sort bins
     std::sort(std::begin(fftCopy), std::end(fftCopy));
-    // somewhere here is the noise floor
 
+    // somewhere here is the noise floor
     // FIXME not clear why the first n values are strange values and not crrectly sorted
     lowestValue = fftCopy[offset/2];
 

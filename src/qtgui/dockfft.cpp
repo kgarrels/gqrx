@@ -26,7 +26,6 @@
 #include <QVariant>
 #include "dockfft.h"
 #include "ui_dockfft.h"
-#include "plotter.h"
 
 #define DEFAULT_FFT_MAX_DB     -0
 #define DEFAULT_FFT_MIN_DB     -135
