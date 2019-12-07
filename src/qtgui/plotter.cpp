@@ -67,7 +67,6 @@ int gettimeofday(struct timeval * tp, struct timezone * tzp)
 #include <QToolTip>
 #include "plotter.h"
 #include "bookmarks.h"
-#include "dxc_spots.h"
 
 // Comment out to enable plotter debug messages
 //#define PLOTTER_DEBUG
@@ -172,7 +171,6 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_FilterBoxEnabled = true;
     m_CenterLineEnabled = true;
     m_BookmarksEnabled = true;
-    m_DXCSpotsEnabled = true;
 
     m_Span = 96000;
     m_SampleFreq = 96000;
@@ -240,20 +238,17 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             bool onTag = false;
             if(pt.y() < 15 * 10) // FIXME
             {
-                if(m_BookmarksEnabled || m_DXCSpotsEnabled)
+                for(int i = 0; i < m_BookmarkTags.size() && !onTag; i++)
                 {
-                    for(int i = 0; i < Taglist.size() && !onTag; i++)
-                    {
-                        if (Taglist[i].first.contains(event->pos()))
-                            onTag = true;
-                    }
+                    if (m_BookmarkTags[i].first.contains(event->pos()))
+                        onTag = true;
                 }
             }
             // if no mouse button monitor grab regions and change cursor icon
             if (onTag)
             {
                 setCursor(QCursor(Qt::PointingHandCursor));
-                m_CursorCaptured = TAG;
+                m_CursorCaptured = BOOKMARK;
             }
             else if (isPointCloseTo(pt.x(), m_DemodFreqX, m_CursorCaptureDelta))
             {
@@ -714,13 +709,13 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
                 resetHorizontalZoom();
             }
         }
-        else if (m_CursorCaptured == TAG)
+        else if (m_CursorCaptured == BOOKMARK)
         {
-            for (int i = 0; i < Taglist.size(); i++)
+            for (int i = 0; i < m_BookmarkTags.size(); i++)
             {
-                if (Taglist[i].first.contains(event->pos()))
+                if (m_BookmarkTags[i].first.contains(event->pos()))
                 {
-                    m_DemodCenterFreq = Taglist[i].second;
+                    m_DemodCenterFreq = m_BookmarkTags[i].second;
                     emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
                     break;
                 }
@@ -1353,8 +1348,6 @@ void CPlotter::drawOverlay()
     painter.setBrush(Qt::SolidPattern);
     painter.fillRect(0, 0, w, h, QColor(PLOTTER_BGD_COLOR));
 
-    QList<BookmarkInfo> tags;
-
 #define HOR_MARGIN 5
 #define VER_MARGIN 5
 
@@ -1365,47 +1358,25 @@ void CPlotter::drawOverlay()
     int xAxisTop = h - xAxisHeight;
     int fLabelTop = xAxisTop + VER_MARGIN;
 
-    if (m_BookmarksEnabled || m_DXCSpotsEnabled)
+    if (m_BookmarksEnabled)
     {
-        Taglist.clear();
+        m_BookmarkTags.clear();
         static const QFontMetrics fm(painter.font());
         static const int fontHeight = fm.ascent() + 1;
         static const int slant = 5;
         static const int levelHeight = fontHeight + 5;
         static const int nLevels = 10;
-        if (m_BookmarksEnabled)
-        {
-            tags = Bookmarks::Get().getBookmarksInRange(m_CenterFreq + m_FftCenter - m_Span / 2,
-                                                        m_CenterFreq + m_FftCenter + m_Span / 2);
-        }
-        else
-        {
-            tags.clear();
-        }
-        if (m_DXCSpotsEnabled)
-        {
-            QList<DXCSpotInfo> dxcspots = DXCSpots::Get().getDXCSpotsInRange(m_CenterFreq + m_FftCenter - m_Span / 2,
+        QList<BookmarkInfo> bookmarks = Bookmarks::Get().getBookmarksInRange(m_CenterFreq + m_FftCenter - m_Span / 2,
                                                                              m_CenterFreq + m_FftCenter + m_Span / 2);
-            QListIterator<DXCSpotInfo> iter(dxcspots);
-            while(iter.hasNext())
-            {
-                BookmarkInfo tempDXCSpot;
-                DXCSpotInfo IterDXCSpot = iter.next();
-                tempDXCSpot.name = IterDXCSpot.name;
-                tempDXCSpot.frequency = IterDXCSpot.frequency;
-                tags.append(tempDXCSpot);
-            }
-            std::stable_sort(tags.begin(),tags.end());
-        }
         int tagEnd[nLevels] = {0};
-        for (int i = 0; i < tags.size(); i++)
+        for (int i = 0; i < bookmarks.size(); i++)
         {
-            x = xFromFreq(tags[i].frequency);
+            x = xFromFreq(bookmarks[i].frequency);
 
 #if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
             int nameWidth = fm.width(bookmarks[i].name);
 #else
-            int nameWidth = fm.boundingRect(tags[i].name).width();
+            int nameWidth = fm.boundingRect(bookmarks[i].name).width();
 #endif
 
             int level = 0;
@@ -1416,9 +1387,9 @@ void CPlotter::drawOverlay()
                 level = 0;
 
             tagEnd[level] = x + nameWidth + slant - 1;
-            Taglist.append(qMakePair<QRect, qint64>(QRect(x, level * levelHeight, nameWidth + slant, fontHeight), tags[i].frequency));
+            m_BookmarkTags.append(qMakePair<QRect, qint64>(QRect(x, level * levelHeight, nameWidth + slant, fontHeight), bookmarks[i].frequency));
 
-            QColor color = QColor(tags[i].GetColor());
+            QColor color = QColor(bookmarks[i].GetColor());
             color.setAlpha(0x60);
             // Vertical line
             painter.setPen(QPen(color, 1, Qt::DashLine));
@@ -1437,59 +1408,9 @@ void CPlotter::drawOverlay()
             painter.setPen(QPen(color, 2, Qt::SolidLine));
             painter.drawText(x + slant, level * levelHeight, nameWidth,
                              fontHeight, Qt::AlignVCenter | Qt::AlignHCenter,
-                             tags[i].name);
+                             bookmarks[i].name);
         }
     }
-
-//    if (m_DXCSpotsEnabled)
-//    {
-//        m_DXCSpotTags.clear();
-//        static const QFontMetrics fm(painter.font());
-//        static const int fontHeight = fm.ascent() + 1;
-//        static const int slant = 5;
-//        static const int levelHeight = fontHeight + 5;
-//        static const int nLevels = 10;
-//        QList<DXCSpotInfo> dxcspots = DXCSpots::Get().getDXCSpotsInRange(m_CenterFreq + m_FftCenter - m_Span / 2,
-//                                                                         m_CenterFreq + m_FftCenter + m_Span / 2);
-//        int tagEnd[nLevels] = {0};
-//        for (int i = 0; i < dxcspots.size(); i++)
-//        {
-//            x = xFromFreq(dxcspots[i].frequency);
-
-//#if defined(_WIN16) || defined(_WIN32) || defined(_WIN64)
-//            int nameWidth = fm.width(dxcspots[i].name);
-//#else
-//            int nameWidth = fm.boundingRect(dxcspots[i].name).width();
-//#endif
-//            int level = 0;
-//            while(level < nLevels && tagEnd[level] > x)
-//                level++;
-
-//            if(level == nLevels)
-//                level = 0;
-//            tagEnd[level] = x + nameWidth + slant - 1;
-//            m_DXCSpotTags.append(qMakePair<QRect, qint64>(QRect(x, level * levelHeight, nameWidth + slant, fontHeight), dxcspots[i].frequency));
-
-//            QColor color = QColor(dxcspots[i].GetColor());
-//            color.setAlpha(0x60);
-//            // Vertical line
-//            painter.setPen(QPen(color, 1, Qt::DashLine));
-//            painter.drawLine(x, level * levelHeight + fontHeight + slant, x, xAxisTop);
-//            // Horizontal line
-//            painter.setPen(QPen(color, 1, Qt::SolidLine));
-//            painter.drawLine(x + slant, level * levelHeight + fontHeight,
-//                             x + nameWidth + slant - 1,
-//                             level * levelHeight + fontHeight);
-//            // Diagonal line
-//            painter.drawLine(x + 1, level * levelHeight + fontHeight + slant - 1,
-//                             x + slant - 1, level * levelHeight + fontHeight + 1);
-//            color.setAlpha(0xFF);
-//            painter.setPen(QPen(color, 2, Qt::SolidLine));
-//            painter.drawText(x + slant, level * levelHeight, nameWidth,
-//                             fontHeight, Qt::AlignVCenter | Qt::AlignHCenter,
-//                             dxcspots[i].name);
-//        }
-//    }
 
     if (m_CenterLineEnabled)
     {
