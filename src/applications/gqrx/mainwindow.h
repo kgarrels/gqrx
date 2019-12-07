@@ -41,6 +41,8 @@
 #include "qtgui/dockrds.h"
 #include "qtgui/afsk1200win.h"
 #include "qtgui/iq_tool.h"
+#include "qtgui/dxc_options.h"
+#include "qtgui/dxc_spots.h"
 
 #include "applications/gqrx/remote_control.h"
 
@@ -100,6 +102,7 @@ private:
     DockRDS        *uiDockRDS;
 
     CIqTool        *iq_tool;
+    DXC_Options    *dxc_options;
 
 
     /* data decoders */
@@ -111,6 +114,7 @@ private:
     QTimer   *iq_fft_timer;
     QTimer   *audio_fft_timer;
     QTimer   *rds_timer;
+    QTimer   *dxc_timer;
 
     receiver *rx;
 
@@ -201,6 +205,9 @@ private slots:
     /* Bookmarks */
     void onBookmarkActivated(qint64 freq, QString demod, int bandwidth);
 
+    /* DXC Spots */
+    void addClusterSpot();
+
     /* menu and toolbar actions */
     void on_actionDSP_triggered(bool checked);
     int  on_actionIoConfig_triggered();
@@ -218,6 +225,7 @@ private slots:
     void on_actionAbout_triggered();
     void on_actionAboutQt_triggered();
     void on_actionAddBookmark_triggered();
+    void on_actionDX_Cluster_triggered();
 
 
     /* window close signals */
@@ -230,6 +238,7 @@ private slots:
     void iqFftTimeout();
     void audioFftTimeout();
     void rdsTimeout();
+    void checkDXCSpotTimeout();
 };
 
 #endif // MAINWINDOW_H
