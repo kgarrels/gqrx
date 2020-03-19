@@ -63,6 +63,7 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     ui(new Ui::MainWindow),
     d_lnb_lo(0),
     d_hw_freq(0),
+    d_fftAvg(0.25),
     d_have_audio(true),
     dec_afsk1200(0)
 {
@@ -109,7 +110,6 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
 
     d_fftData = new std::complex<float>[MAX_FFT_SIZE];
     d_realFftData = new float[MAX_FFT_SIZE];
-    d_pwrFftData = new float[MAX_FFT_SIZE]();
     d_iirFftData = new float[MAX_FFT_SIZE];
     for (int i = 0; i < MAX_FFT_SIZE; i++)
         d_iirFftData[i] = -140.0;  // dBFS
@@ -188,6 +188,7 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     connect(uiDockInputCtl, SIGNAL(lnbLoChanged(double)), this, SLOT(setLnbLo(double)));
     connect(uiDockInputCtl, SIGNAL(lnbLoChanged(double)), remote, SLOT(setLnbLo(double)));
     connect(uiDockInputCtl, SIGNAL(gainChanged(QString, double)), this, SLOT(setGain(QString,double)));
+    connect(uiDockInputCtl, SIGNAL(gainChanged(QString, double)), remote, SLOT(setGain(QString,double)));
     connect(uiDockInputCtl, SIGNAL(autoGainChanged(bool)), this, SLOT(setAutoGain(bool)));
     connect(uiDockInputCtl, SIGNAL(freqCorrChanged(double)), this, SLOT(setFreqCorr(double)));
     connect(uiDockInputCtl, SIGNAL(iqSwapChanged(bool)), this, SLOT(setIqSwap(bool)));
@@ -215,7 +216,7 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     connect(uiDockRxOpt, SIGNAL(sqlLevelChanged(double)), this, SLOT(setSqlLevel(double)));
     connect(uiDockRxOpt, SIGNAL(sqlAutoClicked()), this, SLOT(setSqlLevelAuto()));
     connect(uiDockAudio, SIGNAL(audioGainChanged(float)), this, SLOT(setAudioGain(float)));
-    connect(uiDockAudio, SIGNAL(audioStreamingStarted(QString,int)), this, SLOT(startAudioStream(QString,int)));
+    connect(uiDockAudio, SIGNAL(audioStreamingStarted(QString,int,bool)), this, SLOT(startAudioStream(QString,int,bool)));
     connect(uiDockAudio, SIGNAL(audioStreamingStopped()), this, SLOT(stopAudioStreaming()));
     connect(uiDockAudio, SIGNAL(audioRecStarted(QString)), this, SLOT(startAudioRec(QString)));
     connect(uiDockAudio, SIGNAL(audioRecStarted(QString)), remote, SLOT(startAudioRecorder(QString)));
@@ -234,6 +235,8 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     connect(uiDockFft, SIGNAL(resetFftZoom()), ui->plotter, SLOT(resetHorizontalZoom()));
     connect(uiDockFft, SIGNAL(gotoFftCenter()), ui->plotter, SLOT(moveToCenterFreq()));
     connect(uiDockFft, SIGNAL(gotoDemodFreq()), ui->plotter, SLOT(moveToDemodFreq()));
+    connect(uiDockFft, SIGNAL(wfColormapChanged(const QString)), ui->plotter, SLOT(setWfColormap(const QString)));
+    connect(uiDockFft, SIGNAL(wfColormapChanged(const QString)), uiDockAudio, SLOT(setWfColormap(const QString)));
 
     connect(uiDockFft, SIGNAL(pandapterRangeChanged(float,float)),
             ui->plotter, SLOT(setPandapterRange(float,float)));
@@ -243,6 +246,7 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
             uiDockFft, SLOT(setPandapterRange(float,float)));
     connect(ui->plotter, SIGNAL(newZoomLevel(float)),
             uiDockFft, SLOT(setZoomLevel(float)));
+    connect(ui->plotter, SIGNAL(newSize()), this, SLOT(setWfSize()));
 
     connect(uiDockFft, SIGNAL(fftColorChanged(QColor)), this, SLOT(setFftColor(QColor)));
     connect(uiDockFft, SIGNAL(fftFillToggled(bool)), this, SLOT(setFftFill(bool)));
@@ -278,6 +282,7 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     connect(remote, SIGNAL(stopAudioRecorderEvent()), uiDockAudio, SLOT(stopAudioRecorder()));
     connect(ui->plotter, SIGNAL(newFilterFreq(int, int)), remote, SLOT(setPassband(int, int)));
     connect(remote, SIGNAL(newPassband(int)), this, SLOT(setPassband(int)));
+    connect(remote, SIGNAL(gainChanged(QString, double)), uiDockInputCtl, SLOT(setGain(QString,double)));
 
     rds_timer = new QTimer(this);
     connect(rds_timer, SIGNAL(timeout()), this, SLOT(rdsTimeout()));
@@ -379,7 +384,6 @@ MainWindow::~MainWindow()
     delete [] d_fftData;
     delete [] d_realFftData;
     delete [] d_iirFftData;
-    delete [] d_pwrFftData;
     delete qsvg_dummy;
 
 }
@@ -471,8 +475,20 @@ bool MainWindow::loadConfig(const QString cfgfile, bool check_crash,
     QString indev = m_settings->value("input/device", "").toString();
     if (!indev.isEmpty())
     {
-        conf_ok = true;
-        rx->set_input_device(indev.toStdString());
+        try
+        {
+            rx->set_input_device(indev.toStdString());
+            conf_ok = true;
+        }
+        catch (std::runtime_error &x)
+        {
+            QMessageBox::warning(nullptr,
+                             QObject::tr("Failed to set input device"),
+                             QObject::tr("<p><b>%1</b></p>"
+                                         "Please select another device.")
+                                     .arg(x.what()),
+                             QMessageBox::Ok);
+        }
 
         // Update window title
         QRegExp regexp("'([a-zA-Z0-9 \\-\\_\\/\\.\\,\\(\\)]+)'");
@@ -494,7 +510,7 @@ bool MainWindow::loadConfig(const QString cfgfile, bool check_crash,
         {
             /* rtlsdr gain is 0 by default making users think their device is
              * deaf. Therefore, we don't read gain from the device, but initialize
-             * it to max_gain.
+             * it to the midpoint.
              */
             updateGainStages(false);
         }
@@ -764,7 +780,7 @@ void MainWindow::updateFrequencyRange()
 /**
  * @brief Update gain stages.
  * @param read_from_device If true, the gain value will be read from the device,
- *                         otherwise we set gain = max.
+ *                         otherwise we set gain to the midpoint.
  *
  * This function fetches a list of available gain stages with their range
  * and sends them to the input control UI widget.
@@ -786,13 +802,14 @@ void MainWindow::updateGainStages(bool read_from_device)
         }
         else
         {
-            gain.value = gain.stop;
+            gain.value = (gain.start + gain.stop) / 2;
             rx->set_gain(gain.name, gain.value);
         }
         gain_list.push_back(gain);
     }
 
     uiDockInputCtl->setGainStages(gain_list);
+    remote->setGainStages(gain_list);
 }
 
 /**
@@ -1431,9 +1448,9 @@ void MainWindow::stopAudioPlayback()
 }
 
 /** Start streaming audio over UDP. */
-void MainWindow::startAudioStream(const QString udp_host, int udp_port)
+void MainWindow::startAudioStream(const QString udp_host, int udp_port, bool stereo)
 {
-    rx->start_udp_streaming(udp_host.toStdString(), udp_port);
+    rx->start_udp_streaming(udp_host.toStdString(), udp_port, stereo);
 }
 
 /** Stop streaming audio over UDP. */
@@ -1584,6 +1601,8 @@ void MainWindow::setIqFftSize(int size)
 {
     qDebug() << "Changing baseband FFT size to" << size;
     rx->set_iq_fft_size(size);
+    for (int i = 0; i < size; i++)
+        d_iirFftData[i] = -140.0;  // dBFS
 }
 
 /** Baseband FFT rate has changed. */
@@ -1607,6 +1626,8 @@ void MainWindow::setIqFftRate(int fps)
 
     if (interval > 9 && iq_fft_timer->isActive())
         iq_fft_timer->setInterval(interval);
+
+    uiDockFft->setWfResolution(ui->plotter->getWfTimeRes());
 }
 
 void MainWindow::setIqFftWindow(int type)
@@ -1619,6 +1640,11 @@ void MainWindow::setWfTimeSpan(quint64 span_ms)
 {
     // set new time span, then send back new resolution to be shown by GUI label
     ui->plotter->setWaterfallSpan(span_ms);
+    uiDockFft->setWfResolution(ui->plotter->getWfTimeRes());
+}
+
+void MainWindow::setWfSize()
+{
     uiDockFft->setWfResolution(ui->plotter->getWfTimeRes());
 }
 
@@ -2210,7 +2236,7 @@ void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::about(this, tr("About Gqrx"),
         tr("<p>This is Gqrx %1</p>"
-           "<p>Copyright (C) 2011-2018 Alexandru Csete & contributors.</p>"
+           "<p>Copyright (C) 2011-2020 Alexandru Csete & contributors.</p>"
            "<p>Gqrx is a software defined radio (SDR) receiver powered by "
            "<a href='http://www.gnuradio.org/'>GNU Radio</a> and the Qt toolkit. "
            "<p>Gqrx uses the <a href='https://osmocom.org/projects/sdr/wiki/GrOsmoSDR'>GrOsmoSDR</a> "

@@ -27,13 +27,15 @@
 #include "dockfft.h"
 #include "ui_dockfft.h"
 
-#define DEFAULT_FFT_MAX_DB     -0
-#define DEFAULT_FFT_MIN_DB     -135
+#define DEFAULT_FFT_MAX_DB     -20
+#define DEFAULT_FFT_MIN_DB     -120
 #define DEFAULT_FFT_RATE        25
 #define DEFAULT_FFT_SIZE        8192
 #define DEFAULT_FFT_WINDOW      1       // Hann
+#define DEFAULT_WATERFALL_SPAN  0       // Auto
 #define DEFAULT_FFT_SPLIT       35
 #define DEFAULT_FFT_AVG         75
+#define DEFAULT_COLORMAP        "gqrx"
 
 DockFft::DockFft(QWidget *parent) :
     QDockWidget(parent),
@@ -76,6 +78,13 @@ DockFft::DockFft(QWidget *parent) :
     ui->colorPicker->insertColor(QColor(0xFF,0xC8,0xC8,0xFF), "Pink");
     ui->colorPicker->insertColor(QColor(0xB7,0xE0,0xFF,0xFF), "Blue");
     ui->colorPicker->insertColor(QColor(0x7F,0xFA,0xFA,0xFF), "Cyan");
+
+    ui->cmapComboBox->addItem(tr("Gqrx"), "gqrx");
+    ui->cmapComboBox->addItem(tr("Google Turbo"), "turbo");
+    ui->cmapComboBox->addItem(tr("Plasma"), "plasma");
+    ui->cmapComboBox->addItem(tr("White Hot Compressed"), "whitehotcompressed");
+    ui->cmapComboBox->addItem(tr("White Hot"), "whitehot");
+    ui->cmapComboBox->addItem(tr("Black Hot"), "blackhot");
 }
 DockFft::~DockFft()
 {
@@ -208,6 +217,12 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("fft_window");
 
+    intval = ui->wfSpanComboBox->currentIndex();
+    if (intval != DEFAULT_WATERFALL_SPAN)
+        settings->setValue("waterfall_span", intval);
+    else
+        settings->remove("waterfall_span");
+
     if (ui->fftAvgSlider->value() != DEFAULT_FFT_AVG)
         settings->setValue("averaging", ui->fftAvgSlider->value());
     else
@@ -225,9 +240,9 @@ void DockFft::saveSettings(QSettings *settings)
         settings->remove("pandapter_color");
 
     if (ui->fillButton->isChecked())
-        settings->setValue("pandapter_fill", true);
-    else
         settings->remove("pandapter_fill");
+    else
+        settings->setValue("pandapter_fill", false);
 
     // dB ranges
     intval = ui->pandRangeSlider->minimumValue();
@@ -260,6 +275,7 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("db_ranges_locked");
 
+<<<<<<< HEAD
     // autorange
     if (ui->autoButton->isChecked())
         settings->setValue("auto_range_enabled", true);
@@ -267,6 +283,12 @@ void DockFft::saveSettings(QSettings *settings)
         settings->remove("auto_range_enabled");
 
 
+=======
+    if (QString::compare(ui->cmapComboBox->currentData().toString(), DEFAULT_COLORMAP))
+        settings->setValue("waterfall_colormap", ui->cmapComboBox->currentData().toString());
+    else
+        settings->remove("waterfall_colormap");
+>>>>>>> 7f0c1d92f5de3a52d778004001be6f0d5d5d96f7
 
     settings->endGroup();
 }
@@ -297,6 +319,10 @@ void DockFft::readSettings(QSettings *settings)
     if (conv_ok)
         ui->fftWinComboBox->setCurrentIndex(intval);
 
+    intval = settings->value("waterfall_span", DEFAULT_WATERFALL_SPAN).toInt(&conv_ok);
+    if (conv_ok)
+        ui->wfSpanComboBox->setCurrentIndex(intval);
+
     intval = settings->value("averaging", DEFAULT_FFT_AVG).toInt(&conv_ok);
     if (conv_ok)
         ui->fftAvgSlider->setValue(intval);
@@ -308,7 +334,7 @@ void DockFft::readSettings(QSettings *settings)
     color = settings->value("pandapter_color", QColor(0xFF,0xFF,0xFF,0xFF)).value<QColor>();
     ui->colorPicker->setCurrentColor(color);
 
-    bool_val = settings->value("pandapter_fill", false).toBool();
+    bool_val = settings->value("pandapter_fill", true).toBool();
     ui->fillButton->setChecked(bool_val);
 
     // delete old dB settings from config
@@ -331,8 +357,13 @@ void DockFft::readSettings(QSettings *settings)
     bool_val = settings->value("db_ranges_locked", false).toBool();
     ui->lockButton->setChecked(bool_val);
 
+<<<<<<< HEAD
     bool_val = settings->value("auto_range_enabled", false).toBool();
     ui->autoButton->setChecked(bool_val);
+=======
+    QString cmap = settings->value("waterfall_colormap", "gqrx").toString();
+    ui->cmapComboBox->setCurrentIndex(ui->cmapComboBox->findData(cmap));
+>>>>>>> 7f0c1d92f5de3a52d778004001be6f0d5d5d96f7
 
     settings->endGroup();
 }
@@ -533,19 +564,25 @@ void DockFft::on_lockButton_toggled(bool checked)
     }
 }
 
+void DockFft::on_cmapComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    emit wfColormapChanged(ui->cmapComboBox->currentData().toString());
+}
+
 /** Update RBW and FFT overlab labels */
 void DockFft::updateInfoLabels(void)
 {
-    float   rate;
+    float   interval_ms;
+    float   interval_samples;
     float   size;
     float   rbw;
     float   ovr;
-    float   sps;
+    int     rate;
 
     if (m_sample_rate == 0.f)
         return;
 
-    rate = fftRate();
     size = fftSize();
 
     rbw = m_sample_rate / size;
@@ -556,10 +593,17 @@ void DockFft::updateInfoLabels(void)
     else
         ui->fftRbwLabel->setText(QString("RBW: %1 MHz").arg(1.e-6 * rbw, 0, 'f', 1));
 
-    sps = size * rate;
-    if (sps <= m_sample_rate)
+    rate = fftRate();
+    if (rate == 0)
         ovr = 0;
     else
-        ovr = 100 * (sps / m_sample_rate - 1.f);
+    {
+        interval_ms = 1000 / rate;
+        interval_samples = m_sample_rate * (interval_ms / 1000.0);
+        if (interval_samples >= size)
+            ovr = 0;
+        else
+            ovr = 100 * (1.f - interval_samples / size);
+    }
     ui->fftOvrLabel->setText(QString("Overlap: %1%").arg(ovr, 0, 'f', 0));
 }
