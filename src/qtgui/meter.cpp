@@ -116,6 +116,8 @@ void CMeter::setLevel(float dbfs)
     m_dBFS -= alpha * (level - dbfs);
     m_Siglevel = (int)((level - MIN_DB) * m_pixperdb);
 
+    // qDebug() << "dbfs" << dbfs << m_dBFS;
+
     draw();
 }
 

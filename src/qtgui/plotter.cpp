@@ -164,7 +164,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_FHiCmax = 25000;
     m_symetric = true;
 
-    m_ClickResolution = 100;
+    m_ClickResolution = 10;
     m_FilterClickResolution = 100;
     m_CursorCaptureDelta = CUR_CUT_DELTA;
 
@@ -797,8 +797,11 @@ void CPlotter::zoomOnXAxis(float level)
 void CPlotter::wheelEvent(QWheelEvent * event)
 {
     QPoint pt = event->pos();
-    int numDegrees = event->delta() / 8;
-    int numSteps = numDegrees / 15;  /** FIXME: Only used for direction **/
+    float numDegrees = event->delta() / 8;
+    float numSteps = numDegrees / 15;  /** FIXME: Only used for direction **/
+
+    //qDebug() << "wheel event" << event;
+    //qDebug() << "modfiers" << event->modifiers();
 
     /** FIXME: zooming could use some optimisation **/
     if (m_CursorCaptured == YAXIS)
@@ -846,8 +849,9 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
+        if (numSteps<100) numSteps *= 5;
         m_DemodCenterFreq += (numSteps * m_ClickResolution);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
+        //m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1157,36 +1161,48 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     m_fftData = fftData;
     m_fftDataSize = size;
 
-    float lowestValue;
+    float lowestValue, fftSum;
     static float minAvg;
     static float fftCopy[MAX_FFT_SIZE];
     long i, offset;
 
-    offset = (long) size * 0.15;
+    // cut away the first/last 15% of the waterfall
+    offset = (long) size * 0.25;
 
     // automatic determination of the noise level
     // ignore the first and last offset bins
     for (i=offset; i<=size-offset; i++) {
-        fftCopy[i-offset] = wfData[i];      // we use the wfData that is not averaged
+        fftCopy[i-offset] = fftData[i];      // we use the fftData that is averaged
     }
 
     // sort bins
     std::sort(std::begin(fftCopy), std::end(fftCopy));
 
+    // m_fftData = fftCopy;    // test only, view sorted bins in fft
+
+    lowestValue = fftCopy[offset];
+
+ #ifdef False
     // somewhere here is the noise floor
     // FIXME not clear why the first n values are strange values and not crrectly sorted
-    lowestValue = fftCopy[offset/2];
+    int a = 10;
+    fftSum=0;
+    for(i=0; i<a; i++) {
+        fftSum += fftCopy[offset+i];
+    }
+    //lowestValue = fftSum / a;
+#endif
 
     // do a moving averge of abt. n
-    int n = 10;
+    int n = 5;
     minAvg -= minAvg/n;
     minAvg += lowestValue/n;
 
     // set the panadapter limits
     // FIXME could me done with sliders as well...
     if (m_autoRangeActive) {
-        setFftRange(minAvg - 0, minAvg + 50);
-        setWaterfallRange(minAvg - 0, minAvg + 50);
+        setFftRange(minAvg - 5, minAvg + 48);       // 54dB = S9
+        setWaterfallRange(minAvg - 5, minAvg + 48);
         // qDebug() << "fft min" << lowestValue << minAvg;
     }
 
@@ -1332,6 +1348,7 @@ void CPlotter::drawOverlay()
 
     int     w = m_OverlayPixmap.width();
     int     h = m_OverlayPixmap.height();
+
     int     x,y;
     float   pixperdiv;
     float   adjoffset;

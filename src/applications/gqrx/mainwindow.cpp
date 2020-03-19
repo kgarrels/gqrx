@@ -324,6 +324,8 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     }
 
     qsvg_dummy = new QSvgWidget();
+    on_actionDSP_triggered(true); //+kai autostart
+
 }
 
 MainWindow::~MainWindow()
@@ -379,6 +381,7 @@ MainWindow::~MainWindow()
     delete [] d_iirFftData;
     delete [] d_pwrFftData;
     delete qsvg_dummy;
+
 }
 
 /**
@@ -976,7 +979,7 @@ void MainWindow::selectDemod(int mode_idx)
 {
     double  cwofs = 0.0;
     int     filter_preset = uiDockRxOpt->currentFilter();
-    int     flo=0, fhi=0, click_res=100;
+    int     flo=0, fhi=0, click_res=10;
     bool    rds_enabled;
 
     // validate mode_idx
