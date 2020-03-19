@@ -67,11 +67,8 @@ signals:
     void fftFillToggled(bool fill);                /*! Toggle filling area under FFT plot. */
     void fftPeakHoldToggled(bool enable);          /*! Toggle peak hold in FFT area. */
     void peakDetectionToggled(bool enabled);       /*! Enable peak detection in FFT plot */
-<<<<<<< HEAD
     void autoButtonToggled(bool enabled);       /*! Enable peak detection in FFT plot */
-=======
     void wfColormapChanged(const QString &cmap);
->>>>>>> 7f0c1d92f5de3a52d778004001be6f0d5d5d96f7
 
 public slots:
     void setPandapterRange(float min, float max);
@@ -97,11 +94,8 @@ private slots:
     void on_peakHoldButton_toggled(bool checked);
     void on_peakDetectionButton_toggled(bool checked);
     void on_lockButton_toggled(bool checked);
-<<<<<<< HEAD
     void on_autoButton_toggled(bool checked);
-=======
     void on_cmapComboBox_currentIndexChanged(int index);
->>>>>>> 7f0c1d92f5de3a52d778004001be6f0d5d5d96f7
 
 private:
     void updateInfoLabels(void);

@@ -275,7 +275,6 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("db_ranges_locked");
 
-<<<<<<< HEAD
     // autorange
     if (ui->autoButton->isChecked())
         settings->setValue("auto_range_enabled", true);
@@ -283,12 +282,10 @@ void DockFft::saveSettings(QSettings *settings)
         settings->remove("auto_range_enabled");
 
 
-=======
     if (QString::compare(ui->cmapComboBox->currentData().toString(), DEFAULT_COLORMAP))
         settings->setValue("waterfall_colormap", ui->cmapComboBox->currentData().toString());
     else
         settings->remove("waterfall_colormap");
->>>>>>> 7f0c1d92f5de3a52d778004001be6f0d5d5d96f7
 
     settings->endGroup();
 }
@@ -357,13 +354,10 @@ void DockFft::readSettings(QSettings *settings)
     bool_val = settings->value("db_ranges_locked", false).toBool();
     ui->lockButton->setChecked(bool_val);
 
-<<<<<<< HEAD
     bool_val = settings->value("auto_range_enabled", false).toBool();
     ui->autoButton->setChecked(bool_val);
-=======
     QString cmap = settings->value("waterfall_colormap", "gqrx").toString();
     ui->cmapComboBox->setCurrentIndex(ui->cmapComboBox->findData(cmap));
->>>>>>> 7f0c1d92f5de3a52d778004001be6f0d5d5d96f7
 
     settings->endGroup();
 }
