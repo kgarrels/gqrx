@@ -70,6 +70,9 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     ui->setupUi(this);
     Bookmarks::create();
 
+    // +kai stay on top
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+
     /* Initialise default configuration directory */
     QByteArray xdg_dir = qgetenv("XDG_CONFIG_HOME");
     if (xdg_dir.isEmpty())
