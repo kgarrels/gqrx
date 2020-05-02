@@ -339,6 +339,9 @@
             <property name="toolTip">
              <string>The vertical time span on the waterfall.</string>
             </property>
+            <property name="maxVisibleItems">
+             <number>10</number>
+            </property>
             <item>
              <property name="text">
               <string>Auto</string>

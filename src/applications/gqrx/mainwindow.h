@@ -210,6 +210,7 @@ private slots:
     void on_actionSaveWaterfall_triggered();
     void on_actionIqTool_triggered();
     void on_actionFullScreen_triggered(bool checked);
+    void on_actionStayOnTop_triggered(bool checked);
     void on_actionRemoteControl_triggered(bool checked);
     void on_actionRemoteConfig_triggered();
     void on_actionAFSK1200_triggered();
@@ -231,6 +232,6 @@ private slots:
     void iqFftTimeout();
     void audioFftTimeout();
     void rdsTimeout();
-};
+    };
 
 #endif // MAINWINDOW_H

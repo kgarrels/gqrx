@@ -70,9 +70,6 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     ui->setupUi(this);
     Bookmarks::create();
 
-    // +kai stay on top
-    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
-
     /* Initialise default configuration directory */
     QByteArray xdg_dir = qgetenv("XDG_CONFIG_HOME");
     if (xdg_dir.isEmpty())
@@ -182,6 +179,7 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     ui->menu_View->addAction(ui->mainToolBar->toggleViewAction());
     ui->menu_View->addSeparator();
     ui->menu_View->addAction(ui->actionFullScreen);
+    //+FIXME ui->menu_View->addAction(ui->actionStayOnTop);
 
     /* connect signals and slots */
     connect(ui->freqCtrl, SIGNAL(newFrequency(qint64)), this, SLOT(setNewFrequency(qint64)));
@@ -1979,6 +1977,8 @@ void MainWindow::on_actionFullScreen_triggered(bool checked)
     }
 }
 
+
+
 /** Remote control button (or menu item) toggled. */
 void MainWindow::on_actionRemoteControl_triggered(bool checked)
 {
@@ -2340,5 +2340,17 @@ void MainWindow::on_actionAddBookmark_triggered()
         uiDockBookmarks->updateTags();
         uiDockBookmarks->updateBookmarks();
         ui->plotter->updateOverlay();
+    }
+}
+
+void MainWindow::on_actionStayOnTop_triggered(bool checked)
+{
+    if (checked)
+    {
+     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    }
+    else
+    {
+     setWindowFlags(windowFlags() & !Qt::WindowStaysOnTopHint);
     }
 }

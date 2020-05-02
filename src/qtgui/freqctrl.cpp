@@ -68,6 +68,13 @@ CFreqCtrl::CFreqCtrl(QWidget *parent) :
     m_UnitsFont = QFont("Arial", 12, QFont::Normal);
     m_DigitFont = QFont("Arial", 12, QFont::Normal);
 
+    int i;
+    for (i = 0; i < m_NumDigits; i++)
+    {
+        m_DigitInfo[i].editmode = false;      // +kai moved from ...setup() to here
+    }
+
+
     setStatusTip(tr(STATUS_TIP));
 }
 
@@ -146,7 +153,7 @@ void CFreqCtrl::setup(int NumDigits, qint64 Minf, qint64 Maxf, int MinStep,
         m_DigitInfo[i].weight = pwr;
         m_DigitInfo[i].incval = pwr;
         m_DigitInfo[i].modified = true;
-        m_DigitInfo[i].editmode = false;
+        //m_DigitInfo[i].editmode = false;      // +kai this will disable selected digit when freq is changed from remote
         m_DigitInfo[i].val = 0;
         pwr *= 10;
     }
