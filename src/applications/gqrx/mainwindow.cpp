@@ -23,6 +23,7 @@
  */
 #include <string>
 #include <vector>
+#include <volk/volk.h>
 
 #include <QSettings>
 #include <QByteArray>
@@ -938,7 +939,23 @@ void MainWindow::setDcCancel(bool enabled)
 /** Enable/disable automatic IQ balance. */
 void MainWindow::setIqBalance(bool enabled)
 {
-    rx->set_iq_balance(enabled);
+    try
+    {
+        rx->set_iq_balance(enabled);
+    }
+    catch (std::exception &x)
+    {
+        qCritical() << "Failed to set IQ balance: " << x.what();
+        m_settings->remove("input/iq_balance");
+        uiDockInputCtl->setIqBalance(false);
+        if (enabled)
+        {
+            QMessageBox::warning(this, tr("Gqrx error"),
+                                 tr("Failed to set IQ balance.\n"
+                                    "IQ balance setting in Input Control disabled."),
+                                 QMessageBox::Ok, QMessageBox::Ok);
+        }
+    }
 }
 
 /**
@@ -1265,12 +1282,13 @@ void MainWindow::meterTimeout()
     remote->setSignalLevel(level);
 }
 
+#define LOG2_10 3.321928094887362
+
 /** Baseband FFT plot timeout. */
 void MainWindow::iqFftTimeout()
 {
     unsigned int    fftsize;
     unsigned int    i;
-    float           pwr;
     float           pwr_scale;
     std::complex<float> pt;     /* a single FFT point used in calculations */
 
@@ -1288,23 +1306,14 @@ void MainWindow::iqFftTimeout()
     pwr_scale = 1.0 / ((float)fftsize * (float)fftsize);
 
     /* Normalize, calculate power and shift the FFT */
+    volk_32fc_magnitude_squared_32f(d_realFftData, d_fftData + (fftsize/2), fftsize/2);
+    volk_32fc_magnitude_squared_32f(d_realFftData + (fftsize/2), d_fftData, fftsize/2);
+    volk_32f_s32f_multiply_32f(d_realFftData, d_realFftData, pwr_scale, fftsize);
+    volk_32f_log2_32f(d_realFftData, d_realFftData, fftsize);
+    volk_32f_s32f_multiply_32f(d_realFftData, d_realFftData, 10 / LOG2_10, fftsize);
+
     for (i = 0; i < fftsize; i++)
     {
-
-        /* normalize and shift */
-        if (i < fftsize/2)
-        {
-            pt = d_fftData[fftsize/2+i];
-        }
-        else
-        {
-            pt = d_fftData[i-fftsize/2];
-        }
-
-        /* calculate power in dBFS */
-        pwr = pwr_scale * (pt.imag() * pt.imag() + pt.real() * pt.real());
-        d_realFftData[i] = 10.0 * log10f(pwr + 1.0e-20);
-
         /* FFT averaging */
         d_iirFftData[i] += d_fftAvg * (d_realFftData[i] - d_iirFftData[i]);
     }
@@ -2104,7 +2113,7 @@ void MainWindow::onBookmarkActivated(qint64 freq, QString demod, int bandwidth)
 
     /* Check if filter is symmetric or not by checking the presets */
     int mode = uiDockRxOpt->currentDemod();
-    int preset = uiDockRxOpt->currentFilterShape();
+    int preset = uiDockRxOpt->currentFilter();
 
     int lo, hi;
     uiDockRxOpt->getFilterPreset(mode, preset, &lo, &hi);
@@ -2130,7 +2139,7 @@ void MainWindow::setPassband(int bandwidth)
 {
     /* Check if filter is symmetric or not by checking the presets */
     int mode = uiDockRxOpt->currentDemod();
-    int preset = uiDockRxOpt->currentFilterShape();
+    int preset = uiDockRxOpt->currentFilter();
 
     int lo, hi;
     uiDockRxOpt->getFilterPreset(mode, preset, &lo, &hi);
