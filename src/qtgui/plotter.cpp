@@ -142,7 +142,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_FHiCmax = 25000;
     m_symetric = true;
 
-    m_ClickResolution = 10;
+    m_ClickResolution = 100;
     m_FilterClickResolution = 100;
     m_CursorCaptureDelta = CUR_CUT_DELTA;
 
@@ -1122,7 +1122,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     m_fftData = fftData;
     m_fftDataSize = size;
 
-    float lowestValue, fftSum;
+    float lowestValue;
     static float minAvg;
     static float fftCopy[MAX_FFT_SIZE];
     long i, offset;
@@ -1160,7 +1160,6 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     minAvg += lowestValue/n;
 
     // set the panadapter limits
-    // FIXME could me done with sliders as well...
     if (m_autoRangeActive) {
         setFftRange(minAvg - 5, minAvg + 48);       // 54dB = S9
         setWaterfallRange(minAvg - 5, minAvg + 48);

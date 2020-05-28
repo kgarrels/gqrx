@@ -6,7 +6,7 @@
 #
 #   AUDIO_BACKEND=portaudio     Use portaudio backend
 #   CONFIG+=debug          Enable debug mode
-#   PREFIX=/some/prefix    Installation prefix
+PREFIX=/opt/local    Installation prefix
 #   BOOST_SUFFIX=-mt       To link against libboost-xyz-mt (needed for pybombs)
 #--------------------------------------------------------------------------------
 
