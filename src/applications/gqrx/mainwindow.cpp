@@ -180,7 +180,6 @@ MainWindow::MainWindow(const QString cfgfile, bool edit_conf, QWidget *parent) :
     ui->menu_View->addAction(ui->mainToolBar->toggleViewAction());
     ui->menu_View->addSeparator();
     ui->menu_View->addAction(ui->actionFullScreen);
-    //+FIXME ui->menu_View->addAction(ui->actionStayOnTop);
 
     /* connect signals and slots */
     connect(ui->freqCtrl, SIGNAL(newFrequency(qint64)), this, SLOT(setNewFrequency(qint64)));
@@ -466,6 +465,10 @@ bool MainWindow::loadConfig(const QString cfgfile, bool check_crash,
     if (bool_val)
         ui->mainToolBar->hide();
 
+    // fullscreen
+    bool_val = m_settings->value("gui/fullscreen", true).toBool();
+    on_actionFullScreen_triggered(bool_val);
+
     // main window settings
     if (restore_mainwindow)
     {
@@ -707,6 +710,7 @@ void MainWindow::storeSession()
     if (m_settings)
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
+        m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
 
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
