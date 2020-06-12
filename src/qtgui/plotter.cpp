@@ -361,13 +361,25 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             qint64 delta_hz = delta_px * m_Span / m_OverlayPixmap.width();
             if (event->buttons() & Qt::MidButton)
             {
+
                 m_CenterFreq += delta_hz;
                 m_DemodCenterFreq += delta_hz;
                 emit newCenterFreq(m_CenterFreq);
+
             }
             else
             {
+                // move waterfall horizontally
+                int w, h;
+
+                w = m_WaterfallPixmap.width();
+                h = m_WaterfallPixmap.height();
+                QRegion black;
+                m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &black);
+                QPainter painter1(&m_WaterfallPixmap);
+
                 setFftCenterFreq(m_FftCenter + delta_hz);
+
             }
             updateOverlay();
 
@@ -727,7 +739,15 @@ void CPlotter::mouseReleaseEvent(QMouseEvent * event)
         else if (XAXIS == m_CursorCaptured)
         {
             setCursor(QCursor(Qt::OpenHandCursor));
+
+            // re-center on the new fft center
+            qint64 newFreq = m_CenterFreq + m_FftCenter;
+            // #TODO how to recenter the receiver???
+            emit newFrequency(newFreq);
+            qDebug() << "mouse release: " << newFreq;
+
             m_Xzero = -1;
+
         }
     }
 }
@@ -1576,7 +1596,7 @@ int CPlotter::xFromFreq(qint64 freq)
 {
     int w = m_OverlayPixmap.width();
     qint64 StartFreq = m_CenterFreq + m_FftCenter - m_Span/2;
-    int x = (int) w * ((float)freq - StartFreq)/(float)m_Span;
+    int x = (int) round(w * ((float)freq - StartFreq)/(float)m_Span); // typecast does not round
     if (x < 0)
         return 0;
     if (x > (int)w)
@@ -1650,7 +1670,21 @@ void CPlotter::setCenterFreq(quint64 f)
 {
     if((quint64)m_CenterFreq == f)
         return;
+/*
+    // move waterfall horizontally
+    int w, h;
+    static qint64 old_f=0, deltaX=0;
 
+    deltaX = xFromFreq(old_f) - xFromFreq(f);
+    qDebug() << "center freq delta: " << (old_f - f) << " pixel " << deltaX;
+    old_f = f;
+
+    w = m_WaterfallPixmap.width();
+    h = m_WaterfallPixmap.height();
+    m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h);
+    QPainter painter1;//(&m_WaterfallPixmap);
+    painter1.drawPixmap(0, 0, m_WaterfallPixmap);
+*/
     qint64 offset = m_CenterFreq - m_DemodCenterFreq;
 
     m_CenterFreq = f;
@@ -1659,6 +1693,8 @@ void CPlotter::setCenterFreq(quint64 f)
     updateOverlay();
 
     m_PeakHoldValid = false;
+
+
 }
 
 // Ensure overlay is updated by either scheduling or forcing a redraw
