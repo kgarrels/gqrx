@@ -374,9 +374,11 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
 
                 w = m_WaterfallPixmap.width();
                 h = m_WaterfallPixmap.height();
-                QRegion black;
-                m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &black);
+                QRegion exposed;
+                m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
                 QPainter painter1(&m_WaterfallPixmap);
+                painter1.fillRect(exposed.boundingRect(), Qt::black);
+
 
                 setFftCenterFreq(m_FftCenter + delta_hz);
 
@@ -832,7 +834,7 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     {
         zoomStepX(event->delta() < 0 ? 1.1 : 0.9, pt.x());
     }
-    else if (event->modifiers() & Qt::ControlModifier)
+    else if (event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
     {
         // filter width
         m_DemodLowCutFreq -= numSteps * m_ClickResolution;
