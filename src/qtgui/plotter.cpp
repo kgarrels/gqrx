@@ -736,6 +736,7 @@ void CPlotter::mouseReleaseEvent(QMouseEvent * event)
 // Make a single zoom step on the X axis.
 void CPlotter::zoomStepX(float step, int x)
 {
+
     // calculate new range shown on FFT
     float new_range = qBound(10.0f, m_Span * step, m_SampleFreq * 10.0f);
 
@@ -759,8 +760,9 @@ void CPlotter::zoomStepX(float step, int x)
     setSpanFreq((quint32)new_range);
 
     float factor = (float)m_SampleFreq / (float)m_Span;
+
     emit newZoomLevel(factor);
-    qDebug() << QString("Spectrum zoom: %1x").arg(factor, 0, 'f', 1);
+    qDebug() << QString("Spectrum zoom: %1x").arg(factor, 0, 'f', 1) << step;
 
     m_PeakHoldValid = false;
 }
@@ -773,6 +775,7 @@ void CPlotter::zoomOnXAxis(float level)
     zoomStepX(current_level / level, xFromFreq(m_DemodCenterFreq));
 }
 
+
 // Called when a mouse wheel is turned
 void CPlotter::wheelEvent(QWheelEvent * event)
 {
@@ -780,8 +783,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     float numDegrees = event->delta() / 8;
     float numSteps = numDegrees / 15;  /** FIXME: Only used for direction **/
 
-    //qDebug() << "wheel event" << event;
-    //qDebug() << "modfiers" << event->modifiers();
+    qDebug() << "wheel event" << event << numSteps << numDegrees;
+    qDebug() << "modfiers" << event->modifiers();
 
     /** FIXME: zooming could use some optimisation **/
     if (m_CursorCaptured == YAXIS)
@@ -829,9 +832,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
-        if (numSteps<100) numSteps *= 5;
-        m_DemodCenterFreq += (numSteps * m_ClickResolution);
-        //m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
+        m_DemodCenterFreq += (numSteps * m_ClickResolution / 10);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution / 10);
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
