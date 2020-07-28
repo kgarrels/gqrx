@@ -361,27 +361,25 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             qint64 delta_hz = delta_px * m_Span / m_OverlayPixmap.width();
             if (event->buttons() & Qt::MidButton)
             {
-
                 m_CenterFreq += delta_hz;
                 m_DemodCenterFreq += delta_hz;
                 emit newCenterFreq(m_CenterFreq);
-
             }
             else
             {
                 // move waterfall horizontally
                 int w, h;
 
+                m_Running=false;
                 w = m_WaterfallPixmap.width();
                 h = m_WaterfallPixmap.height();
                 QRegion exposed;
                 m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
                 QPainter painter1(&m_WaterfallPixmap);
                 painter1.fillRect(exposed.boundingRect(), Qt::black);
-
+                m_Running=true;
 
                 setFftCenterFreq(m_FftCenter + delta_hz);
-
             }
             updateOverlay();
 
@@ -631,6 +629,8 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
 {
     QPoint pt = event->pos();
 
+    qDebug() << "mouse press " << event;
+
     if (NOCAP == m_CursorCaptured)
     {
         if (isPointCloseTo(pt.x(), m_DemodFreqX, m_CursorCaptureDelta))
@@ -686,6 +686,7 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
             {
                 // reset frequency zoom
                 resetHorizontalZoom();
+
             }
         }
     }
@@ -699,6 +700,7 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
             m_Xzero = pt.x();
             if (event->buttons() == Qt::RightButton)
             {
+
                 // reset frequency zoom
                 resetHorizontalZoom();
             }
@@ -832,7 +834,7 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     }
     else if (m_CursorCaptured == XAXIS)
     {
-        zoomStepX(event->delta() < 0 ? 1.1 : 0.9, pt.x());
+        //zoomStepX(event->delta() < 0 ? 1.1 : 0.9, pt.x());
     }
     else if (event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
     {
@@ -854,8 +856,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution / 10);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution / 10);
+        m_DemodCenterFreq += (numSteps * m_ClickResolution / 4);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution / 4);
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -922,7 +924,7 @@ void CPlotter::draw()
     int     h;
     int     xmin, xmax;
 
-    if (m_DrawOverlay)
+   if (m_DrawOverlay)
     {
         drawOverlay();
         m_DrawOverlay = false;
@@ -1110,18 +1112,21 @@ void CPlotter::draw()
  * When FFT data is set using this method, the same data will be used for both the
  * pandapter and the waterfall.
  */
+
+
 void CPlotter::setNewFftData(float *fftData, int size)
 {
     /** FIXME **/
     if (!m_Running)
-        m_Running = true;
-
+        //m_Running = true;
+        return;
     m_wfData = fftData;
     m_fftData = fftData;
     m_fftDataSize = size;
 
     draw();
 }
+
 
 /**
  * Set new FFT data.
@@ -1140,7 +1145,8 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
 
     /** FIXME **/
     if (!m_Running)
-        m_Running = true;
+        //m_Running = true;
+        return;     //do nothing
 
     m_wfData = wfData;
     m_fftData = fftData;
@@ -1598,7 +1604,7 @@ int CPlotter::xFromFreq(qint64 freq)
 {
     int w = m_OverlayPixmap.width();
     qint64 StartFreq = m_CenterFreq + m_FftCenter - m_Span/2;
-    int x = (int) round(w * ((float)freq - StartFreq)/(float)m_Span); // typecast does not round
+    int x = (int) round(w * ((float)freq - (float)StartFreq)/(float)m_Span); // typecast does not round
     if (x < 0)
         return 0;
     if (x > (int)w)
@@ -1610,7 +1616,7 @@ int CPlotter::xFromFreq(qint64 freq)
 qint64 CPlotter::freqFromX(int x)
 {
     int w = m_OverlayPixmap.width();
-    qint64 StartFreq = m_CenterFreq + m_FftCenter - m_Span / 2;
+    float StartFreq = (float)m_CenterFreq + (float)m_FftCenter - (float)m_Span / 2.f;
     qint64 f = (qint64)(StartFreq + (float)m_Span * (float)x / (float)w);
     return f;
 }
@@ -1672,21 +1678,7 @@ void CPlotter::setCenterFreq(quint64 f)
 {
     if((quint64)m_CenterFreq == f)
         return;
-/*
-    // move waterfall horizontally
-    int w, h;
-    static qint64 old_f=0, deltaX=0;
 
-    deltaX = xFromFreq(old_f) - xFromFreq(f);
-    qDebug() << "center freq delta: " << (old_f - f) << " pixel " << deltaX;
-    old_f = f;
-
-    w = m_WaterfallPixmap.width();
-    h = m_WaterfallPixmap.height();
-    m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h);
-    QPainter painter1;//(&m_WaterfallPixmap);
-    painter1.drawPixmap(0, 0, m_WaterfallPixmap);
-*/
     qint64 offset = m_CenterFreq - m_DemodCenterFreq;
 
     m_CenterFreq = f;
@@ -1696,6 +1688,22 @@ void CPlotter::setCenterFreq(quint64 f)
 
     m_PeakHoldValid = false;
 
+    // move waterfall horizontally
+    int w, h;
+    static qint64 old_f=0, deltaX=0;
+
+    deltaX = xFromFreq(old_f) - xFromFreq(m_CenterFreq);
+    w = m_WaterfallPixmap.width();
+    h = m_WaterfallPixmap.height();
+    qDebug() << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
+    old_f = f;
+    if (abs(deltaX) < w/2)
+    {
+        QRegion exposed;
+        m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
+        QPainter painter1(&m_WaterfallPixmap);
+        painter1.fillRect(exposed.boundingRect(), Qt::black);
+    }
 
 }
 
@@ -1712,7 +1720,7 @@ void CPlotter::updateOverlay()
 void CPlotter::resetHorizontalZoom(void)
 {
     setFftCenterFreq(0);
-    setSpanFreq((qint32)m_SampleFreq);
+    //setSpanFreq((qint32)m_SampleFreq);
 }
 
 /** Center FFT plot around 0 (corresponds to center freq). */

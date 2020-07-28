@@ -199,7 +199,7 @@ void CFreqCtrl::setFrequency(qint64 freq)
     qint64    rem;
     int       val;
 
-    qDebug() << "freqCtrl:setFrequency: " << freq;
+    qDebug() << "freqCtrl:setFrequency: " << this << freq;
 
 
     if (freq == m_Oldfreq)
