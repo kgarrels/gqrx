@@ -311,7 +311,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(rds_timer, SIGNAL(timeout()), this, SLOT(rdsTimeout()));
 
     // enable frequency tooltips on FFT plot
-    ui->plotter->setTooltipsEnabled(true);
+    ui->plotter->setTooltipsEnabled(false);     // +kai, to nervous on display
 
     // Create list of input devices. This must be done before the configuration is
     // restored because device probing might change the device configuration
@@ -351,6 +351,8 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     }
 
     qsvg_dummy = new QSvgWidget();
+    on_actionDSP_triggered(true); //+kai autostart
+
 }
 
 MainWindow::~MainWindow()
@@ -490,6 +492,10 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     bool_val = m_settings->value("gui/hide_toolbar", false).toBool();
     if (bool_val)
         ui->mainToolBar->hide();
+
+    // fullscreen
+    bool_val = m_settings->value("gui/fullscreen", true).toBool();
+    on_actionFullScreen_triggered(bool_val);
 
     // main window settings
     if (restore_mainwindow)
@@ -742,6 +748,7 @@ void MainWindow::storeSession()
     if (m_settings)
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
+        m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
 
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
