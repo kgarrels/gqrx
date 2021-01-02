@@ -131,6 +131,7 @@ signals:
     void pandapterRangeChanged(float min, float max);
     void newZoomLevel(float level);
     void newSize();
+    void newFrequency(qint64 freq);
 
 public slots:
     // zoom functions
