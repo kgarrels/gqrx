@@ -167,6 +167,7 @@ private slots:
     double setSqlLevelAuto();
     void setAudioGain(float gain);
     void setPassband(int bandwidth);
+    void fftNbChanged(bool state);
 
     /* audio recording and playback */
     void startAudioRec(const QString& filename);
@@ -194,6 +195,7 @@ private slots:
     void setFftColor(const QColor& color);
     void setFftFill(bool enable);
     void setPeakDetection(bool enabled);
+    void setAutoRange(bool enabled);
     void setFftPeakHold(bool enable);
     void setWfTimeSpan(quint64 span_ms);
     void setWfSize();
