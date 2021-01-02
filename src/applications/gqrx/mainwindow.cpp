@@ -786,7 +786,6 @@ void MainWindow::storeSession()
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
         m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
-        
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
         uiDockFft->saveSettings(m_settings);
