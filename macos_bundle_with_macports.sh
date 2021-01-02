@@ -1,7 +1,6 @@
-#!/bin/bash -e
+#!/bin/bash
 
 GQRX_VERSION=$(<version.txt)
-IDENTITY=Y3GC27WZ4S
 
 mkdir -p Gqrx.app/Contents/MacOS
 mkdir -p Gqrx.app/Contents/Resources
@@ -15,10 +14,15 @@ mkdir -p Gqrx.app/Contents/Resources
   <string>NSApplication</string>
   <key>CFBundleGetInfoString</key>
   <string>Gqrx</string>
+  <key>LSEnvironment</key>
+  <dict>
+    <key>SOAPY_SDR_ROOT</key>
+    <string>/usr/local</string>
+  </dict>
   <key>CFBundleExecutable</key>
   <string>gqrx</string>
   <key>CFBundleIdentifier</key>
-  <string>dk.gqrx.gqrx</string>
+  <string>dk.gqrx.www</string>
   <key>CFBundleName</key>
   <string>Gqrx</string>
   <key>CFBundleIconFile</key>
@@ -37,21 +41,8 @@ mkdir -p Gqrx.app/Contents/Resources
 </plist>
 EOM
 
-/bin/cat <<EOM >Entitlements.plist
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-  <true/>
-</dict>
-</plist>
-EOM
-
 cp build/src/gqrx Gqrx.app/Contents/MacOS
 cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
-cp -r /usr/local/lib/SoapySDR/modules* Gqrx.app/Contents/soapy-modules
-chmod 644 Gqrx.app/Contents/soapy-modules/*
 
 # leave dependencies out for macports version
 #dylibbundler -s /usr/local/opt/icu4c/lib/ -od -b -x Gqrx.app/Contents/MacOS/gqrx -d Gqrx.app/Contents/Libs/

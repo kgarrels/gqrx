@@ -1140,6 +1140,7 @@ void CPlotter::setNewFftData(float *fftData, int size)
 
 void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
 {
+#define MAX_FFT_SIZE 1048576
     /** FIXME **/
     if (!m_Running)
         m_Running = true;
@@ -1148,7 +1149,48 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     m_fftData = fftData;
     m_fftDataSize = size;
 
-    draw();
+    float lowestValue;
+    static float minAvg;
+    static float fftCopy[MAX_FFT_SIZE];
+    long i, offset;
+
+    // cut away the first/last partsof the waterfall
+    offset = (long) size / 8;  // =12.5%
+
+    // automatic determination of the noise level
+    // ignore the first and last offset bins
+    for (i=offset; i<=size-offset; i++) {
+        fftCopy[i-offset] = fftData[i];      // we use the fftData that is averaged
+    }
+
+    // sort bins
+    std::sort(std::begin(fftCopy), std::end(fftCopy));
+
+    // m_fftData = fftCopy;    // test only, view sorted bins in fft
+
+    lowestValue = fftCopy[offset];
+
+    // do a moving averge of abt. n
+    int n = 10;
+    minAvg -= minAvg/n;
+    minAvg += lowestValue/n;
+
+    // set the panadapter limits
+    if (m_autoRangeActive) {
+
+        //m_WfMindBSlider
+
+        // set values to new bounds
+        m_WfMindB = minAvg + m_WfMindBSlider + 140 ;        // slider is -160 to 0, allow for -20 correction
+        m_WfMaxdB = m_WfMindB + 50 + m_WfMaxdBSlider;       // 54dB=S9, allow to correct down
+
+        m_PandMindB = m_WfMindB + (m_BandPlanEnabled? -10 : 0); // make room for bandplan if needed
+        m_PandMaxdB = m_WfMaxdB;
+
+        //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
+    }
+
+    if (m_Running) draw();
 }
 
 void CPlotter::getScreenIntegerFFTData(qint32 plotHeight, qint32 plotWidth,
@@ -1283,6 +1325,10 @@ void CPlotter::setWaterfallRange(float min, float max)
 
     m_WfMindB = min;
     m_WfMaxdB = max;
+
+    // save slider values for auto mode
+    m_WfMindBSlider = min;
+    m_WfMaxdBSlider = max;
     // no overlay change is necessary
 }
 
@@ -1304,6 +1350,7 @@ void CPlotter::drawOverlay()
     QFontMetrics    metrics(m_Font);
     QPainter        painter(&m_OverlayPixmap);
 
+    painter.initFrom(this);
     painter.setFont(m_Font);
 
     // solid background
@@ -1750,6 +1797,13 @@ void CPlotter::setPeakHold(bool enabled)
 {
     m_PeakHoldActive = enabled;
     m_PeakHoldValid = false;
+}
+
+/** Set auto range on or off. */
+void CPlotter::setAutoRange(bool enabled)
+{
+    m_autoRangeActive = enabled;
+    qDebug() << "auto range: " << m_autoRangeActive;
 }
 
 /**

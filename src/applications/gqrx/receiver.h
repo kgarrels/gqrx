@@ -41,6 +41,7 @@
 #include "dsp/downconverter.h"
 #include "dsp/filter/fir_decim.h"
 #include "dsp/rx_noise_blanker_cc.h"
+#include "dsp/fft_noise_blanker_cc.h"
 #include "dsp/rx_filter.h"
 #include "dsp/rx_meter.h"
 #include "dsp/rx_agc_xx.h"
@@ -231,6 +232,10 @@ public:
 
     /* utility functions */
     static std::string escape_filename(std::string filename);
+    /* noise blanker for FFT/waterfall */
+    void fftNbChanged(bool state);
+    void fftNbSliderChanged(int value);
+
 
 private:
     void        connect_all(rx_chain type);
@@ -266,6 +271,9 @@ private:
 
     dc_corr_cc_sptr           dc_corr;   /*!< DC corrector block. */
     iq_swap_cc_sptr           iq_swap;   /*!< I/Q swapping block. */
+
+    fft_nb_cc_sptr            fft_nb;         /*!< Noise blanker for fft. */
+
 
     rx_fft_c_sptr             iq_fft;     /*!< Baseband FFT block. */
     rx_fft_f_sptr             audio_fft;  /*!< Audio FFT block. */

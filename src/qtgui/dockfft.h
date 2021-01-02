@@ -69,12 +69,19 @@ signals:
     void peakDetectionToggled(bool enabled);       /*! Enable peak detection in FFT plot */
     void bandPlanChanged(bool enabled);            /*! Toggle Band Plan at bottom of FFT area. */
     void wfColormapChanged(const QString &cmap);
+    void autoButtonToggled(bool enabled);           /*! Enable peak detection in FFT plot */
+    void fftNbChanged(bool enabled);                /*! Enable noise blanker in FFT plot */
+    void fftNbSliderChanged(int value);      /*! change FFT Noise balnker threshold */
+
 
 public slots:
     void setPandapterRange(float min, float max);
     void setWaterfallRange(float min, float max);
     void setWfResolution(quint64 msec_per_line);
     void setZoomLevel(float level);
+
+private slots:
+    void on_fftNbSlider_valueChanged(int value);
 
 private slots:
     void on_fftSizeComboBox_currentIndexChanged(const QString & text);
@@ -96,6 +103,8 @@ private slots:
     void on_lockButton_toggled(bool checked);
     void on_bandPlanCheckbox_stateChanged(int state);
     void on_cmapComboBox_currentIndexChanged(int index);
+    void on_autoButton_toggled(bool checked);
+    void on_fftNbCheckbox_toggled(bool checked);
 
 private:
     void updateInfoLabels(void);

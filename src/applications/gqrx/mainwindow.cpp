@@ -271,6 +271,9 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(uiDockFft, SIGNAL(fftFillToggled(bool)), this, SLOT(setFftFill(bool)));
     connect(uiDockFft, SIGNAL(fftPeakHoldToggled(bool)), this, SLOT(setFftPeakHold(bool)));
     connect(uiDockFft, SIGNAL(peakDetectionToggled(bool)), this, SLOT(setPeakDetection(bool)));
+    connect(uiDockFft, SIGNAL(autoButtonToggled(bool)), this, SLOT(setAutoRange(bool)));
+    connect(uiDockFft, SIGNAL(fftNbChanged(bool)), this, SLOT(fftNbChanged(bool)));
+    connect(uiDockFft, SIGNAL(fftNbSliderChanged(int)), this, SLOT(fftNbSliderChanged(int)));
     connect(uiDockRDS, SIGNAL(rdsDecoderToggled(bool)), this, SLOT(setRdsDecoder(bool)));
 
     // Bookmarks
@@ -1796,6 +1799,22 @@ void MainWindow::setPeakDetection(bool enabled)
 {
     ui->plotter->setPeakDetection(enabled ,2);
 }
+
+void MainWindow::setAutoRange(bool enabled)
+{
+    ui->plotter->setAutoRange(enabled);
+}
+
+void MainWindow::fftNbChanged(bool state)
+{
+    rx->fftNbChanged(state);
+}
+
+void MainWindow::fftNbSliderChanged(int value)
+{
+    rx->fftNbSliderChanged(value);
+}
+
 
 /**
  * @brief Start/Stop DSP processing.

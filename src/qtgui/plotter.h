@@ -144,6 +144,7 @@ public slots:
     void setFftPlotColor(const QColor& color);
     void setFftFill(bool enabled);
     void setPeakHold(bool enabled);
+    void setAutoRange(bool enabled);
     void setFftRange(float min, float max);
     void setWfColormap(const QString &cmap);
     void setPandapterRange(float min, float max);
@@ -254,6 +255,9 @@ private:
     float       m_PandMaxdB;
     float       m_WfMindB;
     float       m_WfMaxdB;
+    float       m_WfMindBSlider;
+    float       m_WfMaxdBSlider;
+    bool        m_autoRangeActive;
 
     qint64      m_Span;
     float       m_SampleFreq;    /*!< Sample rate. */

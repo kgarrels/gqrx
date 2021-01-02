@@ -35,8 +35,11 @@
 #include "dsp/correct_iq_cc.h"
 #include "dsp/filter/fir_decim.h"
 #include "dsp/rx_fft.h"
+#include "dsp/fft_noise_blanker_cc.h"
 #include "receivers/nbrx.h"
 #include "receivers/wfmrx.h"
+
+#include "qtgui/dockfft.h"
 
 #ifdef WITH_PULSEAUDIO
 #include "pulseaudio/pa_sink.h"
@@ -112,6 +115,10 @@ receiver::receiver(const std::string input_device,
     d_quad_rate = d_decim_rate / d_ddc_decim;
     ddc = make_downconverter_cc(d_ddc_decim, 0.0, d_decim_rate);
     rx  = make_nbrx(d_quad_rate, d_audio_rate);
+
+    // create a noiseblanker for the fft/waterfall visualization
+    fft_nb = make_fft_nb_cc(d_quad_rate, 5, 5);
+
 
     iq_swap = make_iq_swap_cc(false);
     dc_corr = make_dc_corr_cc(d_decim_rate, 1.0);
@@ -748,6 +755,23 @@ void receiver::get_audio_fft_data(std::complex<float>* fftPoints, unsigned int &
     audio_fft->get_fft_data(fftPoints, fftsize);
 }
 
+/** Set noiseblanker for fft */
+void receiver::fftNbChanged(bool state)
+{
+    fft_nb->set_nb1_on(state);
+    fft_nb->set_nb2_on(state);
+    qDebug() << "fft noiseblanker changed" << state;
+}
+
+/** Set noiseblanker threshold for fft */
+void receiver::fftNbSliderChanged(int value)
+{
+    fft_nb->set_threshold2(value);
+    fft_nb->set_threshold2(value);
+    qDebug() << "fft noiseblanker value changed" << value;
+}
+
+
 receiver::status receiver::set_nb_on(int nbid, bool on)
 {
     if (rx->has_nb())
@@ -1324,7 +1348,9 @@ void receiver::connect_all(rx_chain type)
     }
 
     // Visualization
-    tb->connect(b, 0, iq_fft, 0);
+    // nb before fft
+    tb->connect(b, 0, fft_nb, 0);
+    tb->connect(fft_nb, 0, iq_fft, 0);
 
     // RX demod chain
     rx.reset();
