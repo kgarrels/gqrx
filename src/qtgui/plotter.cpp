@@ -801,9 +801,22 @@ void CPlotter::zoomOnXAxis(float level)
 void CPlotter::wheelEvent(QWheelEvent * event)
 {
     QPoint pt = event->pos();
-    int delta = m_InvertScrolling? -event->angleDelta().y() : event->angleDelta().y();
-    int numDegrees = delta / 8;
-    int numSteps = numDegrees / 15;  /** FIXME: Only used for direction **/
+
+    QPoint numPixels = event->pixelDelta();
+    QPoint numDegrees = event->angleDelta() / 8;
+
+    int numSteps;
+
+    if (!numPixels.isNull()) {
+        numSteps = numPixels.y() / 2;
+    } else {
+        numSteps = numDegrees.y() / 15;
+    }
+    numSteps = m_InvertScrolling? -numSteps  : numSteps;
+    int delta = numSteps;
+
+    qDebug() << "whell event" << event <<"numSteps" << numSteps;
+
 
     /** FIXME: zooming could use some optimisation **/
     if (m_CursorCaptured == YAXIS)
@@ -1579,12 +1592,11 @@ void CPlotter::makeFrequencyStrs()
     }
 }
 
-// Convert from frequency to screen coordinate
 int CPlotter::xFromFreq(qint64 freq)
 {
-    qint64 w = width();
-    qint64 StartFreq = m_CenterFreq + m_FftCenter - m_Span / 2;
-    int x = (int) (w * (freq - StartFreq) / m_Span);
+    int w = width();
+    qreal StartFreq = m_CenterFreq + m_FftCenter - m_Span/2.f;
+    int x = (int) (round((qreal)w * ((qreal)freq - (qreal)StartFreq)/(qreal)m_Span)); // typecast does not round
     if (x < 0)
         return 0;
     if (x > (int)w)
