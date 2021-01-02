@@ -221,6 +221,12 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("split");
 
+    if (ui->fftZoomSlider->value() != 1)
+        settings->setValue("fft_zoom", ui->fftZoomSlider->value());
+    else
+        settings->remove("fft_zoom");
+
+
     QColor fftColor = ui->colorPicker->currentColor();
     if (fftColor != QColor(0xFF,0xFF,0xFF,0xFF))
         settings->setValue("pandapter_color", fftColor);
@@ -314,6 +320,10 @@ void DockFft::readSettings(QSettings *settings)
     intval = settings->value("split", DEFAULT_FFT_SPLIT).toInt(&conv_ok);
     if (conv_ok)
         ui->fftSplitSlider->setValue(intval);
+
+    intval = settings->value("fft_zoom", 1).toInt(&conv_ok);
+    if (conv_ok)
+        ui->fftZoomSlider->setValue(intval);
 
     color = settings->value("pandapter_color", QColor(0xFF,0xFF,0xFF,0xFF)).value<QColor>();
     ui->colorPicker->setCurrentColor(color);

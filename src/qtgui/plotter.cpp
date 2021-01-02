@@ -357,14 +357,12 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 // move waterfall horizontally
                 int w, h;
 
-                m_Running=false;
                 w = m_WaterfallPixmap.width();
                 h = m_WaterfallPixmap.height();
                 QRegion exposed;
                 m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
                 QPainter painter1(&m_WaterfallPixmap);
                 painter1.fillRect(exposed.boundingRect(), Qt::black);
-                m_Running=true;
 
                 setFftCenterFreq(m_FftCenter + delta_hz);
             }
@@ -661,7 +659,7 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
                 m_GrabPosition = 1;
                 drawOverlay();
             }
-            else if (event->buttons() == Qt::MidButton)
+            else if (event->buttons() == Qt::RightButton)   // was mid button
             {
                 // set center freq
                 m_CenterFreq = roundFreq(freqFromX(pt.x()), m_ClickResolution);
@@ -844,7 +842,7 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     {
         zoomStepX(delta < 0 ? 1.1 : 0.9, pt.x());
     }
-    else if (event->modifiers() & Qt::ControlModifier)
+    else if (event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
     {
         // filter width
         m_DemodLowCutFreq -= numSteps * m_ClickResolution;
@@ -864,8 +862,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/20);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/20);
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1712,7 +1710,6 @@ void CPlotter::updateOverlay()
 void CPlotter::resetHorizontalZoom(void)
 {
     setFftCenterFreq(0);
-    setSpanFreq((qint32)m_SampleFreq);
 }
 
 /** Center FFT plot around 0 (corresponds to center freq). */
