@@ -48,6 +48,7 @@ DockFft::DockFft(QWidget *parent) :
     ui->peakDetectionButton->setMinimumSize(48, 24);
     ui->peakHoldButton->setMinimumSize(48, 24);
     ui->lockButton->setMinimumSize(48, 24);
+    ui->autoButton->setMinimumSize(48, 24);
     ui->resetButton->setMinimumSize(48, 24);
     ui->centerButton->setMinimumSize(48, 24);
     ui->demodButton->setMinimumSize(48, 24);
@@ -263,16 +264,35 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("db_ranges_locked");
 
+    // autorange
+    if (ui->autoButton->isChecked())
+        settings->setValue("auto_range_enabled", true);
+    else
+        settings->remove("auto_range_enabled");
+
     // Band Plan
     if (ui->bandPlanCheckbox->isChecked())
         settings->setValue("bandplan", true);
     else
         settings->remove("bandplan");
 
+    // NoiseBlanker for FFT/Waterfall
+    if (ui->fftNbCheckbox->isChecked())
+        settings->setValue("fft_noiseblanker", true);
+    else
+        settings->remove("fft_noiseblanker");
+
     if (QString::compare(ui->cmapComboBox->currentData().toString(), DEFAULT_COLORMAP))
         settings->setValue("waterfall_colormap", ui->cmapComboBox->currentData().toString());
     else
         settings->remove("waterfall_colormap");
+    // autorange
+    if (ui->autoButton->isChecked())
+        settings->setValue("auto_range_enabled", true);
+    else
+        settings->remove("auto_range_enabled");
+
+
 
     settings->endGroup();
 }
@@ -341,12 +361,22 @@ void DockFft::readSettings(QSettings *settings)
     bool_val = settings->value("db_ranges_locked", false).toBool();
     ui->lockButton->setChecked(bool_val);
 
+    bool_val = settings->value("auto_range_enabled", false).toBool();
+    ui->autoButton->setChecked(bool_val);
+
     bool_val = settings->value("bandplan", false).toBool();
     ui->bandPlanCheckbox->setChecked(bool_val);
     emit bandPlanChanged(bool_val);
 
+    bool_val = settings->value("fft_noiseblanker", false).toBool();
+    ui->fftNbCheckbox->setChecked(bool_val);
+    emit fftNbChanged(bool_val);
+
     QString cmap = settings->value("waterfall_colormap", "gqrx").toString();
     ui->cmapComboBox->setCurrentIndex(ui->cmapComboBox->findData(cmap));
+
+    bool_val = settings->value("auto_range_enabled", false).toBool();
+    ui->autoButton->setChecked(bool_val);
 
     settings->endGroup();
 }
@@ -519,6 +549,18 @@ void DockFft::on_peakHoldButton_toggled(bool checked)
 void DockFft::on_peakDetectionButton_toggled(bool checked)
 {
     emit peakDetectionToggled(checked);
+}
+
+/** Auto button toggled */
+void DockFft::on_autoButton_toggled(bool checked)
+{
+    emit autoButtonToggled(checked);
+}
+
+/** fftNbCheckbox changed */
+void DockFft::on_fftNbCheckbox_toggled(bool checked)
+{
+    emit fftNbChanged(checked);
 }
 
 void DockFft::on_bandPlanCheckbox_stateChanged(int state)
