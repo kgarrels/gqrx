@@ -762,7 +762,9 @@ void MainWindow::storeSession()
         {
             int     flo, fhi;
             ui->plotter->getHiLowCutFrequencies(&flo, &fhi);
-            if (flo != fhi)
+
+            // if (flo != fhi)    // +kai why? It would not save filter settings when demod if off, lo=0 and high=0
+            if (true)
             {
                 m_settings->setValue("receiver/filter_low_cut", flo);
                 m_settings->setValue("receiver/filter_high_cut", fhi);
@@ -1067,7 +1069,7 @@ void MainWindow::selectDemod(int mode_idx)
 {
     double  cwofs = 0.0;
     int     filter_preset = uiDockRxOpt->currentFilter();
-    int     flo=0, fhi=0, click_res=100;
+    int     flo=0, fhi=0, click_res=10;
     bool    rds_enabled;
 
     // validate mode_idx
@@ -1096,6 +1098,7 @@ void MainWindow::selectDemod(int mode_idx)
             uiDockAudio->setAudioRecButtonState(false);
         }
         rx->set_demod(receiver::RX_DEMOD_OFF);
+        ui->plotter->setDemodRanges(0, 0, 0, 0, true);    // +kai
         click_res = 1000;
         break;
 
@@ -1154,7 +1157,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(-40000, -100, -5000, 0, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_USB:
@@ -1162,7 +1165,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(0, 5000, 100, 40000, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_CWL:
