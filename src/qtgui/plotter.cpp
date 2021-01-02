@@ -354,6 +354,18 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             }
             else
             {
+                // move waterfall horizontally
+                int w, h;
+
+                m_Running=false;
+                w = m_WaterfallPixmap.width();
+                h = m_WaterfallPixmap.height();
+                QRegion exposed;
+                m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
+                QPainter painter1(&m_WaterfallPixmap);
+                painter1.fillRect(exposed.boundingRect(), Qt::black);
+                m_Running=true;
+
                 setFftCenterFreq(m_FftCenter + delta_hz);
             }
             updateOverlay();
@@ -1673,6 +1685,25 @@ void CPlotter::setCenterFreq(quint64 f)
     updateOverlay();
 
     m_PeakHoldValid = false;
+
+    // move waterfall horizontally
+    int w, h;
+    static qint64 old_f=0, deltaX=0;
+
+    deltaX = xFromFreq(old_f) - xFromFreq(f);
+
+    w = m_WaterfallPixmap.width();
+    h = m_WaterfallPixmap.height();
+    //qDebug() << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
+    old_f = f;
+    if (abs(deltaX) < w/2)
+    {
+        QRegion exposed;
+        m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
+        QPainter painter1(&m_WaterfallPixmap);
+        painter1.fillRect(exposed.boundingRect(), Qt::black);
+    }
+
 }
 
 // Ensure overlay is updated by either scheduling or forcing a redraw
