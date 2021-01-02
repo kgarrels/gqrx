@@ -282,10 +282,10 @@ private:
     bool        m_MarkersEnabled;     /*!< Show/hide markers on spectrum */
     bool        m_InvertScrolling;
     bool        m_DXCSpotsEnabled;    /*!< Show/hide DXC Spots on spectrum */
-    int         m_DemodHiCutFreq;
-    int         m_DemodLowCutFreq;
-    int         m_DemodFreqX{};       //screen coordinate x position
-    int         m_DemodHiCutFreqX{};  //screen coordinate x position
+    float       m_DemodHiCutFreq;
+    float       m_DemodLowCutFreq;
+    float       m_DemodFreqX{};       //screen coordinate x position
+    float       m_DemodHiCutFreqX{};  //screen coordinate x position
     int         m_DemodLowCutFreqX{}; //screen coordinate x position
     int         m_MarkerAX{};
     int         m_MarkerBX{};

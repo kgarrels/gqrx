@@ -197,13 +197,13 @@ QSize CPlotter::sizeHint() const
 void CPlotter::mouseMoveEvent(QMouseEvent* event)
 {
     QPoint pt = event->pos();
-
+    
     int w = m_OverlayPixmap.width();
     int h = m_OverlayPixmap.height();
     int px = qRound((qreal)pt.x() * m_DPR);
     int py = qRound((qreal)pt.y() * m_DPR);
     QPoint ppos = QPoint(px, py);
-
+    
     /* mouse enter / mouse leave events */
     if (py < h)
     {
@@ -299,9 +299,9 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                     QString toolTipText;
                     qint64 hoverFrequency = freqFromX(px);
                     toolTipText = QString("%1 kHz\nΔ %2 kHz")
-                                          .arg(hoverFrequency/1.e3, 0, 'f', 3)
-                                          .arg(locale().toString((hoverFrequency - m_DemodCenterFreq)/1.e3, 'f', 3));
-
+                        .arg(hoverFrequency/1.e3, 0, 'f', 3)
+                        .arg(locale().toString((hoverFrequency - m_DemodCenterFreq)/1.e3, 'f', 3));
+                    
                     QFontMetricsF metrics(m_Font);
                     qreal bandTopY = ((qreal)h) - metrics.height() - 2 * VER_MARGIN - m_BandPlanHeight;
                     QList<BandInfo> hoverBands = BandPlan::Get().getBandsEncompassing(hoverFrequency);
@@ -323,7 +323,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
         {
             if (NOCAP != m_CursorCaptured)
                 setCursor(QCursor(Qt::ArrowCursor));
-
+            
             m_CursorCaptured = NOCAP;
             m_GrabPosition = 0;
         }
@@ -340,10 +340,10 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             else{
                 timeStr = "[time not valid]";
             }
-
+            
             showToolTip(event, QString("%1\n%2 kHz")
-                                       .arg(timeStr)
-                                       .arg(freqFromX(px)/1.e3, 0, 'f', 3));
+                        .arg(timeStr)
+                        .arg(freqFromX(px)/1.e3, 0, 'f', 3));
         }
     }
     // process mouse moves while in cursor capture modes
@@ -355,7 +355,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             // move Y scale up/down
             qreal delta_px = m_Yzero - py;
             qreal delta_db = delta_px * fabs(m_PandMindB - m_PandMaxdB) /
-                             (qreal)h;
+            (qreal)h;
             m_PandMindB -= delta_db;
             m_PandMaxdB -= delta_db;
             if (out_of_range(m_PandMindB, m_PandMaxdB))
@@ -366,13 +366,13 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             else
             {
                 emit pandapterRangeChanged(m_PandMindB, m_PandMaxdB);
-
+                
                 m_MaxHoldValid = false;
                 m_MinHoldValid = false;
                 m_histIIRValid = false;
-
+                
                 m_Yzero = py;
-
+                
                 updateOverlay();
             }
         }
@@ -387,25 +387,31 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             qint64 delta_hz = qRound64((qreal)delta_px * (qreal)m_Span / (qreal)w);
             if (delta_hz != 0) // update m_Xzero only on real change
             {
-                if (event->buttons() & Qt::MiddleButton)
-                {
-                    m_CenterFreq += delta_hz;
-                    m_DemodCenterFreq += delta_hz;
-                    emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
-                }
-                else
-                {
-                    setFftCenterFreq(m_FftCenter + delta_hz);
-                }
-
-                m_MaxHoldValid = false;
-                m_MinHoldValid = false;
-                m_histIIRValid = false;
-
-                m_Xzero = px;
-
-                updateOverlay();
+                m_CenterFreq += delta_hz;
+                m_DemodCenterFreq += delta_hz;
+                emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
+            else
+            {
+                // move waterfall horizontally
+                int w, h;
+                
+                m_Running=false;
+                w = m_WaterfallPixmap.width();
+                h = m_WaterfallPixmap.height();
+                QRegion exposed;
+                m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
+                QPainter painter1(&m_WaterfallPixmap);
+                painter1.fillRect(exposed.boundingRect(), Qt::black);
+                m_Running=true;
+                
+                setFftCenterFreq(m_FftCenter + delta_hz);
+            }
+            updateOverlay();
+            
+            m_MaxHoldValid = false;
+            
+            m_Xzero = pt.x();
         }
     }
     else if (LEFT == m_CursorCaptured)
@@ -2292,11 +2298,12 @@ void CPlotter::drawOverlay()
 
     pixperdiv = h * (float)dbstepsize / (m_PandMaxdB - m_PandMindB);
     adjoffset = h * (mindbadj - m_PandMindB) / (m_PandMaxdB - m_PandMindB);
-
+/*
     qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
                      << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
                      << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
-
+*/
+    
     // Hairline for grid lines
     painter.setPen(QPen(QColor(PLOTTER_GRID_COLOR), 0.0, Qt::DotLine));
     for (int i = 0; i <= m_VerDivs; i++)
@@ -2361,7 +2368,7 @@ void CPlotter::makeFrequencyStrs()
 {
     qint64  StartFreq = m_StartFreqAdj;
     double  freq;
-    int     i,j;
+    qint64     i,j;
 
     if ((1 == m_FreqUnits) || (m_FreqDigits == 0))
     {
@@ -2384,11 +2391,11 @@ void CPlotter::makeFrequencyStrs()
     }
     // now find the division text with the longest non-zero digit
     // to the right of the decimal point.
-    int max = 0;
+    qint64 max = 0;
     for (i = 0; i <= m_HorDivs; i++)
     {
-        int dp = m_HDivText[i].indexOf('.');
-        int l = m_HDivText[i].length()-1;
+        qint64 dp = m_HDivText[i].indexOf('.');
+        qint64 l = m_HDivText[i].length()-1;
         for (j = l; j > dp; j--)
         {
             if (m_HDivText[i][j] != '0')
@@ -2501,7 +2508,28 @@ void CPlotter::setCenterFreq(quint64 f)
     m_histIIRValid = false;
     m_IIRValid = false;
 
-    updateOverlay();
+    m_MaxHoldValid = false;
+
+    // move waterfall horizontally
+    int w, h;
+    static float old_f=0, deltaX=0;
+
+    deltaX = xFromFreq(old_f) - xFromFreq(f);
+
+    w = m_WaterfallPixmap.width();
+    h = m_WaterfallPixmap.height();
+    //qDebug() << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
+    old_f = f;
+    if (abs(deltaX) < w/2)
+    {
+        QRegion exposed;
+        m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
+        QPainter painter1(&m_WaterfallPixmap);
+        painter1.fillRect(exposed.boundingRect(), Qt::black);
+        
+        // TODO need to move all max / avg buffers as well :-(
+    }
+
 }
 
 // Invalidate overlay. If not running, force a redraw.
