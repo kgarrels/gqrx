@@ -168,6 +168,7 @@ private slots:
     void setAudioGain(float gain);
     void setPassband(int bandwidth);
     void fftNbChanged(bool state);
+    void fftNbSliderChanged(int value);
 
     /* audio recording and playback */
     void startAudioRec(const QString& filename);

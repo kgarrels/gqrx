@@ -14,6 +14,11 @@ mkdir -p Gqrx.app/Contents/Resources
   <string>NSApplication</string>
   <key>CFBundleGetInfoString</key>
   <string>Gqrx</string>
+  <key>LSEnvironment</key>
+  <dict>
+    <key>SOAPY_SDR_ROOT</key>
+    <string>/usr/local</string>
+  </dict>
   <key>CFBundleExecutable</key>
   <string>gqrx</string>
   <key>CFBundleIdentifier</key>
@@ -38,8 +43,6 @@ EOM
 
 cp build/src/gqrx Gqrx.app/Contents/MacOS
 cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
-cp -r /usr/local/lib/SoapySDR/modules* Gqrx.app/Contents/soapy-modules
-chmod 644 Gqrx.app/Contents/soapy-modules/*
 
 # leave dependencies out for macports version
 #dylibbundler -s /usr/local/opt/icu4c/lib/ -od -b -x Gqrx.app/Contents/MacOS/gqrx -d Gqrx.app/Contents/Libs/

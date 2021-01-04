@@ -33,6 +33,7 @@
 #include "dsp/correct_iq_cc.h"
 #include "dsp/filter/fir_decim.h"
 #include "dsp/rx_fft.h"
+#include "dsp/fft_noise_blanker_cc.h"
 #include "receivers/nbrx.h"
 #include "receivers/wfmrx.h"
 
@@ -114,9 +115,7 @@ receiver::receiver(const std::string input_device,
     rx  = make_nbrx(d_quad_rate, d_audio_rate);
 
     // create a noiseblanker for the fft/waterfall visualization
-    fft_nb = make_rx_nb_cc(d_quad_rate, 3, 3);
-    fft_nb->set_nb1_on(true);
-    fft_nb->set_nb2_on(false);
+    fft_nb = make_fft_nb_cc(d_quad_rate, 5, 5);
 
 
     iq_swap = make_iq_swap_cc(false);
@@ -756,9 +755,18 @@ void receiver::get_audio_fft_data(std::complex<float>* fftPoints, unsigned int &
 void receiver::fftNbChanged(bool state)
 {
     fft_nb->set_nb1_on(state);
-    fft_nb->set_nb2_on(false);
+    fft_nb->set_nb2_on(state);
     qDebug() << "fft noiseblanker changed" << state;
 }
+
+/** Set noiseblanker threshold for fft */
+void receiver::fftNbSliderChanged(int value)
+{
+    fft_nb->set_threshold2(value);
+    fft_nb->set_threshold2(value);
+    qDebug() << "fft noiseblanker value changed" << value;
+}
+
 
 receiver::status receiver::set_nb_on(int nbid, bool on)
 {

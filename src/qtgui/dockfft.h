@@ -71,12 +71,17 @@ signals:
     void wfColormapChanged(const QString &cmap);
     void autoButtonToggled(bool enabled);           /*! Enable peak detection in FFT plot */
     void fftNbChanged(bool enabled);                /*! Enable noise blanker in FFT plot */
+    void fftNbSliderChanged(int value);      /*! change FFT Noise balnker threshold */
+
 
 public slots:
     void setPandapterRange(float min, float max);
     void setWaterfallRange(float min, float max);
     void setWfResolution(quint64 msec_per_line);
     void setZoomLevel(float level);
+
+private slots:
+    void on_fftNbSlider_valueChanged(int value);
 
 private slots:
     void on_fftSizeComboBox_currentIndexChanged(const QString & text);
