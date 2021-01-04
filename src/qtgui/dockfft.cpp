@@ -286,7 +286,10 @@ void DockFft::saveSettings(QSettings *settings)
     if (ui->fftNbCheckbox->isChecked())
         settings->setValue("fft_noiseblanker", true);
     else
-        settings->remove("fft_noiseblanker");
+        settings->setValue("fft_noiseblanker", false);
+    intval = ui->fftNbSlider->value();
+    settings->setValue("fft_noiseblanker_value", intval);
+
 
     if (QString::compare(ui->cmapComboBox->currentData().toString(), DEFAULT_COLORMAP))
         settings->setValue("waterfall_colormap", ui->cmapComboBox->currentData().toString());
@@ -381,6 +384,9 @@ void DockFft::readSettings(QSettings *settings)
     bool_val = settings->value("fft_noiseblanker", false).toBool();
     ui->fftNbCheckbox->setChecked(bool_val);
     emit fftNbChanged(bool_val);
+    int int_val = settings->value("fft_noiseblanker_value", DEFAULT_FFT_MAX_DB).toInt();
+    ui->fftNbSlider->setValue(int_val);
+    emit fftNbSliderChanged(int_val);
 
     QString cmap = settings->value("waterfall_colormap", "gqrx").toString();
     ui->cmapComboBox->setCurrentIndex(ui->cmapComboBox->findData(cmap));
@@ -571,6 +577,12 @@ void DockFft::on_autoButton_toggled(bool checked)
 void DockFft::on_fftNbCheckbox_toggled(bool checked)
 {
     emit fftNbChanged(checked);
+}
+
+/** fftNbCheckbox changed */
+void DockFft::on_fftNbSlider_valueChanged(int value)
+{
+    emit fftNbSliderChanged(value);
 }
 
 void DockFft::on_bandPlanCheckbox_stateChanged(int state)

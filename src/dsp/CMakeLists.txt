@@ -43,6 +43,8 @@ add_source_files(SRCS_LIST
 	rx_meter.h
 	rx_noise_blanker_cc.cpp
 	rx_noise_blanker_cc.h
+	fft_noise_blanker_cc.cpp
+	fft_noise_blanker_cc.h
 	rx_rds.cpp
 	rx_rds.h
 	sniffer_f.cpp

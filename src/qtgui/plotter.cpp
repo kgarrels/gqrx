@@ -1130,8 +1130,8 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     static float fftCopy[MAX_FFT_SIZE];
     long i, offset;
 
-    // cut away the first/last 15% of the waterfall
-    offset = (long) size * 0.25;
+    // cut away the first/last partsof the waterfall
+    offset = (long) size / 8;  // =12.5%
 
     // automatic determination of the noise level
     // ignore the first and last offset bins
