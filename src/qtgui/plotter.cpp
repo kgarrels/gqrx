@@ -1147,7 +1147,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     lowestValue = fftCopy[offset];
 
     // do a moving averge of abt. n
-    int n = 10;
+    int n = 5;
     minAvg -= minAvg/n;
     minAvg += lowestValue/n;
 

@@ -92,8 +92,7 @@ private:
     float  d_avgmag_nb1;    /*! Average magnitude. */
     float  d_avgmag_nb2;    /*! Average magnitude. */
 
-#define HANG 15
-    gr_complex d_avgsig, d_delay[HANG+1];
+    gr_complex d_avgsig, d_delay[65535];
     int    d_delidx, d_sigidx, d_hangtime;   // FIXME: need longer buffer for higher sampel rates?
 
 };

@@ -26,6 +26,8 @@
 #include <gnuradio/gr_complex.h>
 #include "dsp/fft_noise_blanker_cc.h"
 
+#include <QtDebug>
+
 fft_nb_cc_sptr make_fft_nb_cc(double sample_rate, float thld1, float thld2)
 {
     return gnuradio::get_initial_sptr(new fft_nb_cc(sample_rate, thld1, thld2));
@@ -73,7 +75,7 @@ int fft_nb_cc::work(int noutput_items,
     gr_complex *out = (gr_complex *) output_items[0];
     int i;
 
-    std::lock_guard<std::mutex> lock(d_mutex);
+    //std::lock_guard<std::mutex> lock(d_mutex);          // +kai unsused?
 
     // copy data into output buffer then perform the processing on that buffer
     for (i = 0; i < noutput_items; i++)
@@ -111,8 +113,9 @@ void fft_nb_cc::process_nb1(gr_complex *buf, int num)
     {
         cmag = abs(buf[i]);
         d_delay[d_sigidx] = buf[i];
-        d_avgmag_nb1 = 0.99*d_avgmag_nb1 + 0.01*cmag;
+        d_avgmag_nb1 = 0.999*d_avgmag_nb1 + 0.001*cmag;
 
+        int HANG = 31;
         if ((d_hangtime == 0) && (cmag > (d_thld_nb1*d_avgmag_nb1)))
             d_hangtime = HANG;
 
@@ -128,6 +131,7 @@ void fft_nb_cc::process_nb1(gr_complex *buf, int num)
 
         d_sigidx = (d_sigidx + HANG) & HANG;
         d_delidx = (d_delidx + HANG) & HANG;
+
     }
 }
 
