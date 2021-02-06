@@ -90,6 +90,8 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
 
     setWindowTitle(QString("Gqrx %1").arg(VERSION));
 
+    ui->statusBar->hide();
+
     /* frequency control widget */
     ui->freqCtrl->setup(0, 0, 9999e6, 1, FCTL_UNIT_NONE);
     ui->freqCtrl->setFrequency(144500000);
@@ -509,6 +511,11 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
         restoreState(m_settings->value("gui/state", saveState()).toByteArray());
     }
 
+    // locked window
+    bool_val = m_settings->value("gui/lockedwindow", false).toBool();
+    ui->actionLock_Window->setChecked(bool_val);
+    on_actionLock_Window_triggered(bool_val);
+    
     QString indev = m_settings->value("input/device", "").toString();
     if (!indev.isEmpty())
     {
@@ -753,7 +760,7 @@ void MainWindow::storeSession()
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
         m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
-
+        
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
         uiDockFft->saveSettings(m_settings);
@@ -2053,15 +2060,27 @@ void MainWindow::on_actionFullScreen_triggered(bool checked)
 {
     if (checked)
     {
-        ui->statusBar->hide();
         showFullScreen();
     }
     else
     {
-        ui->statusBar->show();
         showNormal();
     }
 }
+
+/** Full screen button or menu item toggled. */
+void MainWindow::on_actionStatus_Bar_triggered(bool checked)
+{
+    if (!checked)
+    {
+        ui->statusBar->hide();
+    }
+    else
+    {
+        ui->statusBar->show();
+    }
+}
+
 
 /** Remote control button (or menu item) toggled. */
 void MainWindow::on_actionRemoteControl_triggered(bool checked)
@@ -2458,4 +2477,41 @@ void MainWindow::updateClusterSpots()
 void MainWindow::frequencyFocusShortcut()
 {
     ui->freqCtrl->setFrequencyFocus();
+}
+
+
+/*
+void MainWindow::showLocked()
+{
+    
+    this->show();
+
+    // update locked window
+    bool bool_val = m_settings->value("gui/lockedwindow", true).toBool();
+    on_actionLock_Window_triggered(bool_val);
+  
+}
+*/
+
+
+void MainWindow::on_actionLock_Window_triggered(bool checked)
+{
+    QRect geometry = this->geometry();
+    
+    if (checked)
+    {
+        this->setWindowFlags(this->windowFlags() | (Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    else
+    {
+        this->setWindowFlags(this->windowFlags() & !(Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    m_settings->setValue("gui/lockedwindow", checked);
+    
+    this->setGeometry(geometry);
+    
+    //qDebug() << "windows flags" << this->windowFlags();
+    qDebug() << "checked, window geometry:" << checked << geometry;
+    this->show();
+
 }

@@ -1732,7 +1732,7 @@ void CPlotter::setCenterFreq(quint64 f)
 
     w = m_WaterfallPixmap.width();
     h = m_WaterfallPixmap.height();
-    //qDebug() << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
+    qDebug() << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
     old_f = f;
     if (abs(deltaX) < w/2)
     {

@@ -225,6 +225,8 @@
     <property name="title">
      <string>&amp;View</string>
     </property>
+    <addaction name="actionLock_Window"/>
+    <addaction name="actionStatus_Bar"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -573,6 +575,25 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionLock_Window">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Lock Window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+K</string>
+   </property>
+  </action>
+  <action name="actionStatus_Bar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Status Bar</string>
    </property>
   </action>
  </widget>
