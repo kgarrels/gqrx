@@ -68,6 +68,7 @@ public:
 public slots:
     void setNewFrequency(qint64 rx_freq);
 
+
 private:
     Ui::MainWindow *ui;
 
@@ -222,6 +223,7 @@ private slots:
     void on_actionSaveWaterfall_triggered();
     void on_actionIqTool_triggered();
     void on_actionFullScreen_triggered(bool checked);
+    void on_actionStatus_Bar_triggered(bool checked);
     void on_actionRemoteControl_triggered(bool checked);
     void on_actionRemoteConfig_triggered();
     void on_actionAFSK1200_triggered();
@@ -233,6 +235,8 @@ private slots:
     void on_actionAboutQt_triggered();
     void on_actionAddBookmark_triggered();
     void on_actionDX_Cluster_triggered();
+    void on_actionLock_Window_triggered(bool checked);
+
 
 
     /* window close signals */
