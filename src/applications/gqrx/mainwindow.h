@@ -72,6 +72,7 @@ public slots:
     void enableMarkers(bool enable);
 
 
+
 private:
     Ui::MainWindow *ui;
 
@@ -254,6 +255,7 @@ private slots:
     void on_actionAddBookmark_triggered();
     void on_actionDX_Cluster_triggered();
     void on_actionLock_Window_triggered(bool checked);
+
 
 
     /* markers*/

@@ -101,6 +101,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     setMarkerA(MARKER_OFF);
     setMarkerB(MARKER_OFF);
     d_show_markers = true;
+    ui->statusBar->hide();
 
     /* frequency control widget */
     ui->freqCtrl->setup(0, 0, 9999e6, 1, FCTL_UNIT_NONE);
@@ -786,6 +787,7 @@ void MainWindow::storeSession()
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
         m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
+        
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
         uiDockFft->saveSettings(m_settings);
