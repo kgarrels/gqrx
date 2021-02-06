@@ -2,6 +2,8 @@
 
 GQRX_VERSION=$(<version.txt)
 
+rm -rf Gqrx.app
+
 mkdir -p Gqrx.app/Contents/MacOS
 mkdir -p Gqrx.app/Contents/Resources
 

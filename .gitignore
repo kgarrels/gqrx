@@ -1,5 +1,6 @@
 .DS_Store
 /build/
+/xcode/
 /*.AppImage
 /*.dmg
 /AppDir/
