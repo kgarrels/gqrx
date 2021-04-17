@@ -766,7 +766,9 @@ void MainWindow::storeSession()
         {
             int     flo, fhi;
             ui->plotter->getHiLowCutFrequencies(&flo, &fhi);
-            if (flo != fhi)
+
+            // if (flo != fhi)    // FIXME: +kai why? It would not save filter settings when demod if off, lo=0 and high=0
+            if (true)
             {
                 m_settings->setValue("receiver/filter_low_cut", flo);
                 m_settings->setValue("receiver/filter_high_cut", fhi);

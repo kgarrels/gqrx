@@ -319,6 +319,7 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
     rc_filter_offset += delta;
     if ((rc_filter_offset > 0 && rc_filter_offset + rc_passband_hi < bwh_eff) ||
         (rc_filter_offset < 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
+//    if (false)        // +kai "center mode"
     {
         // move filter offset
         emit newFilterOffset(rc_filter_offset);

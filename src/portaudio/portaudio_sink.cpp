@@ -178,7 +178,7 @@ int portaudio_sink::work(int noutput_items,
         *ptr++ = *data_r++;
     }
 
-    err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);
+    //err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);  //+kai panadapter
     if (err)
         fprintf(stderr,
                 "portaudio_sink::work(): Error writing to audio device: %s\n",
