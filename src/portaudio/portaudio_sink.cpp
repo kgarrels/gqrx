@@ -158,7 +158,7 @@ int portaudio_sink::work(int noutput_items,
                          gr_vector_const_void_star &input_items,
                          gr_vector_void_star &output_items)
 {
-    PaError     err;
+    PaError     err=0;
 
     static float    audio_buffer[BUFFER_SIZE];
     float      *ptr = &audio_buffer[0];
@@ -178,11 +178,12 @@ int portaudio_sink::work(int noutput_items,
         *ptr++ = *data_r++;
     }
 
-    //err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);  //+kai panadapter
-    if (err)
-        fprintf(stderr,
-                "portaudio_sink::work(): Error writing to audio device: %s\n",
-                Pa_GetErrorText(err));
+    //+kai panadapter
+    // audiobuffer will contain zeros if muted
+    if (audio_buffer[0] != 0.f) {
+        err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);
+        if (err) fprintf(stderr, "portaudio_sink::work(): Error writing to audio device: %s\n", Pa_GetErrorText(err));
+    }
 
     return noutput_items;
 

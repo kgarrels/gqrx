@@ -328,6 +328,7 @@ void DockAudio::setAudioPlayButtonState(bool checked)
 void DockAudio::saveSettings(QSettings *settings)
 {
     int     ival, fft_min, fft_max;
+    bool    muted;
 
     if (!settings)
         return;
@@ -336,12 +337,16 @@ void DockAudio::saveSettings(QSettings *settings)
 
     settings->setValue("gain", audioGain());
 
+    muted = ui->audioMuteButton->isChecked();
+    settings->setValue("muted", muted);
+    
     ival = audioOptions->getFftSplit();
     if (ival != DEFAULT_FFT_SPLIT)
         settings->setValue("fft_split", ival);
     else
         settings->remove("fft_split");
 
+   
     audioOptions->getPandapterRange(&fft_min, &fft_max);
     if (fft_min != -80)
         settings->setValue("pandapter_min_db", fft_min);
@@ -393,7 +398,7 @@ void DockAudio::saveSettings(QSettings *settings)
 void DockAudio::readSettings(QSettings *settings)
 {
     int     bool_val, ival, fft_min, fft_max;
-    bool    conv_ok = false;
+    bool    conv_ok = false, muted;
 
     if (!settings)
         return;
@@ -404,6 +409,10 @@ void DockAudio::readSettings(QSettings *settings)
     if (conv_ok)
         setAudioGain(ival);
 
+    muted = settings->value("muted", false).toBool();
+    on_audioMuteButton_clicked(muted);
+    ui->audioMuteButton->setChecked(muted);
+    
     ival = settings->value("fft_split", DEFAULT_FFT_SPLIT).toInt(&conv_ok);
     if (conv_ok)
         audioOptions->setFftSplit(ival);

@@ -1170,7 +1170,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
 
     // m_fftData = fftCopy;    // test only, view sorted bins in fft
 
-    lowestValue = fftCopy[offset];
+    lowestValue = fftCopy[offset/4];
 
     // do a moving averge of abt. n
     int n = 10;
