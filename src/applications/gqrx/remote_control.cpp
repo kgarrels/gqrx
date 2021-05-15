@@ -25,7 +25,11 @@
 #include <iostream>
 #include <QString>
 #include <QStringList>
+#include <QDebug>
 #include "remote_control.h"
+
+Q_LOGGING_CATEGORY(remote, "remote");
+
 
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "::ffff:127.0.0.1"
@@ -192,6 +196,8 @@ void RemoteControl::startRead()
     QString answer = "";
 
     bytes_read = rc_socket->readLine(buffer, 1024);
+    qCDebug(remote) << "got: " << buffer << "remaining: " << rc_socket->bytesAvailable();
+
     if (bytes_read < 2)  // command + '\n'
         return;
 
