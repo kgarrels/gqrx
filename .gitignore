@@ -9,3 +9,5 @@
 .idea/
 cmake-build*/
 /CMakeLists.txt.user
+.vscode/c_cpp_properties.json
+.vscode/settings.json
