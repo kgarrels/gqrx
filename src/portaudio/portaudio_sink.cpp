@@ -178,7 +178,11 @@ int portaudio_sink::work(int noutput_items,
         *ptr++ = *data_r++;
     }
 
-    //err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);  //+kai panadapter
+    //+kai panadapter
+    // audiobuffer will contain zeros if muted
+    if (audio_buffer[0] != 0.f) {
+        err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);
+    }
     if (err)
         fprintf(stderr,
                 "portaudio_sink::work(): Error writing to audio device: %s\n",
