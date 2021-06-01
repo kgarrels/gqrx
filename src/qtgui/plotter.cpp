@@ -307,7 +307,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
         }
     }
     // process mouse moves while in cursor capture modes
-    if (YAXIS == m_CursorCaptured)
+    if ((YAXIS == m_CursorCaptured) && !m_autoRangeActive)              // no yaxis reaction when autorange is active
     {
         if (event->buttons() & Qt::LeftButton)
         {
@@ -675,7 +675,7 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
     }
     else
     {
-        if (m_CursorCaptured == YAXIS)
+        if ((m_CursorCaptured) == YAXIS && !m_autoRangeActive)      // no y-ais events while autorange is active
             // get ready for moving Y axis
             m_Yzero = pt.y();
         else if (m_CursorCaptured == XAXIS)
