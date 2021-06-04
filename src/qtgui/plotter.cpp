@@ -207,7 +207,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             }
             else if (isPointCloseTo(pt.x(), m_YAxisWidth/2, m_YAxisWidth/2))
             {
-                if (YAXIS != m_CursorCaptured)
+                if ((YAXIS != m_CursorCaptured) && !m_autoRangeActive)              // no yaxis dragging with autorange active
                     setCursor(QCursor(Qt::OpenHandCursor));
                 m_CursorCaptured = YAXIS;
                 if (m_TooltipsEnabled)
@@ -789,11 +789,11 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     numSteps = m_InvertScrolling? -numSteps  : numSteps;
     int delta = numSteps;
 
-    qDebug() << "whell event" << event <<"numSteps" << numSteps;
+    qCDebug(plotter) << "wheel event" << event <<"numSteps" << numSteps;
 
 
     /** FIXME: zooming could use some optimisation **/
-    if (m_CursorCaptured == YAXIS)
+    if ((m_CursorCaptured == YAXIS) && ! m_autoRangeActive)
     {
         // Vertical zoom. Wheel down: zoom out, wheel up: zoom in
         // During zoom we try to keep the point (dB or kHz) under the cursor fixed
