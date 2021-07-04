@@ -41,11 +41,13 @@
 #define CTRL_XAXIS_HEGHT 0.4	// vertical position of horizontal axis
 #define CTRL_NEEDLE_TOP 0.4		// vertical position of top of needle triangle
 
-#define MIN_DB -100.0f
-#define MAX_DB +0.0f
+#define MIN_DB 0.0f          // both values adopted for panadapter +kai
+#define MAX_DB 100.0f
 
-#define ALPHA_DECAY     0.25f
-#define ALPHA_RISE      0.70f
+#define ALPHA_DECAY         0.5f
+#define ALPHA_RISE          0.5f
+#define ALPHA_PEAK_DECAY    0.01f   // +kai peak indicator
+#define ALPHA_PEAK_RISE     0.99f
 
 CMeter::CMeter(QWidget *parent) : QFrame(parent)
 {
@@ -117,9 +119,15 @@ void CMeter::setLevel(float dbfs)
         dbfs = MAX_DB;
 
     float level = m_dBFS;
+    float levelPeak = m_dBFSPeak;
     float alpha  = dbfs < level ? ALPHA_DECAY : ALPHA_RISE;
+    float alphaPeak  = dbfs < levelPeak ? ALPHA_PEAK_DECAY : ALPHA_PEAK_RISE;
+
     m_dBFS -= alpha * (level - dbfs);
     m_Siglevel = (int)((level - MIN_DB) * m_pixperdb);
+
+    m_dBFSPeak -= alphaPeak * (levelPeak - dbfs);
+    m_SiglevelPeak = (int)((levelPeak - MIN_DB) * m_pixperdb);
 
     draw();
 }
@@ -168,6 +176,8 @@ void CMeter::draw()
     qreal marg = (qreal) w * CTRL_MARGIN;
     qreal ht = (qreal) h * CTRL_NEEDLE_TOP;
     qreal x = marg + m_Siglevel;
+    qreal xPeak = marg + m_SiglevelPeak;
+
     QPoint pts[3];
     pts[0].setX(x);
     pts[0].setY(ht + 2);
@@ -182,6 +192,8 @@ void CMeter::draw()
     // Qt 4.8+ has a 1-pixel error (or they fixed line drawing)
     // see http://stackoverflow.com/questions/16990326
     painter.drawRect(marg - 1, ht + 1, x - marg, 6);
+    painter.setPen(QPen(Qt::green, 1, Qt::SolidLine));
+    painter.drawLine(QLineF(xPeak, hline+2, xPeak, hline + 6));
 
     if (m_SqlLevel > 0.0f)
     {
@@ -196,7 +208,7 @@ void CMeter::draw()
 
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
     painter.setOpacity(1.0);
-    m_Str.setNum(m_dBFS);
+    m_Str.setNum(m_dBFSPeak);
     painter.drawText(marg, h - 2, m_Str + " dBFS" );
 
     update();

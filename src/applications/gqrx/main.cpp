@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationName(GQRX_APP_NAME);
     QCoreApplication::setApplicationVersion(VERSION);
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps, true);
-    QLoggingCategory::setFilterRules("*.debug=false\n""remote.debug=true\n""plotter.debug=false\n");
+    QLoggingCategory::setFilterRules("*.debug=false\n""remote.debug=true\n""plotter.debug=true\n");
 
     QString plugin_path = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../soapy-modules");
     QFileInfo plugin_path_info(plugin_path);

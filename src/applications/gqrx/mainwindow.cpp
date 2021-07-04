@@ -1369,6 +1369,8 @@ void MainWindow::meterTimeout()
     float level;
 
     level = rx->get_signal_pwr(true);
+    level = level - ui->plotter->m_Noisefloor -30;  // +kai add noisefloor,30dB bandwidth ratio
+    
     ui->sMeter->setLevel(level);
     remote->setSignalLevel(level);
 }

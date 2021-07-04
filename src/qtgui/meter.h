@@ -73,6 +73,8 @@ private:
     QString m_Str;
     qreal   m_pixperdb;     // pixels / dB
     int     m_Siglevel;
+    int     m_dBFSPeak;
+    int     m_SiglevelPeak;
     int     m_dBFS;
     qreal   m_Sql;
     qreal   m_SqlLevel;
