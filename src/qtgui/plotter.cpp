@@ -1176,6 +1176,8 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     int n = 10;
     minAvg -= minAvg/n;
     minAvg += lowestValue/n;
+    
+    m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
 
     // set the panadapter limits
     if (m_autoRangeActive) {
@@ -1189,7 +1191,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
         m_PandMindB = m_WfMindB + (m_BandPlanEnabled? -10 : 0); // make room for bandplan if needed
         m_PandMaxdB = m_WfMaxdB;
 
-        //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
+        qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
     }
 
     if (m_Running) draw();

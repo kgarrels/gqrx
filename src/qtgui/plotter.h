@@ -123,6 +123,10 @@ public:
     void    clearWaterfall();
     bool    saveWaterfall(const QString & filename) const;
 
+    float      m_Noisefloor;
+
+    
+    
 signals:
     void newDemodFreq(qint64 freq, qint64 delta); /* delta is the offset from the center */
     void newLowCutFreq(int f);
