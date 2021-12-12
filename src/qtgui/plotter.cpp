@@ -114,7 +114,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_symetric = true;
 
     m_ClickResolution = 100;
-    m_FilterClickResolution = 100;
+    m_FilterClickResolution = 10;
     m_CursorCaptureDelta = CUR_CUT_DELTA;
 
     m_FilterBoxEnabled = true;
@@ -838,8 +838,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution/20);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/20);
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/100);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/100);
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
