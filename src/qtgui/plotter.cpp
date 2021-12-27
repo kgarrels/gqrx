@@ -348,25 +348,27 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             qint64 delta_hz = delta_px * m_Span / (m_OverlayPixmap.width() / m_DPR);
             if (delta_hz != 0) // update m_Xzero only on real change
             {
-                m_CenterFreq += delta_hz;
-                m_DemodCenterFreq += delta_hz;
-                emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
-            }
-            else
-            {
-                // move waterfall horizontally
-                int w, h;
+                if (event->buttons() & Qt::MidButton)
+                {
+                    m_CenterFreq += delta_hz;
+                    m_DemodCenterFreq += delta_hz;
+                    emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
+                }
+                else
+                {
+                    // move waterfall horizontally
+                    int w, h;
 
-                w = m_WaterfallPixmap.width();
-                h = m_WaterfallPixmap.height();
-                QRegion exposed;
-                m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
-                QPainter painter1(&m_WaterfallPixmap);
-                painter1.fillRect(exposed.boundingRect(), Qt::black);
+                    w = m_WaterfallPixmap.width();
+                    h = m_WaterfallPixmap.height();
+                    QRegion exposed;
+                    m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
+                    QPainter painter1(&m_WaterfallPixmap);
+                    painter1.fillRect(exposed.boundingRect(), Qt::black);
 
-                setFftCenterFreq(m_FftCenter + delta_hz);
-            }
-            updateOverlay();
+                    setFftCenterFreq(m_FftCenter + delta_hz);              
+                }
+                updateOverlay();
 
                 m_PeakHoldValid = false;
 
