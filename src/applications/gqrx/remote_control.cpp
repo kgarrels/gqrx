@@ -31,6 +31,9 @@
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "::ffff:127.0.0.1"
 
+Q_LOGGING_CATEGORY(remote, "remote")
+
+
 RemoteControl::RemoteControl(QObject *parent) :
     QObject(parent)
 {
