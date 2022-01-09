@@ -239,9 +239,18 @@ void receiver::set_input_device(const std::string device)
         src = osmosdr::source::make("file="+escape_filename(get_zero_file())+",freq=428e6,rate=96000,repeat=true,throttle=true");
     }
 
-    set_demod(d_demod, true);
     if(src->get_sample_rate() != 0)
         set_input_rate(src->get_sample_rate());
+
+    if (d_decim >= 2)
+    {
+        tb->connect(src, 0, input_decim, 0);
+        tb->connect(input_decim, 0, iq_swap, 0);
+    }
+    else
+    {
+        tb->connect(src, 0, iq_swap, 0);
+    }
 
     if (d_running)
         tb->start();
@@ -1076,6 +1085,12 @@ receiver::status receiver::stop_audio_recording()
     wav_sink->close();
     tb->disconnect(rx, 0, wav_sink, 0);
     tb->disconnect(rx, 1, wav_sink, 1);
+
+    // Temporary workaround for https://github.com/gnuradio/gnuradio/issues/5436
+    tb->disconnect(ddc, 0, rx, 0);
+    tb->connect(ddc, 0, rx, 0);
+    // End temporary workaronud
+
     tb->unlock();
     wav_sink.reset();
     d_recording_wav = false;
@@ -1300,6 +1315,12 @@ receiver::status receiver::stop_sniffer()
 
     tb->lock();
     tb->disconnect(rx, 0, sniffer_rr, 0);
+
+    // Temporary workaround for https://github.com/gnuradio/gnuradio/issues/5436
+    tb->disconnect(ddc, 0, rx, 0);
+    tb->connect(ddc, 0, rx, 0);
+    // End temporary workaronud
+
     tb->disconnect(sniffer_rr, 0, sniffer, 0);
     tb->unlock();
     d_sniffer_active = false;
@@ -1342,7 +1363,6 @@ void receiver::connect_all(rx_chain type)
 
     if (d_dc_cancel)
     {
-        dc_corr = make_dc_corr_cc(d_decim_rate, 1.0);
         tb->connect(b, 0, dc_corr, 0);
         b = dc_corr;
     }
@@ -1353,19 +1373,25 @@ void receiver::connect_all(rx_chain type)
     tb->connect(fft_nb, 0, iq_fft, 0);
 
     // RX demod chain
-    rx.reset();
     switch (type)
     {
     case RX_CHAIN_NBRX:
-        rx = make_nbrx(d_quad_rate, d_audio_rate);
+        if (rx->name() != "NBRX")
+        {
+            rx.reset();
+            rx = make_nbrx(d_quad_rate, d_audio_rate);
+        }
         break;
 
     case RX_CHAIN_WFMRX:
-        rx = make_wfmrx(d_quad_rate, d_audio_rate);
+        if (rx->name() != "WFMRX")
+        {
+            rx.reset();
+            rx = make_wfmrx(d_quad_rate, d_audio_rate);
+        }
         break;
 
     default:
-        rx = make_nbrx(d_quad_rate, d_audio_rate);
         break;
     }
 

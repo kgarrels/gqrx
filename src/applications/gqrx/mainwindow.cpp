@@ -1467,8 +1467,8 @@ void MainWindow::rdsTimeout()
 
     rx->get_rds_data(buffer, num);
     while(num!=-1) {
-        rx->get_rds_data(buffer, num);
         uiDockRDS->updateRDS(QString::fromStdString(buffer), num);
+        rx->get_rds_data(buffer, num);
     }
 }
 
@@ -2264,12 +2264,12 @@ void MainWindow::setPassband(int bandwidth)
 /** Launch Gqrx google group website. */
 void MainWindow::on_actionUserGroup_triggered()
 {
-    auto res = QDesktopServices::openUrl(QUrl("https://groups.google.com/forum/#!forum/gqrx",
+    auto res = QDesktopServices::openUrl(QUrl("https://groups.google.com/g/gqrx",
                                               QUrl::TolerantMode));
     if (!res)
         QMessageBox::warning(this, tr("Error"),
                              tr("Failed to open website:\n"
-                                "https://groups.google.com/forum/#!forum/gqrx"),
+                                "https://groups.google.com/g/gqrx"),
                              QMessageBox::Close);
 }
 
@@ -2366,9 +2366,10 @@ void MainWindow::on_actionAbout_triggered()
         tr("<p>This is Gqrx %1</p>"
            "<p>compiled %2 %3</p>"
            "<p>Copyright (C) 2011-2020 Alexandru Csete & contributors.</p>"
+           "<p>Copyright (C) 2011-2022 Alexandru Csete & contributors.</p>"
            "<p>Gqrx is a software defined radio (SDR) receiver powered by "
-           "<a href='http://www.gnuradio.org/'>GNU Radio</a> and the Qt toolkit. "
-           "<p>Gqrx uses the <a href='https://osmocom.org/projects/sdr/wiki/GrOsmoSDR'>GrOsmoSDR</a> "
+           "<a href='https://www.gnuradio.org/'>GNU Radio</a> and the Qt toolkit. "
+           "<p>Gqrx uses the <a href='https://osmocom.org/projects/gr-osmosdr/wiki/GrOsmoSDR'>GrOsmoSDR</a> "
            "input source block and works with any input device supported by it, including "
            "Funcube Dongle, RTL-SDR, Airspy, HackRF, RFSpace, BladeRF and USRP receivers."
            "</p>"
