@@ -178,13 +178,13 @@ void CMeter::draw()
     qreal x = marg + m_Siglevel;
     qreal xPeak = marg + m_SiglevelPeak;
 
-    QPoint pts[3];
-    pts[0].setX(x);
-    pts[0].setY(ht + 2);
-    pts[1].setX(x - 6);
-    pts[1].setY(hline + 8);
-    pts[2].setX(x + 6);
-    pts[2].setY(hline + 8);
+    // QPoint pts[3];
+    // pts[0].setX(x);
+    // pts[0].setY(ht + 2);
+    // pts[1].setX(x - 6);
+    // pts[1].setY(hline + 8);
+    // pts[2].setX(x + 6);
+    // pts[2].setY(hline + 8);
 
     painter.setBrush(QBrush(QColor(0, 190, 0, 255)));
     painter.setOpacity(1.0);
@@ -208,7 +208,7 @@ void CMeter::draw()
 
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
     painter.setOpacity(1.0);
-    m_Str.setNum(m_dBFSPeak);
+    m_Str.setNum(m_dBFS, 'f', 1);
     painter.drawText(marg, h - 2, m_Str + " dBFS" );
 
     update();
