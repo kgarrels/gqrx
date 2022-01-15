@@ -75,7 +75,7 @@ private:
     int     m_Siglevel;
     int     m_dBFSPeak;
     int     m_SiglevelPeak;
-    int     m_dBFS;
+    float     m_dBFS;
     qreal   m_Sql;
     qreal   m_SqlLevel;
 };
