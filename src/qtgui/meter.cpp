@@ -124,7 +124,7 @@ void CMeter::setLevel(float dbfs)
     float alphaPeak  = dbfs < levelPeak ? ALPHA_PEAK_DECAY : ALPHA_PEAK_RISE;
 
     m_dBFS -= alpha * (level - dbfs);
-    m_Siglevel = (int)((level - MIN_DB) * m_pixperdb);
+    m_Siglevel = (level - MIN_DB) * m_pixperdb;
 
     m_dBFSPeak -= alphaPeak * (levelPeak - dbfs);
     m_SiglevelPeak = (int)((levelPeak - MIN_DB) * m_pixperdb);
@@ -191,9 +191,21 @@ void CMeter::draw()
 
     // Qt 4.8+ has a 1-pixel error (or they fixed line drawing)
     // see http://stackoverflow.com/questions/16990326
-    painter.drawRect(marg - 1, ht + 1, x - marg, 6);
-    painter.setPen(QPen(Qt::green, 1, Qt::SolidLine));
-    painter.drawLine(QLineF(xPeak, hline+2, xPeak, hline + 6));
+    
+    if (m_Siglevel > 0.0f)
+    {
+        QColor color(0, 190, 0, 255);
+        QPen pen(color);
+        pen.setJoinStyle(Qt::MiterJoin);
+        painter.setPen(pen);
+        painter.setBrush(QBrush(color));
+        painter.setOpacity(1.0);
+
+        painter.drawRect(QRectF(marg, ht + 2, x - marg, 4));
+
+        painter.setPen(QPen(Qt::green, 1, Qt::SolidLine));              // peak level
+        painter.drawLine(QLineF(xPeak, hline+2, xPeak, hline + 6));
+    }
 
     if (m_SqlLevel > 0.0f)
     {

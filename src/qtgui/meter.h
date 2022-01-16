@@ -1,4 +1,4 @@
-/* -*- c++ -*- */
+ /* -*- c++ -*- */
 /* + + +   This Software is released under the "Simplified BSD License"  + + +
  *
  * Copyright 2010 Moe Wheatley. All rights reserved.
@@ -71,11 +71,11 @@ private:
     QPixmap m_OverlayPixmap;
     QSize   m_Size;
     QString m_Str;
-    qreal   m_pixperdb;     // pixels / dB
-    int     m_Siglevel;
-    int     m_dBFSPeak;
-    int     m_SiglevelPeak;
-    float     m_dBFS;
+    qreal   m_pixperdb;     // pixels / dB 
+    qreal   m_dBFSPeak;
+    qreal   m_SiglevelPeak;
+    qreal   m_Siglevel;
+    float   m_dBFS;
     qreal   m_Sql;
     qreal   m_SqlLevel;
 };

@@ -1,5 +1,10 @@
 
-    2.15.3: In progress...
+    2.15.4: Released January 15, 2022
+
+     FIXED: Audio is delayed when FFT size is changed.
+
+
+    2.15.3: Released January 15, 2022
 
      FIXED: RDS receiver skips some messages.
      FIXED: Buffer overruns in AFSK1200 decoder.
@@ -7,6 +12,7 @@
   IMPROVED: FFT and S-meter performance.
   IMPROVED: Reduced FFT memory usage.
   IMPROVED: Increased S-meter resolution to 0.1 dB.
+  IMPROVED: Accuracy of S-meter display.
 
 
     2.15.2: Released January 8, 2022
