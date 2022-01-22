@@ -1490,7 +1490,7 @@ void MainWindow::startAudioRec(const QString& filename)
         msg_box.setIcon(QMessageBox::Critical);
         msg_box.setText(tr("Recording audio requires a demodulator.\n"
                            "Currently, demodulation is switched off "
-                           "(Mode->Demod off)."));
+                           "(Mode->Demod Off)."));
         msg_box.exec();
         uiDockAudio->setAudioRecButtonState(false);
     }
@@ -2132,7 +2132,7 @@ void MainWindow::on_actionAFSK1200_triggered()
         msg_box.setIcon(QMessageBox::Critical);
         msg_box.setText(tr("AFSK1200 decoder requires a demodulator.\n"
                            "Currently, demodulation is switched off "
-                           "(Mode->Demod off)."));
+                           "(Mode->Demod Off)."));
         msg_box.exec();
         return;
     }

@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.2)
 project(gqrx)
 set(${PROJECT_NAME}_MAJOR "2")
 set(${PROJECT_NAME}_MINOR "15")
-set(${PROJECT_NAME}_PATCH "4")
-set(IS_RELEASE TRUE)
+set(${PROJECT_NAME}_PATCH "5")
+set(IS_RELEASE FALSE)
 
 if(IS_RELEASE)
     if(${PROJECT_NAME}_PATCH EQUAL 0)
@@ -123,14 +123,11 @@ find_package(Gnuradio-osmosdr REQUIRED)
 
 set(GR_REQUIRED_COMPONENTS RUNTIME ANALOG AUDIO BLOCKS DIGITAL FILTER FFT PMT)
 find_package(Gnuradio REQUIRED COMPONENTS analog audio blocks digital filter fft network)
-if(Gnuradio_VERSION VERSION_LESS "3.8")
-    find_package(Volk)
-endif()
-
 if(NOT Gnuradio_FOUND)
     message(FATAL_ERROR "GnuRadio Runtime required to compile gqrx")
 endif()
 
+find_package(Volk)
 
 # Pass the GNU Radio version as 0xMMNNPP BCD.
 math(EXPR GNURADIO_BCD_VERSION
@@ -244,17 +241,24 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Finish configuring compiler / linker settings & flags
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-    ${Boost_INCLUDE_DIRS}
-    ${GNURADIO_RUNTIME_INCLUDE_DIRS}
     ${GNURADIO_OSMOSDR_INCLUDE_DIRS}
 )
 
 link_directories(
-    ${Boost_LIBRARY_DIRS}
     ${GNURADIO_RUNTIME_LIBRARY_DIRS}
     ${ICU4C_LIBRARY_DIRS}
 )
 
+if(Gnuradio_VERSION VERSION_LESS "3.8")
+    include_directories(
+        ${Boost_INCLUDE_DIRS}
+        ${GNURADIO_RUNTIME_INCLUDE_DIRS}
+    )
+
+    link_directories(
+        ${Boost_LIBRARY_DIRS}
+    )
+endif()
 
 # Add subdirectories
 add_subdirectory(src)
