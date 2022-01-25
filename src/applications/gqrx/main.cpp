@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationDomain(GQRX_ORG_DOMAIN);
     QCoreApplication::setApplicationName(GQRX_APP_NAME);
     QCoreApplication::setApplicationVersion(VERSION);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps, true);
     QLoggingCategory::setFilterRules("*.debug=false\n""remote.debug=true\n""plotter.debug=true\n");
 
