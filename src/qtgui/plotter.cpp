@@ -1152,8 +1152,8 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     m_fftDataSize = size;
 
     float lowestValue;
-    static float minAvg;
-    static float fftCopy[MAX_FFT_SIZE];
+    static float minAvg = 0;
+    static float fftCopy[MAX_FFT_SIZE] = {0};
     long i, offset;
 
     // cut away the first/last partsof the waterfall
@@ -1191,7 +1191,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
         m_PandMindB = m_WfMindB + (m_BandPlanEnabled? -10 : 0); // make room for bandplan if needed
         m_PandMaxdB = m_WfMaxdB;
 
-        qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
+        //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
     }
 
     if (m_Running) draw();
@@ -1643,9 +1643,15 @@ void CPlotter::makeFrequencyStrs()
 
 int CPlotter::xFromFreq(qint64 freq)
 {
-    int w = width();
-    qreal StartFreq = m_CenterFreq + m_FftCenter - m_Span/2.f;
+//    int w = width();
+//    qreal StartFreq = m_CenterFreq + m_FftCenter - m_Span/2.f;
+
+    qint64 w = width();
+    qint64 StartFreq = m_CenterFreq + m_FftCenter - m_Span / 2;
+//    int x = (int) (w * (freq - StartFreq) / m_Span);
     int x = (int) (round((qreal)w * ((qreal)freq - (qreal)StartFreq)/(qreal)m_Span)); // typecast does not round
+
+    
     if (x < 0)
         return 0;
     if (x > (int)w)
@@ -1729,16 +1735,18 @@ void CPlotter::setCenterFreq(quint64 f)
     m_PeakHoldValid = false;
 
     // move waterfall horizontally
-    int w, h;
-    static qint64 old_f=0, deltaX=0;
+    qint64 w, h;
+    static qint64 old_f=0;
 
-    deltaX = xFromFreq(old_f) - xFromFreq(f);
+    quint64 oldx=xFromFreq(old_f);
+    quint64 newx=xFromFreq(f);
+    quint64 deltaX = oldx - newx;
 
     w = m_WaterfallPixmap.width();
     h = m_WaterfallPixmap.height();
-    qDebug() << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
+    qDebug(plotter) << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
     old_f = f;
-    if (abs(deltaX) < w/2)
+    if (abs((int)deltaX) < w/2)
     {
         QRegion exposed;
         m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
