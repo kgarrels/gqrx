@@ -340,7 +340,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
     }
     else if (XAXIS == m_CursorCaptured)
     {
-        if (event->buttons() & (Qt::LeftButton | Qt::MidButton))
+        if (event->buttons() & (Qt::LeftButton | Qt::MiddleButton))
         {
             setCursor(QCursor(Qt::ClosedHandCursor));
             // pan viewable range or move center frequency
@@ -348,7 +348,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             qint64 delta_hz = delta_px * m_Span / (m_OverlayPixmap.width() / m_DPR);
             if (delta_hz != 0) // update m_Xzero only on real change
             {
-                if (event->buttons() & Qt::MidButton)
+                if (event->buttons() & Qt::MiddleButton)
                 {
                     m_CenterFreq += delta_hz;
                     m_DemodCenterFreq += delta_hz;
@@ -800,23 +800,31 @@ void CPlotter::zoomOnXAxis(float level)
 // Called when a mouse wheel is turned
 void CPlotter::wheelEvent(QWheelEvent * event)
 {
-    QPoint pt = event->pos();
+    // QPoint pt = event->pos();
 
-    QPoint numPixels = event->pixelDelta();
-    QPoint numDegrees = event->angleDelta() / 8;
+    // QPoint numPixels = event->pixelDelta();
+    // QPoint numDegrees = event->angleDelta() / 8;
 
-    int numSteps;
+    // int numSteps;
 
-    if (!numPixels.isNull()) {
-        numSteps = numPixels.y() / 2;
-    } else {
-        numSteps = numDegrees.y() / 15;
-    }
-    numSteps = m_InvertScrolling? -numSteps  : numSteps;
-    int delta = numSteps;
+    // if (!numPixels.isNull()) {
+    //     numSteps = numPixels.y() / 2;
+    // } else {
+    //     numSteps = numDegrees.y() / 15;
+    // }
+    // numSteps = m_InvertScrolling? -numSteps  : numSteps;
+    // int delta = numSteps;
 
-    qCDebug(plotter) << "wheel event" << event <<"numSteps" << numSteps;
+    // qCDebug(plotter) << "wheel event" << event <<"numSteps" << numSteps;
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
+    QPointF pt = QPointF(event->pos());
+#else
+    QPointF pt = event->position();
+#endif
+    int delta = m_InvertScrolling? -event->angleDelta().y() : event->angleDelta().y();
+    int numDegrees = delta / 8;
+    int numSteps = numDegrees / 15;  /** FIXME: Only used for direction **/
 
     /** FIXME: zooming could use some optimisation **/
     if ((m_CursorCaptured == YAXIS) && ! m_autoRangeActive)
@@ -1425,7 +1433,7 @@ void CPlotter::drawOverlay()
             const auto levelNHeightBottom = levelNHeight + fontHeight;
             const auto levelNHeightBottomSlant = levelNHeightBottom + slant;
 
-            m_Taglist.append(qMakePair<QRect, qint64>(QRect(x, levelNHeight, nameWidth + slant, fontHeight), tag.frequency));
+            m_Taglist.append(qMakePair(QRect(x, levelNHeight, nameWidth + slant, fontHeight), tag.frequency));
 
             QColor color = QColor(tag.GetColor());
             color.setAlpha(0x60);

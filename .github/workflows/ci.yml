@@ -12,16 +12,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y cmake qt5-default libqt5svg5-dev libboost-dev libpulse-dev portaudio19-dev liblog4cpp5-dev gnuradio-dev gr-osmosdr gr-fcdproplus liborc-0.4-dev desktop-file-utils
+        run: sudo apt-get update -qq && sudo apt-get install -y cmake qt5-default libqt5svg5-dev libboost-dev libpulse-dev portaudio19-dev liblog4cpp5-dev gnuradio-dev gr-osmosdr gr-fcdproplus liborc-0.4-dev appstream desktop-file-utils
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Configure
         run: mkdir build && cd build && cmake -DLINUX_AUDIO_BACKEND:STRING=${{ matrix.backend }} ..
       - name: Compile
         working-directory: build
-        run: make
+        run: make -j4
       - name: Validate desktop entry
-        run: desktop-file-validate gqrx.desktop
+        if: matrix.os == 'ubuntu-20.04'
+        run: desktop-file-validate dk.gqrx.gqrx.desktop
+      - name: Validate appstream metadata
+        if: matrix.os == 'ubuntu-20.04'
+        run: appstreamcli validate dk.gqrx.gqrx.appdata.xml
   macos-build:
     name: MacOS CI
     strategy:
@@ -41,7 +45,7 @@ jobs:
           mkdir build
           cd build
           cmake ..
-          LIBRARY_PATH=/usr/local/opt/icu4c/lib make
+          LIBRARY_PATH=/usr/local/opt/icu4c/lib make -j4
           make install
       - name: Checkout code
         uses: actions/checkout@v2
@@ -49,4 +53,4 @@ jobs:
         run: mkdir build && cd build && cmake -DOSX_AUDIO_BACKEND:STRING=${{ matrix.backend }} ..
       - name: Compile
         working-directory: build
-        run: make
+        run: make -j4

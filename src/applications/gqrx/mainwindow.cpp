@@ -144,12 +144,12 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     uiDockBookmarks = new DockBookmarks(this);
 
     // setup some toggle view shortcuts
-    uiDockInputCtl->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_J));
-    uiDockRxOpt->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
-    uiDockFft->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
-    uiDockAudio->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_A));
-    uiDockBookmarks->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_B));
-    ui->mainToolBar->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_T));
+    uiDockInputCtl->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_J));
+    uiDockRxOpt->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_R));
+    uiDockFft->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F));
+    uiDockAudio->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_A));
+    uiDockBookmarks->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_B));
+    ui->mainToolBar->toggleViewAction()->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_T));
 
     /* frequency setting shortcut */
     auto *freq_shortcut = new QShortcut(QKeySequence(Qt::Key_F), this);
@@ -466,7 +466,7 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     {
         if (m_settings->value("crashed", false).toBool())
         {
-            qDebug() << "Crash guard triggered!" << endl;
+            qDebug() << "Crash guard triggered!";
             auto* askUserAboutConfig =
                     new QMessageBox(QMessageBox::Warning, tr("Crash Detected!"),
                                     tr("<p>Gqrx has detected problems with the current configuration. "
@@ -535,14 +535,7 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
         }
 
         // Update window title
-        QRegExp regexp(R"('([a-zA-Z0-9 \-\_\/\.\,\(\)]+)')");
-        QString devlabel;
-        if (regexp.indexIn(indev, 0) != -1)
-            devlabel = regexp.cap(1);
-        else
-            devlabel = indev; //"Unknown";
-
-        setWindowTitle(QString("Gqrx %1 - %2").arg(VERSION).arg(devlabel));
+        setWindowTitle(QString("Gqrx %1 - %2").arg(VERSION).arg(indev));
 
         // Add available antenna connectors to the UI
         std::vector<std::string> antennas = rx->get_antennas();
@@ -2411,7 +2404,7 @@ void MainWindow::on_actionAddBookmark_triggered()
 {
     bool ok=false;
     QString name;
-    QString tags; // list of tags separated by comma
+    QStringList tags;
 
     // Create and show the Dialog for a new Bookmark.
     // Write the result into variable 'name'.
@@ -2449,7 +2442,7 @@ void MainWindow::on_actionAddBookmark_triggered()
         if (ok)
         {
             name = textfield->text();
-            tags = taglist->getSelectedTagsAsString();
+            tags = taglist->getSelectedTags();
             qDebug() << "Tags: " << tags;
         }
         else
@@ -2469,14 +2462,13 @@ void MainWindow::on_actionAddBookmark_triggered()
         info.bandwidth = ui->plotter->getFilterBw();
         info.modulation = uiDockRxOpt->currentDemodAsString();
         info.name=name;
-        auto listTags = tags.split(",",QString::SkipEmptyParts);
         info.tags.clear();
-        if (listTags.empty())
+        if (tags.empty())
             info.tags.append(&Bookmarks::Get().findOrAddTag(""));
 
 
-        for (i = 0; i < listTags.size(); ++i)
-            info.tags.append(&Bookmarks::Get().findOrAddTag(listTags[i]));
+        for (i = 0; i < tags.size(); ++i)
+            info.tags.append(&Bookmarks::Get().findOrAddTag(tags[i]));
 
         Bookmarks::Get().add(info);
         uiDockBookmarks->updateTags();

@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.2)
 project(gqrx)
 set(${PROJECT_NAME}_MAJOR "2")
 set(${PROJECT_NAME}_MINOR "15")
-set(${PROJECT_NAME}_PATCH "5")
+set(${PROJECT_NAME}_PATCH "7")
 set(IS_RELEASE FALSE)
 
 if(IS_RELEASE)
@@ -259,6 +259,15 @@ if(Gnuradio_VERSION VERSION_LESS "3.8")
         ${Boost_LIBRARY_DIRS}
     )
 endif()
+
+# Install desktop
+install(FILES dk.gqrx.gqrx.desktop DESTINATION share/applications)
+
+# Install appstream / metainfo file
+install(FILES dk.gqrx.gqrx.appdata.xml DESTINATION share/metainfo)
+
+# Install icon
+install(FILES resources/icons/gqrx.svg DESTINATION share/icons/hicolor/scalable/apps)
 
 # Add subdirectories
 add_subdirectory(src)
