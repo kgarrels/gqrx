@@ -1351,7 +1351,6 @@ void CPlotter::drawOverlay()
     QFontMetrics    metrics(m_Font);
     QPainter        painter(&m_OverlayPixmap);
 
-    painter.initFrom(this);
     painter.setFont(m_Font);
 
     // solid background
