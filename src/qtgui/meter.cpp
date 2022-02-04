@@ -46,8 +46,8 @@
 
 #define ALPHA_DECAY         0.5f
 #define ALPHA_RISE          0.5f
-#define ALPHA_PEAK_DECAY    0.01f   // +kai peak indicator
-#define ALPHA_PEAK_RISE     0.99f
+#define ALPHA_PEAK_DECAY    0.05f   // +kai peak indicator
+#define ALPHA_PEAK_RISE     0.95f
 
 CMeter::CMeter(QWidget *parent) : QFrame(parent)
 {
