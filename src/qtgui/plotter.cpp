@@ -28,6 +28,7 @@
  * or implied, of Moe Wheatley.
  */
 #include <cmath>
+#include <algorithm>
 #include <QColor>
 #include <QDateTime>
 #include <QDebug>
@@ -861,8 +862,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution/20);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/20);
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/10);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/10);
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1149,26 +1150,11 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     m_fftDataSize = size;
 
     float lowestValue;
-    static float minAvg = 0;
-    static float fftCopy[MAX_FFT_SIZE] = {0};
-    long i, offset;
+    static float minAvg = -140 ;
 
-    // cut away the first/last partsof the waterfall
-    offset = (long) size / 8;  // =12.5%
-
-    // automatic determination of the noise level
-    // ignore the first and last offset bins
-    for (i=offset; i<=size-offset; i++) {
-        fftCopy[i-offset] = fftData[i];      // we use the fftData that is averaged
-    }
-
-    // sort bins
-    std::sort(std::begin(fftCopy), std::end(fftCopy));
-
-    // m_fftData = fftCopy;    // test only, view sorted bins in fft
-
-    lowestValue = fftCopy[offset/4];
-
+    lowestValue = *std::min_element(fftData, fftData+size);
+   
+    
     // do a moving averge of abt. n
     int n = 10;
     minAvg -= minAvg/n;
