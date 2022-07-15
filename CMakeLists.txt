@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.2)
 project(gqrx)
 set(${PROJECT_NAME}_MAJOR "2")
 set(${PROJECT_NAME}_MINOR "15")
-set(${PROJECT_NAME}_PATCH "8")
+set(${PROJECT_NAME}_PATCH "9")
 set(IS_RELEASE FALSE)
 
 if(IS_RELEASE)
