@@ -1185,7 +1185,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
         m_WfMindB = minAvg + m_WfMindBSlider + 140 ;        // slider is -160 to 0, allow for -20 correction
         m_WfMaxdB = m_WfMindB + 50 + m_WfMaxdBSlider;       // 54dB=S9, allow to correct down
 
-        m_PandMindB = m_WfMindB + (m_BandPlanEnabled? -10 : 0); // make room for bandplan if needed
+        m_PandMindB = m_WfMindB; // + (m_BandPlanEnabled? -10 : 0); // make room for bandplan if needed
         m_PandMaxdB = m_WfMaxdB;
 
         //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
@@ -1456,14 +1456,15 @@ void CPlotter::drawOverlay()
             int band_left = xFromFreq(band.minFrequency);
             int band_right = xFromFreq(band.maxFrequency);
             int band_width = band_right - band_left;
-            rect.setRect(band_left, xAxisTop - m_BandPlanHeight, band_width, m_BandPlanHeight);
+            // rect.setRect(band_left, xAxisTop - m_BandPlanHeight, band_width, m_BandPlanHeight);
+            rect.setRect(band_left, 0, band_width, m_BandPlanHeight);
             painter.fillRect(rect, band.color);
             QString band_label = band.name + " (" + band.modulation + ")";
             int textWidth = metrics.boundingRect(band_label).width();
             if (band_left < w && band_width > textWidth + 20)
             {
                 painter.setOpacity(1.0);
-                rect.setRect(band_left, xAxisTop - m_BandPlanHeight, band_width, metrics.height());
+                rect.setRect(band_left, 0, band_width, m_BandPlanHeight);
                 painter.setPen(QColor(PLOTTER_TEXT_COLOR));
                 painter.drawText(rect, Qt::AlignCenter, band_label);
             }
