@@ -1163,7 +1163,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(-40000, -100, -5000, 0, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_USB:
@@ -1171,7 +1171,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(0, 5000, 100, 40000, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_CWL:
@@ -1196,7 +1196,7 @@ void MainWindow::selectDemod(int mode_idx)
         qDebug() << "Unsupported mode selection (can't happen!): " << mode_idx;
         flo = -5000;
         fhi = 5000;
-        click_res = 100;
+        click_res = 500;
         break;
     }
 
@@ -1370,8 +1370,9 @@ void MainWindow::meterTimeout()
     level = rx->get_signal_pwr();
     // level = level - ui->plotter->m_Noisefloor -30;  // +kai add noisefloor,30dB bandwidth ratio
     
-    ui->sMeter->setLevel(level);
+    ui->sMeter->setLevel(level, ui->plotter->m_Noisefloor);
     remote->setSignalLevel(level);
+    remote->setNoisefloor(ui->plotter->m_Noisefloor);
 }
 
 #define LOG2_10 3.321928094887362
