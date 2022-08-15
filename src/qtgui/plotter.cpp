@@ -113,7 +113,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_FHiCmax = 25000;
     m_symetric = true;
 
-    m_ClickResolution = 100;
+    m_ClickResolution = 500;
     m_FilterClickResolution = 100;
     m_CursorCaptureDelta = CUR_CUT_DELTA;
 
@@ -1167,7 +1167,8 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
 
     // m_fftData = fftCopy;    // test only, view sorted bins in fft
 
-    lowestValue = fftCopy[offset/4];
+    //    lowestValue = fftCopy[offset/4];
+    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+offset, 0) / offset;
 
     // do a moving averge of abt. n
     int n = 10;
