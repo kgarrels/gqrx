@@ -56,7 +56,7 @@ public:
     void UpdateOverlay(){DrawOverlay();}
 
 public slots:
-    void setLevel(float dbfs);
+    void setLevel(float dbfs, float noisefloor);
     void setSqlLevel(float dbfs);
 
 protected:
@@ -76,6 +76,7 @@ private:
     qreal   m_SiglevelPeak;
     qreal   m_Siglevel;
     float   m_dBFS;
+    float   m_Noisefloor;
     qreal   m_Sql;
     qreal   m_SqlLevel;
 };

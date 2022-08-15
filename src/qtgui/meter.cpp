@@ -33,6 +33,7 @@
 #include <cmath>
 #include <QDebug>
 #include "meter.h"
+#include "plotter.h"    // for m_Noisefloor
 
 // ratio to total control width or height
 #define CTRL_MARGIN 0.07		// left/right margin
@@ -111,7 +112,7 @@ void CMeter::resizeEvent(QResizeEvent *)
     draw();
 }
 
-void CMeter::setLevel(float dbfs)
+void CMeter::setLevel(float dbfs, float noisefloor)
 {
     if (dbfs < MIN_DB)
         dbfs = MIN_DB;
@@ -126,6 +127,8 @@ void CMeter::setLevel(float dbfs)
     m_dBFS -= alpha * (level - dbfs);
     m_Siglevel = (level - MIN_DB) * m_pixperdb;
 
+    m_Noisefloor = noisefloor;
+    
     m_dBFSPeak -= alphaPeak * (levelPeak - dbfs);
     m_SiglevelPeak = (int)((levelPeak - MIN_DB) * m_pixperdb);
 
@@ -220,8 +223,8 @@ void CMeter::draw()
 
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
     painter.setOpacity(1.0);
-    m_Str.setNum(m_dBFS, 'f', 1);
-    painter.drawText(marg, h - 2, m_Str + " dBFS" );
+    m_Str.setNum(m_dBFS - m_Noisefloor -40, 'f', 1);
+    painter.drawText(marg, h - 2, m_Str + " dB SNR" );
 
     update();
 }
