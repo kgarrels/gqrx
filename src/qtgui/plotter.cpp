@@ -28,6 +28,7 @@
  * or implied, of Moe Wheatley.
  */
 #include <cmath>
+#include <algorithm>
 #include <QColor>
 #include <QDateTime>
 #include <QDebug>
@@ -861,8 +862,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution/20);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/20);
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/10);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/10);
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1181,6 +1182,9 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     //lowestValue = fftCopy[offset/16];
     lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+offset/8, 0) / (offset/8);
 
+    lowestValue = *std::min_element(fftData, fftData+size);
+   
+    
     // do a moving averge of abt. n
     int n = 10;
     minAvg -= minAvg/n;
