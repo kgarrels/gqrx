@@ -1180,17 +1180,17 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
     //lowestValue = fftCopy[offset/16];
-    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+offset/8, 0) / (offset/8);
+    const int bins=50;
+    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0) / bins;
 
     lowestValue = *std::min_element(fftData, fftData+size);
    
     
-    // do a moving averge of abt. n
-    int n = 10;
-    minAvg -= minAvg/n;
-    minAvg += lowestValue/n;
-
-     m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
+    // do a moving averge
+    const float alpha = 0.05;
+    minAvg = alpha*lowestValue + (1-alpha)* minAvg;
+  
+    m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
 
     // set the panadapter limits
     if (m_autoRangeActive) {
@@ -1204,7 +1204,6 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
         // set values to new bounds
         m_WfMindB = minAvg + m_WfMindBSlider + 140 ;        // slider is -160 to 0, allow for -20 correction
         m_WfMaxdB = m_WfMindB + 50 + m_WfMaxdBSlider;       // 54dB=S9, allow to correct down
-
         m_PandMindB = m_WfMindB;
         m_PandMaxdB = m_WfMaxdB;
         
