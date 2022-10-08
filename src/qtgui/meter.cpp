@@ -223,7 +223,8 @@ void CMeter::draw()
 
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
     painter.setOpacity(1.0);
-    m_Str.setNum(m_dBFS - m_Noisefloor -55, 'f', 1);        // some coorection of noisefloor level
+    
+    m_Str.setNum(m_dBFSPeak - m_Noisefloor -44, 'f', 1);        // some correction of noisefloor level
     painter.drawText(marg, h - 2, m_Str + " dB SNR" );
 
     update();

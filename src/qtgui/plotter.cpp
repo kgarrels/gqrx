@@ -36,6 +36,7 @@
 #include <QPainter>
 #include <QtGlobal>
 #include <QToolTip>
+#include <string.h>
 #include "plotter.h"
 #include "bandplan.h"
 #include "bookmarks.h"
@@ -1168,26 +1169,25 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     // ignore the first and last offset bins
 
     // cut away the first/last partsof the waterfall
-    offset = (long) size / 8;  // =12.5%
-
+    offset = (long) size / 16;  // =12.5%
     for (i=offset; i<=size-offset; i++) {
         fftCopy[i-offset] = fftData[i];      // we use the fftData that is averaged
     }
-
+ 
+   
     // sort bins
     std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
 
     //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
-    //lowestValue = fftCopy[offset/16];
     const int bins=50;
-    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0) / bins;
+    lowestValue = std::accumulate(std::begin(fftCopy)+offset, std::begin(fftCopy)+offset+bins, 0) / bins;
 
-    lowestValue = *std::min_element(fftData, fftData+size);
+    //lowestValue = *std::min_element(fftCopy, fftCopy+size);
    
     
     // do a moving averge
-    const float alpha = 0.05;
+    const float alpha = 0.1;
     minAvg = alpha*lowestValue + (1-alpha)* minAvg;
   
     m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
