@@ -31,6 +31,7 @@
 #define DEFAULT_FFT_MIN_DB     -120
 #define DEFAULT_FFT_RATE        25
 #define DEFAULT_FFT_SIZE        8192
+#define DEFAULT_FFT_ZOOM        1
 #define DEFAULT_FFT_WINDOW      1       // Hann
 #define DEFAULT_WATERFALL_SPAN  0       // Auto
 #define DEFAULT_FFT_SPLIT       35
@@ -281,6 +282,17 @@ void DockFft::saveSettings(QSettings *settings)
         settings->setValue("bandplan", true);
     else
         settings->remove("bandplan");
+    
+    // Peak
+    if (ui->peakDetectionButton->isChecked())
+        settings->setValue("peak_detect", true);
+    else
+        settings->remove("peak_detect");
+
+    if (ui->peakHoldButton->isChecked())
+        settings->setValue("peak_hold", true);
+    else
+        settings->remove("peak_hold");
 
     // NoiseBlanker for FFT/Waterfall
     if (ui->fftNbCheckbox->isChecked())
@@ -302,6 +314,12 @@ void DockFft::saveSettings(QSettings *settings)
         settings->remove("auto_range_enabled");
 
 
+
+    // FFT Zoom
+    if (ui->fftZoomSlider->value() != DEFAULT_FFT_ZOOM)
+        settings->setValue("fft_zoom", ui->fftZoomSlider->value());
+    else
+        settings->remove("fft_zoom");
 
     settings->endGroup();
 }
@@ -387,12 +405,23 @@ void DockFft::readSettings(QSettings *settings)
     int int_val = settings->value("fft_noiseblanker_value", DEFAULT_FFT_MAX_DB).toInt();
     ui->fftNbSlider->setValue(int_val);
     emit fftNbSliderChanged(int_val);
+    bool_val = settings->value("peak_detect", false).toBool();
+    ui->peakDetectionButton->setChecked(bool_val);
+    emit peakDetectionToggled(bool_val);
+
+    bool_val = settings->value("peak_hold", false).toBool();
+    ui->peakHoldButton->setChecked(bool_val);
+    emit fftPeakHoldToggled(bool_val);
 
     QString cmap = settings->value("waterfall_colormap", "gqrx").toString();
     ui->cmapComboBox->setCurrentIndex(ui->cmapComboBox->findData(cmap));
 
     bool_val = settings->value("auto_range_enabled", false).toBool();
     ui->autoButton->setChecked(bool_val);
+    // FFT Zoom
+    intval = settings->value("fft_zoom", DEFAULT_FFT_ZOOM).toInt(&conv_ok);
+    if (conv_ok)
+        ui->fftZoomSlider->setValue(intval);
 
     settings->endGroup();
 }
