@@ -72,11 +72,11 @@ private:
     QSize   m_Size;
     QString m_Str;
     qreal   m_pixperdb;     // pixels / dB 
-    qreal   m_dBFSPeak;
+    qreal   m_dBFSPeak=0;
     qreal   m_SiglevelPeak;
     qreal   m_Siglevel;
     float   m_dBFS;
-    float   m_Noisefloor;
+    float   m_Noisefloor=0;
     qreal   m_Sql;
     qreal   m_SqlLevel;
 };
