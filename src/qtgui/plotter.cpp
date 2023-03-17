@@ -1169,7 +1169,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     // ignore the first and last offset bins
 
     // cut away the first/last partsof the waterfall
-    offset = (long) size / 16;  // =12.5%
+    offset = (long) size / 4;  
     for (i=offset; i<=size-offset; i++) {
         fftCopy[i-offset] = fftData[i];      // we use the fftData that is averaged
     }
