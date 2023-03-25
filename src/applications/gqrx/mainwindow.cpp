@@ -2527,6 +2527,7 @@ void MainWindow::on_actionLock_Window_triggered(bool checked)
     //qDebug() << "windows flags" << this->windowFlags();
     qDebug() << "checked, window geometry:" << checked << geometry;
     this->show();
+}
 
 void MainWindow::rxOffsetZeroShortcut()
 {

@@ -1657,17 +1657,14 @@ void CPlotter::makeFrequencyStrs()
     }
 }
 
+// Convert from frequency to screen coordinate
 int CPlotter::xFromFreq(qint64 freq)
 {
-//    int w = width();
-//    qreal StartFreq = m_CenterFreq + m_FftCenter - m_Span/2.f;
-
-    qint64 w = width();
-    qint64 StartFreq = m_CenterFreq + m_FftCenter - m_Span / 2;
-//    int x = (int) (w * (freq - StartFreq) / m_Span);
-    int x = (int) (round((qreal)w * ((qreal)freq - (qreal)StartFreq)/(qreal)m_Span)); // typecast does not round
-
-    
+    double w = width();
+    double startFreq = (double)m_CenterFreq
+                       + (double)m_FftCenter
+                       - (double)m_Span / 2.0;
+    int x = lround(w * ((double)freq - startFreq) / (double)m_Span);
     if (x < 0)
         return 0;
     if (x > (int)w)
@@ -1679,7 +1676,8 @@ int CPlotter::xFromFreq(qint64 freq)
 qint64 CPlotter::freqFromX(int x)
 {
     double ratio = (double)x / (double)width();
-    qint64 f = (m_CenterFreq + m_FftCenter - m_Span / 2) + ratio * m_Span;
+    qint64 f = llround((double)m_CenterFreq + (double)m_FftCenter
+                       - (double)m_Span / 2 + ratio * (double)m_Span);
     return f;
 }
 
