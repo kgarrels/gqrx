@@ -120,7 +120,7 @@ receiver::receiver(const std::string input_device,
     fft_nb = make_fft_nb_cc(d_quad_rate, 5, 5);
 
 
-    iq_swap = make_iq_swap_cc(false);
+    //iq_swap = make_iq_swap_cc(false);
     dc_corr = make_dc_corr_cc(d_decim_rate, 1.0);
     iq_fft = make_rx_fft_c(8192u, d_decim_rate, gr::fft::window::WIN_HANN);
 
@@ -209,22 +209,22 @@ void receiver::set_input_device(const std::string device)
     if (d_decim >= 2)
     {
         tb->disconnect(src, 0, input_decim, 0);
-        tb->disconnect(input_decim, 0, iq_swap, 0);
+        //tb->disconnect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->disconnect(src, 0, iq_swap, 0);
+        //tb->disconnect(src, 0, iq_swap, 0);
     }
 
 #if GNURADIO_VERSION < 0x030802
     //Work around GNU Radio bug #3184
     //temporarily connect dummy source to ensure that previous device is closed
     src = osmosdr::source::make("file="+escape_filename(get_zero_file())+",freq=428e6,rate=96000,repeat=true,throttle=true");
-    tb->connect(src, 0, iq_swap, 0);
+    //tb->connect(src, 0, iq_swap, 0);
     tb->start();
     tb->stop();
     tb->wait();
-    tb->disconnect(src, 0, iq_swap, 0);
+    //tb->disconnect(src, 0, iq_swap, 0);
 #else
     src.reset();
 #endif
@@ -245,11 +245,11 @@ void receiver::set_input_device(const std::string device)
     if (d_decim >= 2)
     {
         tb->connect(src, 0, input_decim, 0);
-        tb->connect(input_decim, 0, iq_swap, 0);
+        //tb->connect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->connect(src, 0, iq_swap, 0);
+        //tb->connect(src, 0, iq_swap, 0);
     }
 
     if (d_running)
@@ -390,11 +390,11 @@ unsigned int receiver::set_input_decim(unsigned int decim)
     if (d_decim >= 2)
     {
         tb->disconnect(src, 0, input_decim, 0);
-        tb->disconnect(input_decim, 0, iq_swap, 0);
+        //tb->disconnect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->disconnect(src, 0, iq_swap, 0);
+        //tb->disconnect(src, 0, iq_swap, 0);
     }
 
     input_decim.reset();
@@ -431,11 +431,11 @@ unsigned int receiver::set_input_decim(unsigned int decim)
     if (d_decim >= 2)
     {
         tb->connect(src, 0, input_decim, 0);
-        tb->connect(input_decim, 0, iq_swap, 0);
+        //tb->connect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->connect(src, 0, iq_swap, 0);
+        //tb->connect(src, 0, iq_swap, 0);
     }
 
 #ifdef CUSTOM_AIRSPY_KERNELS
@@ -472,7 +472,7 @@ void receiver::set_iq_swap(bool reversed)
         return;
 
     d_iq_rev = reversed;
-    iq_swap->set_enabled(d_iq_rev);
+    //iq_swap->set_enabled(d_iq_rev);
 }
 
 /**
@@ -1358,8 +1358,8 @@ void receiver::connect_all(rx_chain type)
         tb->connect(b, 0, iq_sink, 0);
     }
 
-    tb->connect(b, 0, iq_swap, 0);
-    b = iq_swap;
+    //tb->connect(b, 0, iq_swap, 0);
+    //b = iq_swap;
 
     if (d_dc_cancel)
     {
