@@ -127,8 +127,9 @@ private:
     void updateGainStages(bool read_from_device);
     void showSimpleTextFile(const QString &resource_path,
                             const QString &window_title);
-    /* key shortcut */
+    /* key shortcuts */
     void frequencyFocusShortcut();
+    void rxOffsetZeroShortcut();
 
 private slots:
     /* RecentConfig */
