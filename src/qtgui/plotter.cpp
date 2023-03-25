@@ -1783,6 +1783,8 @@ void CPlotter::updateOverlay()
 void CPlotter::resetHorizontalZoom(void)
 {
     setFftCenterFreq(0);
+    setSpanFreq((qint32)m_SampleFreq);
+    emit newZoomLevel(1.0);
 }
 
 /** Center FFT plot around 0 (corresponds to center freq). */
