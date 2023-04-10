@@ -1677,7 +1677,7 @@ qint64 CPlotter::freqFromX(int x)
 {
     double ratio = (double)x / (double)width();
     qint64 f = qRound64((double)m_CenterFreq + (double)m_FftCenter
-                       - (double)m_Span / 2 + ratio * (double)m_Span);
+                       - (double)m_Span / 2.0 + ratio * (double)m_Span);
     return f;
 }
 
