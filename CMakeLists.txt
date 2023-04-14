@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.2)
 project(gqrx)
 set(${PROJECT_NAME}_MAJOR "2")
 set(${PROJECT_NAME}_MINOR "15")
-set(${PROJECT_NAME}_PATCH "9")
+set(${PROJECT_NAME}_PATCH "10")
 set(IS_RELEASE FALSE)
 SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
 
