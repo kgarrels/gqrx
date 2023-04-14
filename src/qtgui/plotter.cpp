@@ -1169,7 +1169,7 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     // ignore the first and last offset bins
 
     // cut away the first/last partsof the waterfall
-    offset = (long) size / 4;  
+    offset = (long) size / 8;  
     for (i=offset; i<=size-offset; i++) {
         fftCopy[i-offset] = fftData[i];      // we use the fftData that is averaged
     }
@@ -1181,7 +1181,8 @@ void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
     //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
     const int bins=50;
-    lowestValue = std::accumulate(std::begin(fftCopy)+offset, std::begin(fftCopy)+offset+bins, 0) / bins;
+    //lowestValue = std::accumulate(std::begin(fftCopy)+offset, std::begin(fftCopy)+offset+bins, 0) / bins;
+    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0) / bins;
 
     //lowestValue = *std::min_element(fftCopy, fftCopy+size);
    
@@ -1677,7 +1678,7 @@ qint64 CPlotter::freqFromX(int x)
 {
     double ratio = (double)x / (double)width();
     qint64 f = qRound64((double)m_CenterFreq + (double)m_FftCenter
-                       - (double)m_Span / 2.0 + ratio * (double)m_Span);
+                       - (double)m_Span / 2 + ratio * (double)m_Span);
     return f;
 }
 
