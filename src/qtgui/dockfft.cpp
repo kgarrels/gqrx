@@ -282,7 +282,7 @@ void DockFft::saveSettings(QSettings *settings)
         settings->setValue("bandplan", true);
     else
         settings->remove("bandplan");
-    
+
     // Peak
     if (ui->peakDetectionButton->isChecked())
         settings->setValue("peak_detect", true);
