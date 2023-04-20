@@ -3,7 +3,12 @@
 
        NEW: Restore AM & AM-Sync settings between sessions.
        NEW: Set/get audio gain via remote control.
+       NEW: Only show bookmarks for active tag groups in the panadapter.
      FIXED: Loading of narrow FM tau setting.
+     FIXED: Crash when adding or removing bookmark tags.
+     FIXED: Redraw bookmarks immediately after changes.
+     FIXED: DX cluster spots fail to expire around midnight.
+  IMPROVED: Rendering of frequency control and S-meter on some high-DPI screens.
    REMOVED: Support for GNU Radio 3.7.
 
 
