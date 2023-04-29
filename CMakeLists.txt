@@ -122,9 +122,9 @@ else()
 endif()
 
 # 3rd Party Dependency Stuff
-find_package(Qt6 QUIET COMPONENTS Core Network Widgets Svg SvgWidgets)
+find_package(Qt6  COMPONENTS Core Network Widgets Svg SvgWidgets)
 if(NOT Qt6_FOUND)
-    find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
+   # find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
 endif()
 include(FindPkgConfig)
 find_package(Gnuradio-osmosdr REQUIRED)
