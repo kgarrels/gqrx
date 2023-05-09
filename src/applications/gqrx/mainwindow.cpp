@@ -280,6 +280,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(uiDockFft, SIGNAL(gotoFftCenter()), ui->plotter, SLOT(moveToCenterFreq()));
     connect(uiDockFft, SIGNAL(gotoDemodFreq()), ui->plotter, SLOT(moveToDemodFreq()));
     connect(uiDockFft, SIGNAL(bandPlanChanged(bool)), ui->plotter, SLOT(enableBandPlan(bool)));
+    connect(uiDockFft, SIGNAL(autoCheckBoxToggled(bool)), this, SLOT(setAutoRange(bool)));        //+kai auto mode for plotter
     connect(uiDockFft, SIGNAL(markersChanged(bool)), ui->plotter, SLOT(enableMarkers(bool)));
     connect(uiDockFft, SIGNAL(markersChanged(bool)), this, SLOT(enableMarkers(bool)));
     connect(uiDockFft, SIGNAL(wfColormapChanged(const QString)), ui->plotter, SLOT(setWfColormap(const QString)));
@@ -306,7 +307,6 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(uiDockFft, SIGNAL(fftFillToggled(bool)), this, SLOT(enableFftFill(bool)));
     connect(uiDockFft, SIGNAL(fftPeakHoldToggled(bool)), this, SLOT(setFftPeakHold(bool)));
     connect(uiDockFft, SIGNAL(peakDetectionToggled(bool)), this, SLOT(setPeakDetection(bool)));
-    connect(uiDockFft, SIGNAL(autoButtonToggled(bool)), this, SLOT(setAutoRange(bool)));
     connect(uiDockFft, SIGNAL(fftNbChanged(bool)), this, SLOT(fftNbChanged(bool)));
     connect(uiDockFft, SIGNAL(fftNbSliderChanged(int)), this, SLOT(fftNbSliderChanged(int)));
     connect(uiDockRDS, SIGNAL(rdsDecoderToggled(bool)), this, SLOT(setRdsDecoder(bool)));
@@ -1914,6 +1914,8 @@ void MainWindow::setPeakDetection(bool enabled)
 void MainWindow::setAutoRange(bool enabled)
 {
     ui->plotter->setAutoRange(enabled);
+    qDebug() << "main window auto range: " << enabled;
+
 }
 
 void MainWindow::fftNbChanged(bool state)

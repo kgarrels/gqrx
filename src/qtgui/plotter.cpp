@@ -1976,8 +1976,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
     const int bins=50;
-    //lowestValue = std::accumulate(std::begin(fftCopy)+offset, std::begin(fftCopy)+offset+bins, 0) / bins;
-    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0) / bins;
+    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
 
     //lowestValue = *std::min_element(fftCopy, fftCopy+size);
    
@@ -1998,19 +1997,13 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         }
 
         // set values to new bounds
-        m_WfMindB = minAvg + m_WfMindBSlider + 140 ;        // slider is -160 to 0, allow for -20 correction
-        m_WfMaxdB = m_WfMindB + 50 + m_WfMaxdBSlider;       // 54dB=S9, allow to correct down
-        m_PandMindB = m_WfMindB;
-        m_PandMaxdB = m_WfMaxdB;
-        
+        m_WfMindB = 10*log10f(minAvg)   +140+ m_WfMindBSlider;          // slider is -160 to 0, allow for -20 correction
+        m_WfMaxdB = m_WfMindB           + 50+ m_WfMaxdBSlider;          // 54dB=S9, allow to correct down
+        m_PandMindB = 10*log10f(minAvg) +140+ m_PandMindBSlider;        // slider is -160 to 0, allow for -20 correction
+        m_PandMaxdB = m_PandMindB       + 50+ m_PandMaxdBSlider;        // 54dB=S9, allow to correct down
+
         qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
     }
-
-
-
-
-
-
 
     draw(true);
 }
@@ -2025,9 +2018,6 @@ void CPlotter::setFftRange(float min, float max)
     setWaterfallRange(min, max);
     setPandapterRange(min, max);
 
-    // save slider values for auto mode
-    m_WfMindBSlider = min;
-    m_WfMaxdBSlider = max;
 }
 
 void CPlotter::setPandapterRange(float min, float max)
@@ -2037,6 +2027,10 @@ void CPlotter::setPandapterRange(float min, float max)
 
     m_PandMindB = min;
     m_PandMaxdB = max;
+
+    m_PandMindBSlider = min;
+    m_PandMaxdBSlider = max;
+
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
     m_histIIRValid = false;
@@ -2050,6 +2044,8 @@ void CPlotter::setWaterfallRange(float min, float max)
 
     m_WfMindB = min;
     m_WfMaxdB = max;
+    m_WfMindBSlider = min;
+    m_WfMaxdBSlider = max;
     // no overlay change is necessary
 }
 
@@ -2609,7 +2605,7 @@ void CPlotter::enableMarkers(bool enabled)
 void CPlotter::setAutoRange(bool enabled)
 {
     m_autoRangeActive = enabled;
-    qDebug() << "auto range: " << m_autoRangeActive;
+    qDebug() << "plotter auto range: " << m_autoRangeActive;
 }
 
 

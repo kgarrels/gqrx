@@ -293,8 +293,10 @@ private:
     int         m_GrabPosition;
     qreal       m_Percent2DScreen;
 
-    float       m_WfMindBSlider;        //+kai slider values for auto mode
+    float       m_WfMindBSlider;            //+kai slider values for auto mode
     float       m_WfMaxdBSlider;
+    float       m_PandMindBSlider;           //+kai slider values for auto mode
+    float       m_PandMaxdBSlider;
 
     int         m_FLowCmin;
     int         m_FLowCmax;
