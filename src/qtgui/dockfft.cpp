@@ -293,7 +293,7 @@ void DockFft::saveSettings(QSettings *settings)
         settings->remove("db_ranges_locked");
 
     // autorange
-    if (ui->autoButton->isChecked())
+    if (ui->autoCheckBox->isChecked())
         settings->setValue("auto_range_enabled", true);
     else
         settings->remove("auto_range_enabled");
@@ -339,7 +339,7 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("waterfall_colormap");
     // autorange
-    if (ui->autoButton->isChecked())
+    if (ui->autoCheckBox->isChecked())
         settings->setValue("auto_range_enabled", true);
     else
         settings->remove("auto_range_enabled");
@@ -446,7 +446,7 @@ void DockFft::readSettings(QSettings *settings)
     ui->lockCheckBox->setChecked(bool_val);
 
     bool_val = settings->value("auto_range_enabled", false).toBool();
-    ui->autoButton->setChecked(bool_val);
+    ui->autoCheckBox->setChecked(bool_val);
 
     bool_val = settings->value("bandplan", false).toBool();
     ui->bandPlanCheckBox->setChecked(bool_val);
@@ -478,7 +478,7 @@ void DockFft::readSettings(QSettings *settings)
     ui->cmapComboBox->setCurrentIndex(ui->cmapComboBox->findData(cmap));
 
     bool_val = settings->value("auto_range_enabled", false).toBool();
-    ui->autoButton->setChecked(bool_val);
+    ui->autoCheckBox->setChecked(bool_val);
     // FFT Zoom
     intval = settings->value("fft_zoom", DEFAULT_FFT_ZOOM).toInt(&conv_ok);
     if (conv_ok)
@@ -717,9 +717,9 @@ void DockFft::on_peakDetectCheckBox_stateChanged(int state)
 }
 
 /** Auto button toggled */
-void DockFft::on_autoButton_toggled(bool checked)
+void DockFft::on_autoCheckBox_toggled(bool checked)
 {
-    emit autoButtonToggled(checked);
+    emit autoCheckBoxToggled(checked);
 }
 
 /** fftNbCheckbox changed */
@@ -734,7 +734,6 @@ void DockFft::on_fftNbSlider_valueChanged(int value)
     emit fftNbSliderChanged(value);
 }
 
-void DockFft::on_bandPlanCheckbox_stateChanged(int state)
 void DockFft::on_bandPlanCheckBox_stateChanged(int state)
 {
     emit bandPlanChanged(state == Qt::Checked);

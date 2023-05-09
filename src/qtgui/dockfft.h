@@ -75,7 +75,7 @@ signals:
     void bandPlanChanged(bool enabled);            /*! Toggle Band Plan at bottom of FFT area. */
     void markersChanged(bool enabled);             /*! Toggle markers and on-plot controls. */
     void wfColormapChanged(const QString &cmap);
-    void autoButtonToggled(bool enabled);           /*! Enable peak detection in FFT plot */
+    void autoCheckBoxToggled(bool enabled);           /*! Enable peak detection in FFT plot */
     void fftNbChanged(bool enabled);                /*! Enable noise blanker in FFT plot */
     void fftNbSliderChanged(int value);      /*! change FFT Noise balnker threshold */
 
@@ -118,7 +118,7 @@ private slots:
     void on_bandPlanCheckBox_stateChanged(int state);
     void on_markersCheckBox_stateChanged(int state);
     void on_cmapComboBox_currentIndexChanged(int index);
-    void on_autoButton_toggled(bool checked);
+    void on_autoCheckBox_toggled(bool checked);
     void on_fftNbCheckbox_toggled(bool checked);
 
 private:

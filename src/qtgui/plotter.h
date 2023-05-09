@@ -123,10 +123,6 @@ public:
     void    clearWaterfallBuf();
     bool    saveWaterfall(const QString & filename) const;
 
-    float      m_Noisefloor;
-
-    
-    
     enum ePlotMode {
         PLOT_MODE_MAX = 0,
         PLOT_MODE_AVG = 1,
@@ -146,6 +142,10 @@ public:
         WATERFALL_MODE_SYNC = 2
     };
 
+    float      m_Noisefloor;        //+kai noisefloor for auto range
+
+
+
 signals:
     void newDemodFreq(qint64 freq, qint64 delta); /* delta is the offset from the center */
     void newLowCutFreq(int f);
@@ -154,7 +154,6 @@ signals:
     void pandapterRangeChanged(float min, float max);
     void newZoomLevel(float level);
     void newSize();
-    void newFrequency(qint64 freq);
     void markerSelectA(qint64 freq);
     void markerSelectB(qint64 freq);
 
@@ -170,9 +169,6 @@ public slots:
 
     // other FFT slots
     void setFftPlotColor(const QColor& color);
-    void setFftFill(bool enabled);
-    void setPeakHold(bool enabled);
-    void setAutoRange(bool enabled);
     void enableFftFill(bool enabled);
     void enableMaxHold(bool enabled);
     void enableMinHold(bool enabled);
@@ -185,6 +181,7 @@ public slots:
     void enableBandPlan(bool enable);
     void enableMarkers(bool enabled);
     void setMarkers(qint64 a, qint64 b);
+    void setAutoRange(bool enabled);
     void updateOverlay();
 
     void setPercent2DScreen(int percent)
@@ -258,6 +255,8 @@ private:
     qreal       m_XAxisYCenter{};
     qreal       m_YAxisWidth{};
 
+    bool        m_autoRangeActive;      //+kai for auto range mode
+
     eCapturetype    m_CursorCaptured;
     QPixmap     m_2DPixmap;         // Composite of everything displayed in the 2D plotter area
     QPixmap     m_OverlayPixmap;    // Grid, axes ... things that need to be drawn infrequently
@@ -294,6 +293,9 @@ private:
     int         m_GrabPosition;
     qreal       m_Percent2DScreen;
 
+    float       m_WfMindBSlider;        //+kai slider values for auto mode
+    float       m_WfMaxdBSlider;
+
     int         m_FLowCmin;
     int         m_FLowCmax;
     int         m_FHiCmin;
@@ -307,9 +309,6 @@ private:
     float       m_PandMaxdB;
     float       m_WfMindB;
     float       m_WfMaxdB;
-    float       m_WfMindBSlider;
-    float       m_WfMaxdBSlider;
-    bool        m_autoRangeActive;
     double      m_alpha;     /*!< IIR averaging. */
 
     qint64      m_Span;
@@ -331,6 +330,7 @@ private:
     qreal       m_BandPlanHeight; /*!< Height in pixels of band plan (if enabled) */
 
     quint32     m_LastSampleRate{};
+
 
     QColor      m_avgFftColor, m_maxFftColor, m_FftFillCol, m_MaxHoldColor, m_MinHoldColor;
     bool        m_FftFill{};

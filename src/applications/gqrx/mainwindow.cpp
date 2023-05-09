@@ -303,7 +303,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(ui->plotter, SIGNAL(newSize()), this, SLOT(setWfSize()));
 
     connect(uiDockFft, SIGNAL(fftColorChanged(QColor)), this, SLOT(setFftColor(QColor)));
-    connect(uiDockFft, SIGNAL(fftFillToggled(bool)), this, SLOT(setFftFill(bool)));
+    connect(uiDockFft, SIGNAL(fftFillToggled(bool)), this, SLOT(enableFftFill(bool)));
     connect(uiDockFft, SIGNAL(fftPeakHoldToggled(bool)), this, SLOT(setFftPeakHold(bool)));
     connect(uiDockFft, SIGNAL(peakDetectionToggled(bool)), this, SLOT(setPeakDetection(bool)));
     connect(uiDockFft, SIGNAL(autoButtonToggled(bool)), this, SLOT(setAutoRange(bool)));
@@ -1903,12 +1903,12 @@ void MainWindow::enableFftFill(bool enable)
 
 void MainWindow::setFftPeakHold(bool enable)
 {
-    ui->plotter->setPeakHold(enable);
+    ui->plotter->enablePeakDetect(enable);
 }
 
 void MainWindow::setPeakDetection(bool enabled)
 {
-    ui->plotter->setPeakDetection(enabled ,2);
+    ui->plotter->enablePeakDetect(enabled);
 }
 
 void MainWindow::setAutoRange(bool enabled)

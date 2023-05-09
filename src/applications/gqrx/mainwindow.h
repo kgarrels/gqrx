@@ -212,7 +212,7 @@ private slots:
     void setIqFftSplit(int pct_wf);
     void setAudioFftRate(int fps);
     void setFftColor(const QColor& color);
-    void setFftFill(bool enable);
+    //void setFftFill(bool enable);
     void setPeakDetection(bool enabled);
     void setAutoRange(bool enabled);
     void setFftPeakHold(bool enable);

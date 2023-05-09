@@ -28,7 +28,6 @@
  * or implied, of Moe Wheatley.
  */
 #include <cmath>
-#include <algorithm>
 #include <QColor>
 #include <QDateTime>
 #include <QDebug>
@@ -36,7 +35,6 @@
 #include <QPainter>
 #include <QtGlobal>
 #include <QToolTip>
-#include <string.h>
 #include "plotter.h"
 #include "bandplan.h"
 #include "bookmarks.h"
@@ -232,7 +230,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             }
             else if (isPointCloseTo(px, m_YAxisWidth/2, m_YAxisWidth/2))
             {
-                if ((YAXIS != m_CursorCaptured) && !m_autoRangeActive)              // no yaxis dragging with autorange active
+                if (YAXIS != m_CursorCaptured)
                     setCursor(QCursor(Qt::OpenHandCursor));
                 m_CursorCaptured = YAXIS;
                 if (m_TooltipsEnabled)
@@ -349,7 +347,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
         }
     }
     // process mouse moves while in cursor capture modes
-    if ((YAXIS == m_CursorCaptured) && !m_autoRangeActive)              // no yaxis reaction when autorange is active
+    if (YAXIS == m_CursorCaptured)
     {
         if (event->buttons() & Qt::LeftButton)
         {
@@ -397,17 +395,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 }
                 else
                 {
-                    // move waterfall horizontally
-                    int w, h;
-
-                    w = m_WaterfallPixmap.width();
-                    h = m_WaterfallPixmap.height();
-                    QRegion exposed;
-                    m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
-                    QPainter painter1(&m_WaterfallPixmap);
-                    painter1.fillRect(exposed.boundingRect(), Qt::black);
-
-                    setFftCenterFreq(m_FftCenter + delta_hz);              
+                    setFftCenterFreq(m_FftCenter + delta_hz);
                 }
 
                 m_MaxHoldValid = false;
@@ -836,7 +824,7 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
                     updateOverlay();
                 }
             }
-            else if (event->buttons() == Qt::RightButton)   // was mid button
+            else if (event->buttons() == Qt::MiddleButton)
             {
                 // set center freq
                 m_CenterFreq = roundFreq(freqFromX(px), m_ClickResolution);
@@ -853,7 +841,7 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
     }
     else
     {
-        if ((m_CursorCaptured) == YAXIS && !m_autoRangeActive)      // no y-ais events while autorange is active
+        if (m_CursorCaptured == YAXIS)
             // get ready for moving Y axis
             m_Yzero = py;
         else if (m_CursorCaptured == XAXIS)
@@ -1014,23 +1002,6 @@ void CPlotter::setWaterfallMode(int mode)
 // Called when a mouse wheel is turned
 void CPlotter::wheelEvent(QWheelEvent * event)
 {
-    // QPoint pt = event->pos();
-
-    // QPoint numPixels = event->pixelDelta();
-    // QPoint numDegrees = event->angleDelta() / 8;
-
-    // int numSteps;
-
-    // if (!numPixels.isNull()) {
-    //     numSteps = numPixels.y() / 2;
-    // } else {
-    //     numSteps = numDegrees.y() / 15;
-    // }
-    // numSteps = m_InvertScrolling? -numSteps  : numSteps;
-    // int delta = numSteps;
-
-    // qCDebug(plotter) << "wheel event" << event <<"numSteps" << numSteps;
-
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
     QPoint pt = QPoint(event->pos());
 #else
@@ -1045,7 +1016,7 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     int numSteps = numDegrees / 15;  /** FIXME: Only used for direction **/
 
     /** FIXME: zooming could use some optimisation **/
-    if ((m_CursorCaptured == YAXIS) && ! m_autoRangeActive)
+    if (m_CursorCaptured == YAXIS)
     {
         // Vertical zoom. Wheel down: zoom out, wheel up: zoom in
         // During zoom we try to keep the point (dB or kHz) under the cursor fixed
@@ -1072,7 +1043,7 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     {
         zoomStepX(delta < 0 ? 1.1 : 0.9, px);
     }
-    else if (event->modifiers() & (Qt::ControlModifier | Qt::MetaModifier))
+    else if (event->modifiers() & Qt::ControlModifier)
     {
         // filter width
         m_DemodLowCutFreq -= numSteps * m_ClickResolution;
@@ -1092,8 +1063,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     else
     {
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution/10);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/10);
+        m_DemodCenterFreq += (numSteps * m_ClickResolution);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1898,131 +1869,6 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     // Make sure zeros don't get through to log calcs
     const float fmin = std::numeric_limits<float>::min();
 
-    m_wfData = fftData;
-    m_fftData = fftData;
-    m_fftDataSize = size;
-
-    draw();
-}
-
-/**
- * Set new FFT data.
- * @param fftData Pointer to the new FFT data used on the pandapter.
- * @param wfData Pointer to the FFT data used in the waterfall.
- * @param size The FFT size.
- *
- * This method can be used to set different FFT data set for the pandapter and the
- * waterfall.
- */
-
-void CPlotter::setNewFftData(float *fftData, float *wfData, int size)
-{
-#define MAX_FFT_SIZE 1048576
-    /** FIXME **/
-    if (!m_Running)
-        m_Running = true;
-
-    m_wfData = wfData;
-    m_fftData = fftData;
-    m_fftDataSize = size;
-
-    float lowestValue;
-    static float minAvg = 0;
-    float fftCopy[MAX_FFT_SIZE] = {0};
-    long i, offset;
-
-
-/*
-    Noise Floor
-
-    A few weeks previously a reasonable logic was implemented for measuring the noise floor. Purists will not be happy - they rarely are, but it works for me.
-
-    Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering, and we're left with a healthy 70% of the signal. Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
- */
-    
-    
-    // automatic determination of the noise level
-    // ignore the first and last offset bins
-
-    // cut away the first/last partsof the waterfall
-    offset = (long) size / 8;  
-    for (i=offset; i<=size-offset; i++) {
-        fftCopy[i-offset] = fftData[i];      // we use the fftData that is averaged
-    }
- 
-   
-    // sort bins
-    std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
-
-    //m_fftData = fftCopy;    // test only, view sorted bins in fft
-
-    const int bins=50;
-    //lowestValue = std::accumulate(std::begin(fftCopy)+offset, std::begin(fftCopy)+offset+bins, 0) / bins;
-    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0) / bins;
-
-    //lowestValue = *std::min_element(fftCopy, fftCopy+size);
-   
-    
-    // do a moving averge
-    const float alpha = 0.1;
-    minAvg = alpha*lowestValue + (1-alpha)* minAvg;
-  
-    m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
-
-    // set the panadapter limits
-    if (m_autoRangeActive) {
-
-        static float minAvg_old =0;
-        if (minAvg != minAvg_old) {
-            m_DrawOverlay = true;
-            minAvg_old = minAvg;
-        }
-
-        // set values to new bounds
-        m_WfMindB = minAvg + m_WfMindBSlider + 140 ;        // slider is -160 to 0, allow for -20 correction
-        m_WfMaxdB = m_WfMindB + 50 + m_WfMaxdBSlider;       // 54dB=S9, allow to correct down
-        m_PandMindB = m_WfMindB;
-        m_PandMaxdB = m_WfMaxdB;
-        
-        qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
-    }
-
-    if (m_Running) draw();
-}
-
-void CPlotter::getScreenIntegerFFTData(qint32 plotHeight, qint32 plotWidth,
-                                       float maxdB, float mindB,
-                                       qint64 startFreq, qint64 stopFreq,
-                                       float *inBuf, qint32 *outBuf,
-                                       int *xmin, int *xmax) const
-{
-    qint32 i;
-    qint32 y;
-    qint32 x;
-    qint32 ymax = 10000;
-    qint32 xprev = -1;
-    qint32 minbin, maxbin;
-    qint32 m_BinMin, m_BinMax;
-    qint32 m_FFTSize = m_fftDataSize;
-    float *m_pFFTAveBuf = inBuf;
-    float  dBGainFactor = ((float)plotHeight) / fabs(maxdB - mindB);
-    auto* m_pTranslateTbl = new qint32[qMax(m_FFTSize, plotWidth)];
-
-    /** FIXME: qint64 -> qint32 **/
-    m_BinMin = (qint32)((float)startFreq * (float)m_FFTSize / m_SampleFreq);
-    m_BinMin += (m_FFTSize/2);
-    m_BinMax = (qint32)((float)stopFreq * (float)m_FFTSize / m_SampleFreq);
-    m_BinMax += (m_FFTSize/2);
-
-    minbin = m_BinMin < 0 ? 0 : m_BinMin;
-    if (m_BinMin > m_FFTSize)
-        m_BinMin = m_FFTSize - 1;
-    if (m_BinMax <= m_BinMin)
-        m_BinMax = m_BinMin + 1;
-    maxbin = m_BinMax < m_FFTSize ? m_BinMax : m_FFTSize;
-    bool largeFft = (m_BinMax-m_BinMin) > plotWidth; // true if more fft point than plot points
-
-    if (largeFft)
     if (size != m_fftDataSize)
     {
         // Reallocate and invalidate IIRs
@@ -2100,6 +1946,72 @@ void CPlotter::getScreenIntegerFFTData(qint32 plotHeight, qint32 plotWidth,
 
     m_IIRValid = true;
 
+/*
+    Noise Floor
+    A few weeks previously a reasonable logic was implemented for measuring the noise floor. Purists will not be happy - they rarely are, but it works for me.
+    Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering, and we're left with a healthy 70% of the signal. Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
+ */
+    
+    
+    // automatic determination of the noise level
+    // ignore the first and last offset bins
+
+    // cut away the first/last partsof the waterfall
+    #define MAX_FFT_SIZE 1048576
+    float lowestValue;
+    static float minAvg = 0;
+    float fftCopy[MAX_FFT_SIZE] = {0};
+    long i, offset;
+
+
+    offset = (long) size / 8;  
+    for (i=offset; i<=size-offset; i++) {
+        fftCopy[i-offset] = m_fftIIR[i];      // we use the fftData that is averaged
+    }
+ 
+   
+    // sort bins
+    std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
+
+    //m_fftData = fftCopy;    // test only, view sorted bins in fft
+
+    const int bins=50;
+    //lowestValue = std::accumulate(std::begin(fftCopy)+offset, std::begin(fftCopy)+offset+bins, 0) / bins;
+    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0) / bins;
+
+    //lowestValue = *std::min_element(fftCopy, fftCopy+size);
+   
+    
+    // do a moving averge
+    const float alpha = 0.1;
+    minAvg = alpha*lowestValue + (1-alpha)* minAvg;
+  
+    m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
+
+    // set the panadapter limits
+    if (m_autoRangeActive) {
+
+        static float minAvg_old =0;
+        if (minAvg != minAvg_old) {
+            m_DrawOverlay = true;
+            minAvg_old = minAvg;
+        }
+
+        // set values to new bounds
+        m_WfMindB = minAvg + m_WfMindBSlider + 140 ;        // slider is -160 to 0, allow for -20 correction
+        m_WfMaxdB = m_WfMindB + 50 + m_WfMaxdBSlider;       // 54dB=S9, allow to correct down
+        m_PandMindB = m_WfMindB;
+        m_PandMaxdB = m_WfMaxdB;
+        
+        qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
+    }
+
+
+
+
+
+
+
     draw(true);
 }
 
@@ -2112,6 +2024,10 @@ void CPlotter::setFftRange(float min, float max)
 {
     setWaterfallRange(min, max);
     setPandapterRange(min, max);
+
+    // save slider values for auto mode
+    m_WfMindBSlider = min;
+    m_WfMaxdBSlider = max;
 }
 
 void CPlotter::setPandapterRange(float min, float max)
@@ -2134,10 +2050,6 @@ void CPlotter::setWaterfallRange(float min, float max)
 
     m_WfMindB = min;
     m_WfMaxdB = max;
-
-    // save slider values for auto mode
-    m_WfMindBSlider = min;
-    m_WfMaxdBSlider = max;
     // no overlay change is necessary
 }
 
@@ -2593,28 +2505,6 @@ void CPlotter::setCenterFreq(quint64 f)
     m_histIIRValid = false;
     m_IIRValid = false;
 
-    m_PeakHoldValid = false;
-
-    // move waterfall horizontally
-    qint64 w, h;
-    static qint64 old_f=0;
-
-    quint64 oldx=xFromFreq(old_f);
-    quint64 newx=xFromFreq(f);
-    quint64 deltaX = oldx - newx;
-
-    w = m_WaterfallPixmap.width();
-    h = m_WaterfallPixmap.height();
-    qDebug(plotter) << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
-    old_f = f;
-    if (abs((int)deltaX) < w/2)
-    {
-        QRegion exposed;
-        m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
-        QPainter painter1(&m_WaterfallPixmap);
-        painter1.fillRect(exposed.boundingRect(), Qt::black);
-    }
-
     updateOverlay();
 }
 
@@ -2694,13 +2584,6 @@ void CPlotter::enableMinHold(bool enabled)
     m_MinHoldValid = false;
 }
 
-/** Set auto range on or off. */
-void CPlotter::setAutoRange(bool enabled)
-{
-    m_autoRangeActive = enabled;
-    qDebug() << "auto range: " << m_autoRangeActive;
-}
-
 /**
  * Set peak detection on or off.
  * @param enabled The new state of peak detection.
@@ -2721,6 +2604,15 @@ void CPlotter::enableMarkers(bool enabled)
 {
     m_MarkersEnabled = enabled;
 }
+
+/** Set auto range on or off. */
+void CPlotter::setAutoRange(bool enabled)
+{
+    m_autoRangeActive = enabled;
+    qDebug() << "auto range: " << m_autoRangeActive;
+}
+
+
 
 void CPlotter::setMarkers(qint64 a, qint64 b)
 {
