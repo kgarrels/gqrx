@@ -402,7 +402,6 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
                 QPainter painter1(&m_WaterfallPixmap);
                 painter1.fillRect(exposed.boundingRect(), Qt::black);
-                m_Running=true;
               
                 setFftCenterFreq(m_FftCenter + delta_hz);
             }
@@ -1985,7 +1984,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
     
     // do a moving averge
-    const float alpha = 0.05;
+    const float alpha = 0.1;
     minAvg = alpha*lowestValue + (1-alpha)* minAvg;
     
     m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
@@ -2521,6 +2520,11 @@ void CPlotter::setCenterFreq(quint64 f)
         m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
         QPainter painter1(&m_WaterfallPixmap);
         painter1.fillRect(exposed.boundingRect(), Qt::black);
+
+        m_MaxHoldValid = false;
+        m_MinHoldValid = false;
+        m_histIIRValid = false;
+
         updateOverlay();
     }
 
