@@ -396,7 +396,6 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 // move waterfall horizontally
                 int w, h;
                 
-                m_Running=false;
                 w = m_WaterfallPixmap.width();
                 h = m_WaterfallPixmap.height();
                 QRegion exposed;
@@ -404,7 +403,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 QPainter painter1(&m_WaterfallPixmap);
                 painter1.fillRect(exposed.boundingRect(), Qt::black);
                 m_Running=true;
-                
+              
                 setFftCenterFreq(m_FftCenter + delta_hz);
             }
             updateOverlay();
@@ -614,6 +613,7 @@ void CPlotter::clearWaterfallBuf()
     for (int i = 0; i < MAX_SCREENSIZE; i++)
         m_wfbuf[i] = 0.0;
 }
+
 
 /**
  * @brief Save waterfall to a graphics file
@@ -1972,7 +1972,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     offset = (long) size / 8;  
     for (i=offset; i<=size-offset; i++) {
-        fftCopy[i-offset] = m_fftIIR[i];      // we use the fftData that is averaged
+        fftCopy[i-offset] = m_fftData[i];      // we use the fftData that is averaged
     }
  
    
@@ -1983,14 +1983,11 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     const int bins=50;
     lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
-
-    //lowestValue = *std::min_element(fftCopy, fftCopy+size);
-   
     
     // do a moving averge
-    const float alpha = 0.1;
+    const float alpha = 0.05;
     minAvg = alpha*lowestValue + (1-alpha)* minAvg;
-  
+    
     m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
 
     // set the panadapter limits
@@ -2508,8 +2505,6 @@ void CPlotter::setCenterFreq(quint64 f)
     m_histIIRValid = false;
     m_IIRValid = false;
 
-    m_MaxHoldValid = false;
-
     // move waterfall horizontally
     int w, h;
     static float old_f=0, deltaX=0;
@@ -2526,8 +2521,7 @@ void CPlotter::setCenterFreq(quint64 f)
         m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
         QPainter painter1(&m_WaterfallPixmap);
         painter1.fillRect(exposed.boundingRect(), Qt::black);
-        
-        // TODO need to move all max / avg buffers as well :-(
+        updateOverlay();
     }
 
 }

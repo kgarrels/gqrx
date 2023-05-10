@@ -121,6 +121,7 @@ public:
     quint64 getWfTimeRes() const;
     void    setFftRate(int rate_hz);
     void    clearWaterfallBuf();
+    void    clearAllBuf();
     bool    saveWaterfall(const QString & filename) const;
 
     enum ePlotMode {
