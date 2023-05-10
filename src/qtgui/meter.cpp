@@ -65,11 +65,11 @@ CMeter::CMeter(QWidget *parent) : QFrame(parent)
     m_2DPixmap = QPixmap(0,0);
     m_OverlayPixmap = QPixmap(0,0);
     m_Size = QSize(0,0);
-    m_pixperdb = 0.0;
+    m_pixperdb = 0.0f;
     m_Siglevel = 0;
     m_dBFS = MIN_DB;
-    m_Sql = -150.0;
-    m_SqlLevel = 0.0;
+    m_Sql = -150.0f;
+    m_SqlLevel = 0.0f;
 }
 
 CMeter::~CMeter()
@@ -125,7 +125,7 @@ void CMeter::setLevel(float dbfs, float noisefloor)
     float alphaPeak  = dbfs < levelPeak ? ALPHA_PEAK_DECAY : ALPHA_PEAK_RISE;
 
     m_dBFS -= alpha * (level - dbfs);
-    m_Siglevel = (qreal)(level - MIN_DB) * m_pixperdb;
+    m_Siglevel = (level - MIN_DB) * m_pixperdb;
 
     m_Noisefloor = noisefloor;
     
@@ -138,12 +138,12 @@ void CMeter::setLevel(float dbfs, float noisefloor)
 void CMeter::setSqlLevel(float dbfs)
 {
     if (dbfs >= 0.f)
-        m_SqlLevel = 0.0;
+        m_SqlLevel = 0.0f;
     else
-        m_SqlLevel = (qreal)(dbfs - MIN_DB) * m_pixperdb;
+        m_SqlLevel = (dbfs - MIN_DB) * m_pixperdb;
 
-    if (m_SqlLevel < 0.0)
-        m_SqlLevel = 0.0;
+    if (m_SqlLevel < 0.0f)
+        m_SqlLevel = 0.0f;
 
     m_Sql = dbfs;
 }
@@ -181,7 +181,21 @@ void CMeter::draw()
     qreal x = marg + m_Siglevel;
     qreal xPeak = marg + m_SiglevelPeak;
 
-    if (m_Siglevel > 0.0)
+    // QPoint pts[3];
+    // pts[0].setX(x);
+    // pts[0].setY(ht + 2);
+    // pts[1].setX(x - 6);
+    // pts[1].setY(hline + 8);
+    // pts[2].setX(x + 6);
+    // pts[2].setY(hline + 8);
+
+    painter.setBrush(QBrush(QColor(0, 190, 0, 255)));
+    painter.setOpacity(1.0);
+
+    // Qt 4.8+ has a 1-pixel error (or they fixed line drawing)
+    // see http://stackoverflow.com/questions/16990326
+    
+    if (m_Siglevel > 0.0f)
     {
         QColor color(0, 190, 0, 255);
         QPen pen(color);
@@ -196,7 +210,7 @@ void CMeter::draw()
         painter.drawLine(QLineF(xPeak, hline+2, xPeak, hline + 6));
     }
 
-    if (m_SqlLevel > 0.0)
+    if (m_SqlLevel > 0.0f)
     {
         x = marg + m_SqlLevel;
         painter.setPen(QPen(Qt::yellow, 1, Qt::SolidLine));

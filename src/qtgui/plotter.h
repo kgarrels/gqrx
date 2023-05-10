@@ -99,7 +99,7 @@ public:
     /* Determines full bandwidth. */
     void setSampleRate(float rate)
     {
-        if (rate > 0.0f)
+        if (rate > 0.0)
         {
             m_SampleFreq = rate;
             drawOverlay();

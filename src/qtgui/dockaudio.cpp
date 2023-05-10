@@ -118,7 +118,7 @@ void DockAudio::setAudioGain(int gain)
  */
 void DockAudio::setAudioGainDb(float gain)
 {
-    ui->audioGainSlider->setValue(int(std::round(gain*10.0f)));
+    ui->audioGainSlider->setValue(int(std::round(gain*10.0)));
 }
 
 
@@ -186,7 +186,7 @@ void DockAudio::setWfColormap(const QString &cmap)
  */
 void DockAudio::on_audioGainSlider_valueChanged(int value)
 {
-    float gain = float(value) / 10.0f;
+    float gain = float(value) / 10.0;
 
     // update dB label
     ui->audioGainDbLabel->setText(QString("%1 dB").arg(gain, 5, 'f', 1));
@@ -285,7 +285,7 @@ void DockAudio::on_audioMuteButton_clicked(bool checked)
     else
     {
         int value = ui->audioGainSlider->value();
-        float gain = float(value) / 10.0f;
+        float gain = float(value) / 10.0;
         emit audioGainChanged(gain);
     }
 }
