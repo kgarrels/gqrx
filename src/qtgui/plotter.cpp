@@ -402,6 +402,10 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
                 QPainter painter1(&m_WaterfallPixmap);
                 painter1.fillRect(exposed.boundingRect(), Qt::black);
+
+                m_MaxHoldValid = false;
+                m_MinHoldValid = false;
+                m_histIIRValid = false;
               
                 setFftCenterFreq(m_FftCenter + delta_hz);
             }
@@ -1017,6 +1021,7 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     int py = qRound((qreal)pt.y() * m_DPR);
 
     int delta = m_InvertScrolling? -event->angleDelta().y() : event->angleDelta().y();
+    //int delta = m_InvertScrolling? -event->pixelDelta().y() : event->pixelDelta().y();
     int numDegrees = delta / 8;
     int numSteps = numDegrees / 15;  /** FIXME: Only used for direction **/
 
