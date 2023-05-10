@@ -2009,7 +2009,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         m_PandMindB = 10*log10f(minAvg) +140+ m_PandMindBSlider;        // slider is -160 to 0, allow for -20 correction
         m_PandMaxdB = m_PandMindB       + 50+ m_PandMaxdBSlider;        // 54dB=S9, allow to correct down
 
-        qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
+        //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
     }
 
     draw(true);
@@ -2517,7 +2517,7 @@ void CPlotter::setCenterFreq(quint64 f)
 
     w = m_WaterfallPixmap.width();
     h = m_WaterfallPixmap.height();
-    //qDebug() << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
+    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
     old_f = f;
     if (abs(deltaX) < w/2)
     {
@@ -2636,7 +2636,7 @@ void CPlotter::enableMarkers(bool enabled)
 void CPlotter::setAutoRange(bool enabled)
 {
     m_autoRangeActive = enabled;
-    qDebug() << "plotter auto range: " << m_autoRangeActive;
+    qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
 }
 
 
@@ -2655,10 +2655,11 @@ void CPlotter::setMarkers(qint64 a, qint64 b)
 
 void CPlotter::calcDivSize (qint64 low, qint64 high, int divswanted, qint64 &adjlow, qint64 &step, int& divs)
 {
+/*
     qCDebug(plotter) << "low:" << low;
     qCDebug(plotter) << "high:" << high;
     qCDebug(plotter) << "divswanted:" << divswanted;
-
+*/
     if (divswanted == 0)
         return;
 
@@ -2685,9 +2686,11 @@ void CPlotter::calcDivSize (qint64 low, qint64 high, int divswanted, qint64 &adj
     if (adjlow < low)
         adjlow += step;
 
+/*
     qCDebug(plotter) << "adjlow:" << adjlow;
     qCDebug(plotter) << "step:" << step;
     qCDebug(plotter) << "divs:" << divs;
+*/
 }
 
 void CPlotter::showToolTip(QMouseEvent* event, QString toolTipText)
