@@ -417,7 +417,7 @@ MainWindow::~MainWindow()
 
     if (m_settings)
     {
-        m_settings->setValue("configversion", 3);
+        m_settings->setValue("configversion", 4);
         m_settings->setValue("crashed", false);
 
         // hide toolbar (default=false)
