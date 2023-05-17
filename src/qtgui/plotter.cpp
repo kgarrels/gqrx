@@ -1879,6 +1879,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     // Make sure zeros don't get through to log calcs
     const float fmin = std::numeric_limits<float>::min();
 
+
     if (size != m_fftDataSize)
     {
         // Reallocate and invalidate IIRs
@@ -1941,7 +1942,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     const bool needIIR = m_IIRValid                         // Initializing
                       && a != 1.0;                          // IIR is NOP
 
-    if (needIIR) {
+    if (needIIR) {  
         for (int i = 0; i < size; ++i)
         {
             const double v = m_fftData[i];
@@ -1957,9 +1958,12 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     m_IIRValid = true;
 
 /*
-    Noise Floor
-    A few weeks previously a reasonable logic was implemented for measuring the noise floor. Purists will not be happy - they rarely are, but it works for me.
-    Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering, and we're left with a healthy 70% of the signal. Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
+    Noise Floor detection a la Simon Brown
+    A few weeks previously a reasonable logic was implemented for measuring the noise floor. 
+    Purists will not be happy - they rarely are, but it works for me.
+    Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering, 
+    and we're left with a healthy 70% of the signal. 
+    Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
  */
     
     
@@ -1970,34 +1974,39 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     #define MAX_FFT_SIZE 1048576
     float lowestValue;
     static float minAvg = 0;
+
     float fftCopy[MAX_FFT_SIZE] = {0};
     long i, offset;
 
-
     offset = (long) size / 8;  
     for (i=offset; i<=size-offset; i++) {
-        fftCopy[i-offset] = m_fftData[i];      // we use the fftData that is averaged
+        fftCopy[i-offset] = m_fftData[i];      // we use the fftIIR that is averaged
     }
  
-   
     // sort bins
     std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
 
     //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
-    const int bins=50;
+    const long bins=(m_fftDataSize -2*offset)/10;
     lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
     
     // do a moving averge
-    const float alpha = 0.1;
-    minAvg = alpha*lowestValue + (1-alpha)* minAvg;
+    const float alpha = 0.1f;
+
+    // we have a huge jump, reset moving average
+    if(abs(log(minAvg)-log(lowestValue)) > 3) {
+        minAvg = lowestValue;
+        m_fftDataSize = 0 ;     // reset everything
+    }
+    minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
     
     m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
 
     // set the panadapter limits
     if (m_autoRangeActive) {
 
-        static float minAvg_old =0;
+        static float minAvg_old = 0;
         if (minAvg != minAvg_old) {
             m_DrawOverlay = true;
             minAvg_old = minAvg;
@@ -2012,6 +2021,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
     }
 
+    m_DrawOverlay = true;
     draw(true);
 }
 
@@ -2508,6 +2518,7 @@ void CPlotter::setCenterFreq(quint64 f)
     m_MinHoldValid = false;
     m_histIIRValid = false;
     m_IIRValid = false;
+    m_fftDataSize = 0;      //+kai reset everything
 
     // move waterfall horizontally
     int w, h;
@@ -2525,10 +2536,6 @@ void CPlotter::setCenterFreq(quint64 f)
         m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
         QPainter painter1(&m_WaterfallPixmap);
         painter1.fillRect(exposed.boundingRect(), Qt::black);
-
-        m_MaxHoldValid = false;
-        m_MinHoldValid = false;
-        m_histIIRValid = false;
 
         updateOverlay();
     }
