@@ -1941,7 +1941,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     const bool needIIR = m_IIRValid                         // Initializing
                       && a != 1.0;                          // IIR is NOP
 
-    if (needIIR) {
+    if (needIIR) {  
         for (int i = 0; i < size; ++i)
         {
             const double v = m_fftData[i];
@@ -1957,9 +1957,12 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     m_IIRValid = true;
 
 /*
-    Noise Floor
-    A few weeks previously a reasonable logic was implemented for measuring the noise floor. Purists will not be happy - they rarely are, but it works for me.
-    Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering, and we're left with a healthy 70% of the signal. Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
+    Noise Floor detection a la Simon Brown
+    A few weeks previously a reasonable logic was implemented for measuring the noise floor. 
+    Purists will not be happy - they rarely are, but it works for me.
+    Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering, 
+    and we're left with a healthy 70% of the signal. 
+    Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
  */
     
     
@@ -1985,7 +1988,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
-    const int bins=50;
+    const int bins=(m_fftDataSize -2*offset)/10;
     lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
     
     // do a moving averge
@@ -2525,10 +2528,6 @@ void CPlotter::setCenterFreq(quint64 f)
         m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
         QPainter painter1(&m_WaterfallPixmap);
         painter1.fillRect(exposed.boundingRect(), Qt::black);
-
-        m_MaxHoldValid = false;
-        m_MinHoldValid = false;
-        m_histIIRValid = false;
 
         updateOverlay();
     }
