@@ -1972,40 +1972,39 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     // cut away the first/last partsof the waterfall
     #define MAX_FFT_SIZE 1048576
     float lowestValue;
-    static float minAvg = 0;
+    static float minAvg = 1e-10f;
     float fftCopy[MAX_FFT_SIZE] = {0};
     long i, offset;
 
-
     offset = (long) size / 8;  
     for (i=offset; i<=size-offset; i++) {
-        fftCopy[i-offset] = m_fftData[i];      // we use the fftData that is averaged
+        fftCopy[i-offset] = m_fftIIR[i];      // we use the fftIIR that is averaged
     }
  
-   
     // sort bins
     std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
 
     //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
-    const int bins=(m_fftDataSize -2*offset)/10;
+    const long bins=(m_fftDataSize -2*offset)/10;
     lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
     
-    // do a moving averge
-    const float alpha = 0.1;
-    minAvg = alpha*lowestValue + (1-alpha)* minAvg;
+    // do a moving averge, currently not :-)
+    const float alpha = 1.0f;
+    minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
     
     m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
 
     // set the panadapter limits
     if (m_autoRangeActive) {
 
-        static float minAvg_old =0;
+/*
+        static float minAvg_old = 0;
         if (minAvg != minAvg_old) {
             m_DrawOverlay = true;
             minAvg_old = minAvg;
         }
-
+*/
         // set values to new bounds
         m_WfMindB = 10*log10f(minAvg)   +140+ m_WfMindBSlider;          // slider is -160 to 0, allow for -20 correction
         m_WfMaxdB = m_WfMindB           + 50+ m_WfMaxdBSlider;          // 54dB=S9, allow to correct down
@@ -2015,6 +2014,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
     }
 
+    m_DrawOverlay = true;
     draw(true);
 }
 
