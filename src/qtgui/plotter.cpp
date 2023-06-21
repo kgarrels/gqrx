@@ -1506,6 +1506,15 @@ void CPlotter::draw(bool newData)
         QPainter painter2(&m_2DPixmap);
         painter2.translate(QPointF(0.5, 0.5));
 
+
+        // draw the pandapter
+        QBrush fillBrush = QBrush(m_FftFillCol);
+
+        // Fill between max and avg
+        QColor maxFillCol = m_FftFillCol;
+        maxFillCol.setAlpha(80);
+        QBrush maxFillBrush = QBrush(maxFillCol);
+
         // Diagonal fill for area between markers. Scale the pattern to DPR.
         QColor abFillColor = QColor::fromRgba(PLOTTER_MARKER_COLOR);
         abFillColor.setAlpha(128);
