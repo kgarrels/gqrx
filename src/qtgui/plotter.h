@@ -18,6 +18,7 @@
 #define PEAK_CLICK_MAX_V_DISTANCE 20 //Maximum vertical distance of clicked point from peak
 #define PEAK_WINDOW_HALF_WIDTH    10
 #define PEAK_UPDATE_PERIOD       100 // msec
+#define PLOTTER_UPDATE_LIMIT_MS   16 // 16ms = 62.5 Hz
 
 #define MARKER_OFF std::numeric_limits<qint64>::min()
 
@@ -55,7 +56,7 @@ public:
     void setFilterOffset(qint64 freq_hz)
     {
         m_DemodCenterFreq = m_CenterFreq + freq_hz;
-        drawOverlay();
+        updateOverlay();
     }
     qint64 getFilterOffset() const
     {
@@ -71,7 +72,7 @@ public:
     {
         m_DemodLowCutFreq = LowCut;
         m_DemodHiCutFreq = HiCut;
-        drawOverlay();
+        updateOverlay();
     }
 
     void getHiLowCutFrequencies(int *LowCut, int *HiCut) const
@@ -89,7 +90,7 @@ public:
             m_Span = (qint32)s;
             setFftCenterFreq(m_FftCenter);
         }
-        drawOverlay();
+        updateOverlay();
     }
 
     void setVdivDelta(int delta) { m_VdivDelta = delta; }
@@ -102,7 +103,7 @@ public:
         if (rate > 0.0)
         {
             m_SampleFreq = rate;
-            drawOverlay();
+            updateOverlay();
         }
     }
 
@@ -246,6 +247,7 @@ private:
     double      m_histMaxIIR;
     std::vector<float> m_fftIIR;
     std::vector<float> m_fftData;
+    std::vector<float> m_X;                // scratch array of matching size for local calculation
     double      m_wfbuf[MAX_SCREENSIZE]{}; // used for accumulating waterfall data at high time spans
     float       m_fftMaxHoldBuf[MAX_SCREENSIZE]{};
     float       m_fftMinHoldBuf[MAX_SCREENSIZE]{};
@@ -344,6 +346,7 @@ private:
 
     // Waterfall averaging
     quint64     tlast_wf_ms;        // last time waterfall has been updated
+    quint64     tlast_plot_drawn_ms;// last time the plot was drawn
     quint64     tlast_wf_drawn_ms;  // last time waterfall was drawn
     quint64     wf_valid_since_ms;  // last time before action that invalidates time line
     double      msec_per_wfline{};  // milliseconds between waterfall updates

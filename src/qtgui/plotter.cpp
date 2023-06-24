@@ -39,6 +39,7 @@
 #include "bandplan.h"
 #include "bookmarks.h"
 #include "dxc_spots.h"
+#include <volk/volk.h>
 
 Q_LOGGING_CATEGORY(plotter, "plotter")
 
@@ -164,6 +165,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
 
     // always update waterfall
     tlast_wf_ms = 0;
+    tlast_plot_drawn_ms = 0;
     tlast_wf_drawn_ms = 0;
     wf_valid_since_ms = 0;
     msec_per_wfline = 0;
@@ -347,9 +349,9 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
         {
             setCursor(QCursor(Qt::ClosedHandCursor));
             // move Y scale up/down
-            qreal delta_px = m_Yzero - py;
-            qreal delta_db = delta_px * fabs(m_PandMindB - m_PandMaxdB) /
-            (qreal)h;
+            float delta_px = m_Yzero - py;
+            float delta_db = delta_px * fabsf(m_PandMindB - m_PandMaxdB) /
+                             (float)h;
             m_PandMindB -= delta_db;
             m_PandMaxdB -= delta_db;
             if (out_of_range(m_PandMindB, m_PandMaxdB))
@@ -630,12 +632,13 @@ bool CPlotter::saveWaterfall(const QString & filename) const
     QFontMetricsF   font_metrics(font);
     float           pixperdiv;
     int             x, y, w, h;
-    int             hxa, wya = 85;
+    int             hxa, wya;
     int             i;
 
     w = pixmap.width();
     h = pixmap.height();
     hxa = font_metrics.height() + 5;    // height of X axis
+    wya = font_metrics.boundingRect("2008.08.08").width() + 5; // width of Y axis
     y = h - hxa;
     pixperdiv = (float) w / (float) m_HorDivs;
 
@@ -916,7 +919,7 @@ void CPlotter::zoomStepX(float step, int x)
     }
 
     // calculate new range shown on FFT
-    double new_range = qBound(10.0, m_Span * (double)step, m_SampleFreq * 10.0f);
+    double new_range = qBound(10.0, m_Span * (double)step, (double)m_SampleFreq * 10.0);
 
     // Frequency where event occurred is kept fixed under mouse
     double ratio = (double)x / (qreal)m_Size.width() / m_DPR;
@@ -972,7 +975,7 @@ void CPlotter::zoomStepX(float step, int x)
 // Zoom on X axis (absolute level)
 void CPlotter::zoomOnXAxis(float level)
 {
-    double current_level = (double)m_SampleFreq / (double)m_Span;
+    float current_level = (float)m_SampleFreq / (float)m_Span;
     zoomStepX(current_level / level, xFromFreq(m_DemodCenterFreq));
     updateOverlay();
 }
@@ -1025,9 +1028,9 @@ void CPlotter::wheelEvent(QWheelEvent * event)
         // Vertical zoom. Wheel down: zoom out, wheel up: zoom in
         // During zoom we try to keep the point (dB or kHz) under the cursor fixed
         float zoom_fac = delta < 0 ? 1.1 : 0.9;
-        float ratio = (qreal)py / (qreal)(h);
+        float ratio = (float) py / (float) h;
         float db_range = m_PandMaxdB - m_PandMindB;
-        auto y_range = (qreal)(h);
+        float y_range = (float) h;
         float db_per_pix = db_range / y_range;
         float fixed_db = m_PandMaxdB - py * db_per_pix;
 
@@ -1145,8 +1148,7 @@ void CPlotter::resizeEvent(QResizeEvent* )
         m_CursorCaptureDelta = qRound((qreal)CUR_CUT_DELTA * m_DPR);
     }
 
-    drawOverlay();
-    draw(false);
+    updateOverlay();
     emit newSize();
 }
 
@@ -1255,11 +1257,15 @@ void CPlotter::draw(bool newData)
 
     const double frameTime = 1.0 / (double)fft_rate;
 
-    // Redraw the plot if it is visible.
-    const bool doPlotter = !m_2DPixmap.isNull();
+    // Do plotter work only if visible.
+    const bool plotterVisible = (!m_2DPixmap.isNull());
+
+    // Limit plotter drawing rate.
+    const bool drawPlotter = (plotterVisible
+        && tnow_ms >= tlast_plot_drawn_ms + PLOTTER_UPDATE_LIMIT_MS);
 
     // Do not waste time with histogram calculations unless in this mode.
-    const bool doHistogram = m_PlotMode == PLOT_MODE_HISTOGRAM;
+    const bool doHistogram = (plotterVisible && m_PlotMode == PLOT_MODE_HISTOGRAM);
 
     // Use fewer histogram bins when statistics are sparse
     const int histBinsDisplayed = std::min(
@@ -1530,45 +1536,48 @@ void CPlotter::draw(bool newData)
         }
     }
 
-    // get/draw the 2D spectrum
-    if (doPlotter)
+    // Update histogram IIR if it will be used.
+    if (doHistogram)
     {
+        const double gamma = 1.0;
+        const double a = powf(1.0 - m_alpha, gamma);
+        // fast attack ... leaving alternative here in case it's useful
+        const double aAttack = 1.0;
+        // const double aAttack = 1.0 - a * frameTime;
+        const double aDecay = 1.0 - pow(a, 4.0 * frameTime);
+
+        histMax = 0.0;
+        for (i = xmin; i < xmax; ++i) {
+            for (j = 0; j < histBinsDisplayed; ++j)
+            {
+                double histV;
+                const double histPrev = m_histIIR[i][j];
+                const double histNew = m_histogram[i][j];
+                // Fast response when invalid
+                if (!m_histIIRValid)
+                    histV = histNew;
+                else
+                    histV = histPrev + aAttack * histNew - aDecay * histPrev;
+                m_histIIR[i][j] = std::max(histV, 0.0);
+                histMax = std::max(histMax, histV);
+            }
+        }
+        m_histIIRValid = true;
+
+        // 5 Hz time constant for colormap adjustment
+        const double histMaxAlpha = std::min(5.0 * frameTime, 1.0);
+        m_histMaxIIR = m_histMaxIIR * (1.0 - histMaxAlpha) + histMax * histMaxAlpha;
+    }
+
+    // get/draw the 2D spectrum
+    if (drawPlotter)
+    {
+        tlast_plot_drawn_ms = tnow_ms;
+
         m_2DPixmap.fill(PLOTTER_BGD_COLOR);
         QPainter painter2(&m_2DPixmap);
+        painter2.translate(QPointF(0.5, 0.5));
 
-        // Update histogram IIR
-        const double frameTime = 1.0 / (double)fft_rate;
-        if (m_PlotMode == PLOT_MODE_HISTOGRAM)
-        {
-            const double gamma = 1.0;
-            const double a = powf(1.0 - m_alpha, gamma);
-            // fast attack ... leaving alternative here in case it's useful
-            const double aAttack = 1.0;
-            // const double aAttack = 1.0 - a * frameTime;
-            const double aDecay = 1.0 - pow(a, 4.0 * frameTime);
-
-            histMax = 0.0;
-            for (i = xmin; i < xmax; ++i) {
-                for (j = 0; j < histBinsDisplayed; ++j)
-                {
-                    double histV;
-                    const double histPrev = m_histIIR[i][j];
-                    const double histNew = m_histogram[i][j];
-                    // Fast response when invalid
-                    if (!m_histIIRValid)
-                        histV = histNew;
-                    else
-                        histV = histPrev + aAttack * histNew - aDecay * histPrev;
-                    m_histIIR[i][j] = std::max(histV, 0.0);
-                    histMax = std::max(histMax, histV);
-                }
-            }
-            m_histIIRValid = true;
-
-            // 5 Hz time constant for colormap adjustment
-            const double histMaxAlpha = std::min(5.0 * frameTime, 1.0);
-            m_histMaxIIR = m_histMaxIIR * (1.0 - histMaxAlpha) + histMax * histMaxAlpha;
-        }
 
         // draw the pandapter
         QBrush fillBrush = QBrush(m_FftFillCol);
@@ -1871,7 +1880,7 @@ void CPlotter::setRunningState(bool running)
 void CPlotter::setNewFftData(const float *fftData, int size)
 {
     // Make sure zeros don't get through to log calcs
-    const float fmin = std::numeric_limits<float>::min();
+    const float fmin = 1e-20;
 
 
     if (size != m_fftDataSize)
@@ -1879,6 +1888,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         // Reallocate and invalidate IIRs
         m_fftData.resize(size);
         m_fftIIR.resize(size);
+        m_X.resize(size);
 
         m_MaxHoldValid = false;
         m_MinHoldValid = false;
@@ -1936,13 +1946,10 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     const bool needIIR = m_IIRValid                         // Initializing
                       && a != 1.0;                          // IIR is NOP
 
-    if (needIIR) {  
-        for (int i = 0; i < size; ++i)
-        {
-            const double v = m_fftData[i];
-            const double iir = m_fftIIR[i];
-            m_fftIIR[i] = iir * powf(v / iir, a);
-        }
+    if (needIIR) {
+        volk_32f_x2_divide_32f(m_X.data(), m_fftData.data(), m_fftIIR.data(), size);
+        volk_32f_s32f_power_32f(m_X.data(), m_X.data(), a, size);
+        volk_32f_x2_multiply_32f(m_fftIIR.data(), m_fftIIR.data(), m_X.data(), size);
     }
     else
     {
@@ -2079,6 +2086,7 @@ void CPlotter::drawOverlay()
 
     m_OverlayPixmap.fill(Qt::transparent);
     QPainter painter(&m_OverlayPixmap);
+    painter.translate(QPointF(-0.5, -0.5));
     // painter.setRenderHint(QPainter::Antialiasing);
     painter.setFont(m_Font);
 
@@ -2258,8 +2266,8 @@ void CPlotter::drawOverlay()
                 qMin(w / (metrics.boundingRect(label).width() + metrics.boundingRect("O").width()),
                      (qreal)HORZ_DIVS_MAX),
                 m_StartFreqAdj, m_FreqPerDiv, m_HorDivs);
-    pixperdiv = w * (float) m_FreqPerDiv / (float) m_Span;
-    adjoffset = pixperdiv * float (m_StartFreqAdj - StartFreq) / (float) m_FreqPerDiv;
+    pixperdiv = w * (qreal) m_FreqPerDiv / (qreal) m_Span;
+    adjoffset = pixperdiv * (qreal) (m_StartFreqAdj - StartFreq) / (qreal) m_FreqPerDiv;
 
     // Hairline for grid lines
     painter.setPen(QPen(QColor(PLOTTER_GRID_COLOR), 0.0, Qt::DotLine));
@@ -2301,12 +2309,12 @@ void CPlotter::drawOverlay()
     dbstepsize = (float) dbDivSize;
     mindbadj = mindBAdj64;
 
-    pixperdiv = h * (float)dbstepsize / (m_PandMaxdB - m_PandMindB);
-    adjoffset = h * (mindbadj - m_PandMindB) / (m_PandMaxdB - m_PandMindB);
-/*
-    qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
-                     << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
-                     << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
+    pixperdiv = h * (qreal) dbstepsize / (qreal) (m_PandMaxdB - m_PandMindB);
+    adjoffset = h * (mindbadj - (qreal) m_PandMindB) / (qreal) (m_PandMaxdB - m_PandMindB);
+
+    // qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
+    //                  << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
+    //                  << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
 */
     
     // Hairline for grid lines
@@ -2540,10 +2548,7 @@ void CPlotter::setCenterFreq(quint64 f)
 void CPlotter::updateOverlay()
 {
     m_DrawOverlay = true;
-    if (!m_Running)
-    {
-        draw(false);
-    }
+    draw(false);
 }
 
 /** Reset horizontal zoom to 100% and centered around 0. */

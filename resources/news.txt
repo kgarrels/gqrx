@@ -14,7 +14,7 @@
   IMPROVED: Peak detection algorithm.
   IMPROVED: Peak detection uses peak hold data when available.
   IMPROVED: Maximum FFT size increased to 4M.
-  IMPROVED: Maximum frame rate increased to 250.
+  IMPROVED: Maximum frame rate increased to 500.
   IMPROVED: Averaging slider is consistent across frame rates.
   IMPROVED: Visibility of text in axes.
   IMPROVED: Full support for high-DPI screens in plot & waterfall.
@@ -27,6 +27,7 @@
      FIXED: Time on waterfall is calculated correctly.
      FIXED: Frequency is correctly rounded in I/Q filenames.
      FIXED: Crash in AFSK1200 decoder.
+     FIXED: Y axis in saved waterfall is too narrow.
 
 
       2.16: Released April 28, 2023
