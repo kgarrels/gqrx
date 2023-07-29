@@ -582,7 +582,7 @@ int CPlotter::getNearestPeak(QPoint pt)
         if (abs(y - py) > PEAK_CLICK_MAX_V_DISTANCE)
             continue;
 
-        qreal d = powf(y - py, 2) + powf(x - px, 2);
+        qreal d = pow(y - py, 2) + pow(x - px, 2);
         if (d < dist)
         {
             dist = d;
@@ -776,7 +776,7 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
                         // Find the data value of the click y()
 
                         const qreal plotHeight = m_2DPixmap.height();
-                        const float panddBGainFactor = plotHeight / fabs(m_PandMaxdB - m_PandMindB);
+                        const float panddBGainFactor = (float)plotHeight / fabsf(m_PandMaxdB - m_PandMindB);
                         const float vlog = m_PandMaxdB - py / panddBGainFactor;
                         const float v = powf(10.0f, vlog / 10.0f);
 
@@ -1192,7 +1192,7 @@ void CPlotter::paintEvent(QPaintEvent *)
 void CPlotter::draw(bool newData)
 {
     qint32        i, j;
-    double        histMax;
+    float         histMax;
     QFontMetricsF metrics(m_Font);
 
     // No fft data yet? Draw overlay if needed and return.
@@ -1228,12 +1228,12 @@ void CPlotter::draw(bool newData)
     const qreal shadowOffset = metrics.height() / 20.0;
 
     // Scale plotter for graph height
-    const double panddBGainFactor = plotHeight / fabs(m_PandMaxdB - m_PandMindB);
+    const float panddBGainFactor = (float)plotHeight / fabsf(m_PandMaxdB - m_PandMindB);
     // Scale waterfall and histogram for colormap
-    const double wfdBGainFactor = 256.0 / fabs(m_WfMaxdB - m_WfMindB);
+    const float wfdBGainFactor = 256.0f / fabsf(m_WfMaxdB - m_WfMindB);
 
     const double fftSize = m_fftDataSize;
-    const double sampleFreq = m_SampleFreq;
+    const double sampleFreq = (double)m_SampleFreq;
     const double fftCenter = (double)m_FftCenter;
     const double span = (double)m_Span;
     const double startFreq = fftCenter - span / 2.0;
@@ -1255,7 +1255,7 @@ void CPlotter::draw(bool newData)
     const qint32 xmin = qRound((double)(minbin - startBin) * xScale);
     const qint32 xmax = qRound((double)(maxbin - startBin) * xScale);
 
-    const double frameTime = 1.0 / (double)fft_rate;
+    const float frameTime = 1.0f / (float)fft_rate;
 
     // Do plotter work only if visible.
     const bool plotterVisible = (!m_2DPixmap.isNull());
@@ -1271,14 +1271,14 @@ void CPlotter::draw(bool newData)
     const int histBinsDisplayed = std::min(
         MAX_HISTOGRAM_SIZE,
         std::max(32,
-            qRound(32 * (double)numBins / 2048.0))
+            qRound(32 * (float)numBins / 2048.0f))
         );
 
     // Amount to add to histogram for each hit
-    const double histWeight = 10e6 * frameTime / (double)histBinsDisplayed / fftSize;
+    const float histWeight = 10e6f * frameTime / (float)histBinsDisplayed / (float)fftSize;
 
     // Bins / dB
-    const double histdBGainFactor = (double)histBinsDisplayed / fabs(m_PandMaxdB - m_PandMindB);
+    const float histdBGainFactor = (float)histBinsDisplayed / fabsf(m_PandMaxdB - m_PandMindB);
 
     // Show max and average highlights on histogram if it would not be too
     // cluttered
@@ -1310,8 +1310,8 @@ void CPlotter::draw(bool newData)
 
     float vmax;
     float vmaxIIR;
-    double vsum;
-    double vsumIIR;
+    float vsum;
+    float vsumIIR;
 
     if ((qreal)numBins >= w)
     {
@@ -1321,7 +1321,7 @@ void CPlotter::draw(bool newData)
 
         for(qint32 i = minbin; i <= maxbin; i++)
         {
-            const double xD = (double)(i - startBin) * xScale;
+            const float xD = (float)(i - startBin) * (float)xScale;
             const int x = qRound(xD);
 
             // Plot uses IIR output. Histogram and waterfall use raw fft data.
@@ -1342,17 +1342,17 @@ void CPlotter::draw(bool newData)
             // closest bins using linear interpolation.
             if (doHistogram)
             {
-                const double binD = histdBGainFactor * (m_PandMaxdB - 10.0f * log10f(v));
-                if (binD > 0.0 && binD < (double)histBinsDisplayed) {
-                    const int binLeft = std::max((int)(xD - 0.5), 0);
+                const float binD = histdBGainFactor * (m_PandMaxdB - 10.0f * log10f(v));
+                if (binD > 0.0f && binD < (float)histBinsDisplayed) {
+                    const int binLeft = std::max((int)(xD - 0.5f), 0);
                     const int binRight = std::min(binLeft + 1, numBins - 1);
-                    const int binLow = std::min(std::max((int)(binD - 0.5), 0), histBinsDisplayed - 1);
+                    const int binLow = std::min(std::max((int)(binD - 0.5f), 0), histBinsDisplayed - 1);
                     const int binHigh = std::min(binLow + 1, histBinsDisplayed - 1);
-                    const double wgtH = (xD - (double)binLeft) / 2.0;
-                    const double wgtV = (binD - (double)binLow) / 2.0;
-                    m_histogram[binLeft][binLow] += (1.0 - wgtV) * (1.0 - wgtH) * histWeight;
-                    m_histogram[binLeft][binHigh] += wgtV * (1.0 - wgtH) * histWeight;
-                    m_histogram[binRight][binLow] += (1.0 - wgtV) * wgtH * histWeight;
+                    const float wgtH = (xD - (float)binLeft) / 2.0f;
+                    const float wgtV = (binD - (float)binLow) / 2.0f;
+                    m_histogram[binLeft][binLow] += (1.0f - wgtV) * (1.0f - wgtH) * histWeight;
+                    m_histogram[binLeft][binHigh] += wgtV * (1.0f - wgtH) * histWeight;
+                    m_histogram[binRight][binLow] += (1.0f - wgtV) * wgtH * histWeight;
                     m_histogram[binRight][binHigh] += wgtV * wgtH * histWeight;
                 }
             }
@@ -1366,9 +1366,9 @@ void CPlotter::draw(bool newData)
                 vmaxIIR = std::max(vmaxIIR, fmin);
                 m_fftMaxBuf[xprev] = vmaxIIR;
 
-                const float vavg = std::max((float)(vsum / (double)count), fmin);
+                const float vavg = std::max((float)(vsum / (float)count), fmin);
                 m_wfAvgBuf[xprev] = vavg;
-                const float vavgIIR = std::max((float)(vsumIIR / (double)count), fmin);
+                const float vavgIIR = std::max((float)(vsumIIR / (float)count), fmin);
                 m_fftAvgBuf[xprev] = vavgIIR;
 
                 // New peak hold value if greater, or reset
@@ -1409,7 +1409,7 @@ void CPlotter::draw(bool newData)
     {
         for (i = xmin; i < xmax; i++)
         {
-            j = qRound((double)i / xScale + startBinD);
+            j = qRound((float)i / (float)xScale + (float)startBinD);
 
             const float v = m_fftData[j];
             const float viir = m_fftIIR[j];
@@ -1432,12 +1432,12 @@ void CPlotter::draw(bool newData)
             // closest bins using linear interpolation.
             if (doHistogram)
             {
-                const double binD = histdBGainFactor * (m_PandMaxdB - 10.0f * log10f(v));
-                if (binD > 0.0 && binD < (double)histBinsDisplayed) {
-                    const int binLow = std::min(std::max((int)(binD - 0.5), 0), histBinsDisplayed - 1);
+                const float binD = histdBGainFactor * (m_PandMaxdB - 10.0f * log10f(v));
+                if (binD > 0.0f && binD < (float)histBinsDisplayed) {
+                    const int binLow = std::min(std::max((int)(binD - 0.5f), 0), histBinsDisplayed - 1);
                     const int binHigh = std::min(binLow + 1, histBinsDisplayed - 1);
-                    const double wgt = (binD - (double)binLow) / 2.0;
-                    m_histogram[i][binLow] += (1.0 - wgt) * histWeight;
+                    const float wgt = (binD - (float)binLow) / 2.0f;
+                    m_histogram[i][binLow] += (1.0f - wgt) * histWeight;
                     m_histogram[i][binHigh] += wgt * histWeight;
                 }
             }
@@ -1483,7 +1483,7 @@ void CPlotter::draw(bool newData)
             else
             {
                 for (i = 0; i < npts; ++i)
-                    m_wfbuf[i] = std::max(m_wfbuf[i], (double)dataSource[i]);
+                    m_wfbuf[i] = std::max(m_wfbuf[i], dataSource[i]);
             }
         }
 
@@ -1515,7 +1515,7 @@ void CPlotter::draw(bool newData)
                 _lineFactor = 1.0f / (float)wf_avg_count;
             else
                 _lineFactor = 1.0f;
-            const double lineFactor = _lineFactor;
+            const float lineFactor = _lineFactor;
             wf_avg_count = 0;
 
             // Use buffer (max or average) if in manual mode, else current data
@@ -1539,34 +1539,34 @@ void CPlotter::draw(bool newData)
     // Update histogram IIR if it will be used.
     if (doHistogram)
     {
-        const double gamma = 1.0;
-        const double a = powf(1.0 - m_alpha, gamma);
+        const float gamma = 1.0f;
+        const float a = powf(1.0f - m_alpha, gamma);
         // fast attack ... leaving alternative here in case it's useful
-        const double aAttack = 1.0;
-        // const double aAttack = 1.0 - a * frameTime;
-        const double aDecay = 1.0 - pow(a, 4.0 * frameTime);
+        const float aAttack = 1.0f;
+        // const float aAttack = 1.0 - a * frameTime;
+        const float aDecay = 1.0f - powf(a, 4.0f * frameTime);
 
         histMax = 0.0;
         for (i = xmin; i < xmax; ++i) {
             for (j = 0; j < histBinsDisplayed; ++j)
             {
-                double histV;
-                const double histPrev = m_histIIR[i][j];
-                const double histNew = m_histogram[i][j];
+                float histV;
+                const float histPrev = m_histIIR[i][j];
+                const float histNew = m_histogram[i][j];
                 // Fast response when invalid
                 if (!m_histIIRValid)
                     histV = histNew;
                 else
                     histV = histPrev + aAttack * histNew - aDecay * histPrev;
-                m_histIIR[i][j] = std::max(histV, 0.0);
+                m_histIIR[i][j] = std::max(histV, 0.0f);
                 histMax = std::max(histMax, histV);
             }
         }
         m_histIIRValid = true;
 
         // 5 Hz time constant for colormap adjustment
-        const double histMaxAlpha = std::min(5.0 * frameTime, 1.0);
-        m_histMaxIIR = m_histMaxIIR * (1.0 - histMaxAlpha) + histMax * histMaxAlpha;
+        const float histMaxAlpha = std::min(5.0f * frameTime, 1.0f);
+        m_histMaxIIR = m_histMaxIIR * (1.0f - histMaxAlpha) + histMax * histMaxAlpha;
     }
 
     // get/draw the 2D spectrum
@@ -1623,40 +1623,40 @@ void CPlotter::draw(bool newData)
         const int minMarker = std::min(ax, bx);
         const int maxMarker = std::max(ax, bx);
 
-        const double binSizeY = plotHeight / (double)histBinsDisplayed;
+        const float binSizeY = (float)plotHeight / (float)histBinsDisplayed;
         for (i = 0; i < npts; i++)
         {
             const int ix = i + xmin;
             const qreal ixPlot = (qreal)ix;
-            const qreal yMaxD = std::max(std::min(
+            const qreal yMaxD = (qreal)std::max(std::min(
                 panddBGainFactor * (m_PandMaxdB - 10.0f * log10f(m_fftMaxBuf[ix])),
-                plotHeight), 0.0);
-            const qreal yAvgD = std::max(std::min(
+                (float)plotHeight), 0.0f);
+            const qreal yAvgD = (qreal)std::max(std::min(
                 panddBGainFactor * (m_PandMaxdB - 10.0f * log10f(m_fftAvgBuf[ix])),
-                plotHeight), 0.0);
+                (float)plotHeight), 0.0f);
 
             if (m_PlotMode == PLOT_MODE_HISTOGRAM)
             {
-                const double *histData = m_histIIR[(ix)];
+                const float *histData = m_histIIR[(ix)];
                 qreal topBin = plotHeight;
                 for (j = 0; j < histBinsDisplayed; ++j)
                 {
-                    qint32 cidx = qRound(histData[j] / m_histMaxIIR * 255.0 * .7);
+                    qint32 cidx = qRound(histData[j] / m_histMaxIIR * 255.0f * .7f);
                     if (cidx > 0) {
                         cidx += 65;  // 255 * 0.7 = 178, + 65 = 243
                         // Histogram IIR can cause out-of-range cidx
                         cidx = std::max(std::min(cidx, 255), 0);
                         QColor c = m_ColorTbl[cidx];
                         // Paint rectangle
-                        const qreal binY = binSizeY * j;
+                        const qreal binY = (qreal)binSizeY * j;
                         topBin = std::min(topBin, binY);
-                        const qreal binH = binSizeY * (j + 1) - binY;
+                        const qreal binH = (qreal)binSizeY * (j + 1) - binY;
                         painter2.fillRect(QRectF(ixPlot, binY, 1.0, binH), c);
                     }
                 }
                 // Highlight the top bin, if it isn't too crowded
                 if (topBin != plotHeight && showHistHighlights) {
-                    painter2.fillRect(QRectF(ixPlot, topBin, 1.0, binSizeY), maxLineColor);
+                    painter2.fillRect(QRectF(ixPlot, topBin, 1.0, (qreal)binSizeY), maxLineColor);
                 }
             }
 
@@ -1700,9 +1700,9 @@ void CPlotter::draw(bool newData)
             {
                 const int ix = i + xmin;
                 const qreal ixPlot = (qreal)ix;
-                const qreal yMaxHoldD = std::max(std::min(
+                const qreal yMaxHoldD = (qreal)std::max(std::min(
                     panddBGainFactor * (m_PandMaxdB - 10.0f * log10f(m_fftMaxHoldBuf[ix])),
-                    plotHeight), 0.0);
+                    (float)plotHeight), 0.0f);
                 maxLineBuf[i] = QPointF(ixPlot, yMaxHoldD);
             }
             // NOT scaling to DPR due to performance
@@ -1720,9 +1720,9 @@ void CPlotter::draw(bool newData)
             {
                 const int ix = i + xmin;
                 const qreal ixPlot = (qreal)ix;
-                const qreal yMinHoldD = std::max(std::min(
+                const qreal yMinHoldD = (qreal)std::max(std::min(
                     panddBGainFactor * (m_PandMaxdB - 10.0f * log10f(m_fftMinHoldBuf[ix])),
-                    plotHeight), 0.0);
+                    (float)plotHeight), 0.0f);
                 maxLineBuf[i] = QPointF(ixPlot, yMinHoldD);
             }
             // NOT scaling to DPR due to performance
@@ -1770,9 +1770,9 @@ void CPlotter::draw(bool newData)
                     m_peakSmoothBuf[ix] = avgV;
                     if (vi == maxV && (vi > 2.0f * avgV) && (vi > 4.0f * minV))
                     {
-                        const qreal y = std::max(std::min(
+                        const qreal y = (qreal)std::max(std::min(
                             panddBGainFactor * (m_PandMaxdB - 10.0f * log10f(vi)),
-                            plotHeight - 0.0), 0.0);
+                            (float)plotHeight - 0.0f), 0.0f);
                         m_Peaks[ix] = y;
                     }
                 }
@@ -1794,9 +1794,9 @@ void CPlotter::draw(bool newData)
                     const float avgV = sumV / (float)(pw2 * 2);
                     if (vi == maxV && (vi > 2.0f * avgV) && (vi > 4.0f * minV))
                     {
-                        const qreal y = std::max(std::min(
+                        const qreal y = (qreal)std::max(std::min(
                             panddBGainFactor * (m_PandMaxdB - 10.0f * log10f(vi)),
-                            plotHeight - 0.0), 0.0);
+                            (float)plotHeight - 0.0f), 0.0f);
 
                         // Show the wider peak only if there is no very close narrow peak
                         bool found = false;
@@ -1936,15 +1936,15 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     // Time constant, taking update rate into account. Attack and decay rate of
     // change in dB/sec should not visibly change with FFT rate.
-    const double _a = pow((double)fft_rate, -1.75 * (1.0 - m_alpha));
+    const float _a = powf((float)fft_rate, -1.75f * (1.0f - m_alpha));
 
     // Make the slider vs alpha nonlinear
-    const double gamma = 0.7;
-    const double a = pow(_a, gamma);
+    const float gamma = 0.7;
+    const float a = powf(_a, gamma);
 
     // Shortcut expensive pow() if not needed
     const bool needIIR = m_IIRValid                         // Initializing
-                      && a != 1.0;                          // IIR is NOP
+                      && a != 1.0f;                         // IIR is NOP
 
     if (needIIR) {
         volk_32f_x2_divide_32f(m_X.data(), m_fftData.data(), m_fftIIR.data(), size);
@@ -2306,7 +2306,7 @@ void CPlotter::drawOverlay()
                 qMax(h / (m_VdivDelta * m_DPR), (qreal)VERT_DIVS_MIN),
                 mindBAdj64, dbDivSize, m_VerDivs);
 
-    dbstepsize = (float) dbDivSize;
+    dbstepsize = (qreal) dbDivSize;
     mindbadj = mindBAdj64;
 
     pixperdiv = h * (qreal) dbstepsize / (qreal) (m_PandMaxdB - m_PandMindB);
