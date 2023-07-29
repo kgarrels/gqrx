@@ -2315,7 +2315,6 @@ void CPlotter::drawOverlay()
     // qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
     //                  << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
     //                  << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
-*/
     
     // Hairline for grid lines
     painter.setPen(QPen(QColor(PLOTTER_GRID_COLOR), 0.0, Qt::DotLine));

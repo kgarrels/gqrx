@@ -224,7 +224,9 @@ void CMeter::draw()
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
     painter.setOpacity(1.0);
     
-    m_Str.setNum(m_dBFSPeak - m_Noisefloor - 37, 'f', 1);        // some correction of noisefloor level
+    // calculate SNR by using signalPeak and noisefloor
+    float nf = 10*log10(m_Noisefloor);
+    m_Str.setNum(m_dBFSPeak - nf -40, 'f', 1);        // some correction of noisefloor level
     painter.drawText(marg, h - 2, m_Str + " dB SNR" );
 
     update();
