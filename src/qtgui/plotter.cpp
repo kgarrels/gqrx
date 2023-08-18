@@ -2012,7 +2012,6 @@ void CPlotter::setNewFftData(const float *fftData, int size)
             m_DrawOverlay = true;
             minAvg_old = minAvg;
         }
-
         // set values to new bounds
         m_WfMindB = 10*log10f(minAvg)   +140+ m_WfMindBSlider;          // slider is -160 to 0, allow for -20 correction
         m_WfMaxdB = m_WfMindB           + 50+ m_WfMaxdBSlider;          // 54dB=S9, allow to correct down
@@ -2641,6 +2640,12 @@ void CPlotter::enableMarkers(bool enabled)
 void CPlotter::setAutoRange(bool enabled)
 {
     m_autoRangeActive = enabled;
+    qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
+}
+/** Set auto range on or off. */
+void CPlotter::toggleAutoRange()
+{
+    m_autoRangeActive = !m_autoRangeActive;
     qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
 }
 

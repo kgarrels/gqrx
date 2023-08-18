@@ -166,6 +166,11 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     auto *freq_shortcut = new QShortcut(QKeySequence(Qt::Key_F), this);
     QObject::connect(freq_shortcut, &QShortcut::activated, this, &MainWindow::frequencyFocusShortcut);
 
+    /* fft autorange shortcut */
+    auto *auto_shortcut = new QShortcut(QKeySequence(Qt::Key_A), this);
+    QObject::connect(auto_shortcut, &QShortcut::activated, this, &MainWindow::toggleAutoRange);
+
+    
     // zero cursor (rx filter offset)
     auto *rx_offset_zero_shortcut = new QShortcut(QKeySequence(Qt::Key_Z), this);
     QObject::connect(rx_offset_zero_shortcut, &QShortcut::activated, this, &MainWindow::rxOffsetZeroShortcut);
@@ -1916,7 +1921,12 @@ void MainWindow::setAutoRange(bool enabled)
 {
     ui->plotter->setAutoRange(enabled);
     qDebug() << "main window auto range: " << enabled;
+}
 
+void MainWindow::toggleAutoRange()
+{
+    ui->plotter->toggleAutoRange();
+    qDebug() << "main window auto range toggled";
 }
 
 void MainWindow::fftNbChanged(bool state)

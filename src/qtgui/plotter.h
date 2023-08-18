@@ -184,6 +184,7 @@ public slots:
     void enableMarkers(bool enabled);
     void setMarkers(qint64 a, qint64 b);
     void setAutoRange(bool enabled);
+    void toggleAutoRange();
     void updateOverlay();
 
     void setPercent2DScreen(int percent)
