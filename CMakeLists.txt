@@ -109,8 +109,8 @@ if(APPLE AND EXISTS /usr/local/opt/qt5)
     list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt5")
 endif()
 
-if(APPLE AND EXISTS /usr/local/opt/qt6)
-    list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt6")
+if(APPLE AND EXISTS /Users/kai/Qt/6.2.4/macos/usr/local/opt/qt6)
+    list(APPEND CMAKE_PREFIX_PATH "/Users/kai/Qt/6.2.4/macos")
 endif()
 
 if(APPLE AND EXISTS /usr/local/opt/icu4c/lib)
