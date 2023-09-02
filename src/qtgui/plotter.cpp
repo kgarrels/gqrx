@@ -2420,7 +2420,7 @@ void CPlotter::makeFrequencyStrs()
         qint64 l = m_HDivText[i].length()-1;
         for (j = l; j > dp; j--)
         {
-            if (m_HDivText[i][j] != '0')
+            if (m_HDivText[i][(uint)j] != '0')
                 break;
         }
         if ((j - dp) > max)
