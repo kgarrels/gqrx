@@ -1967,55 +1967,56 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     m_IIRValid = true;
 
-/*
-    Noise Floor detection a la Simon Brown
-    A few weeks previously a reasonable logic was implemented for measuring the noise floor. 
-    Purists will not be happy - they rarely are, but it works for me.
-    Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering, 
-    and we're left with a healthy 70% of the signal. 
-    Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
- */
-    
-    
-    // automatic determination of the noise level
-    // ignore the first and last offset bins
 
-    // cut away the first/last partsof the waterfall
-    #define MAX_FFT_SIZE 1048576
-    float lowestValue;
-    static float minAvg = 0;
-
-    float fftCopy[MAX_FFT_SIZE] = {0};
-    long i, offset;
-
-    offset = (long) size / 8;  
-    for (i=offset; i<=size-offset; i++) {
-        fftCopy[i-offset] = m_fftData[i];      // we use the fftIIR that is averaged
-    }
- 
-    // sort bins
-    std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
-
-    //m_fftData = fftCopy;    // test only, view sorted bins in fft
-
-    const long bins=(m_fftDataSize -2*offset)/10;
-    lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
-    
-    // do a moving averge
-    const float alpha = 0.1f;
-
-    // we have a huge jump, reset moving average
-    if(abs(log(minAvg)-log(lowestValue)) > 3) {
-        minAvg = lowestValue;
-        m_fftDataSize = 0 ;     // reset everything
-    }
-    minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
-    
-    m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
-
-    // set the panadapter limits
     if (m_autoRangeActive) {
+    
+        /*
+        Noise Floor detection a la Simon Brown
+        A few weeks previously a reasonable logic was implemented for measuring the noise floor.
+        Purists will not be happy - they rarely are, but it works for me.
+        Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering,
+        and we're left with a healthy 70% of the signal.
+        Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
+         */
+        
+        
+        // automatic determination of the noise level
+        // ignore the first and last offset bins
 
+        // cut away the first/last partsof the waterfall
+        #define MAX_FFT_SIZE 1048576
+        float lowestValue;
+        static float minAvg = 0;
+
+        float fftCopy[MAX_FFT_SIZE] = {0};
+        long i, offset;
+
+        offset = (long) size / 8;
+        for (i=offset; i<=size-offset; i++) {
+            fftCopy[i-offset] = m_fftData[i];      // we use the fftIIR that is averaged
+        }
+     
+        // sort bins
+        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
+
+        //m_fftData = fftCopy;    // test only, view sorted bins in fft
+
+        const long bins=(m_fftDataSize -2*offset)/10;
+        lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
+        
+        // do a moving averge
+        const float alpha = 0.1f;
+
+        // we have a huge jump, reset moving average
+        if(abs(log(minAvg)-log(lowestValue)) > 3) {
+            minAvg = lowestValue;
+            m_fftDataSize = 0 ;     // reset everything
+        }
+        minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
+        
+        m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
+
+        // set the panadapter limits
         static float minAvg_old = 0;
         if (minAvg != minAvg_old) {
             m_DrawOverlay = true;
@@ -2028,7 +2029,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         m_PandMaxdB = m_PandMindB       + 50+ m_PandMaxdBSlider;        // 54dB=S9, allow to correct down
 
         //qCDebug(plotter) << "fft min" << lowestValue << minAvg << m_WfMindBSlider << m_WfMaxdBSlider;
-    }
+    } // m_autorange_active
 
     m_DrawOverlay = true;
     draw(true);
@@ -2349,6 +2350,7 @@ void CPlotter::drawOverlay()
             painter.drawText(shadowRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
             // Foreground
             painter.setPen(QPen(QColor(PLOTTER_TEXT_COLOR)));
+            if(m_autoRangeActive) painter.setPen(QPen(QColor(Qt::darkGreen)));          // green dB when autorange active
             QRectF textRect(HOR_MARGIN, y - th / 2,
                             m_YAxisWidth - 2 * HOR_MARGIN, th);
             painter.drawText(textRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
@@ -2651,12 +2653,7 @@ void CPlotter::setAutoRange(bool enabled)
     m_autoRangeActive = enabled;
     qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
 }
-/** Set auto range on or off. */
-void CPlotter::toggleAutoRange()
-{
-    m_autoRangeActive = !m_autoRangeActive;
-    qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
-}
+
 
 
 

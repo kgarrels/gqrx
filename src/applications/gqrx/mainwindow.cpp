@@ -53,6 +53,7 @@
 
 /* Qt Designer files */
 #include "ui_mainwindow.h"
+#include "ui_dockfft.h"
 
 /* DSP */
 #include "receiver.h"
@@ -1919,15 +1920,21 @@ void MainWindow::setPeakDetection(bool enabled)
 
 void MainWindow::setAutoRange(bool enabled)
 {
+    d_automode_enabled = enabled;
+    
     ui->plotter->setAutoRange(enabled);
     qDebug() << "main window auto range: " << enabled;
 }
 
 void MainWindow::toggleAutoRange()
 {
-    ui->plotter->toggleAutoRange();
-    qDebug() << "main window auto range toggled";
+    
+    d_automode_enabled = !d_automode_enabled;
+    ui->plotter->setAutoRange(d_automode_enabled);
+    
+    qDebug() << "main window auto range: " << d_automode_enabled;
 }
+
 
 void MainWindow::fftNbChanged(bool state)
 {

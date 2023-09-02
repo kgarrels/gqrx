@@ -98,6 +98,8 @@ private:
 
     std::vector<float> d_audioFftData;
     bool d_have_audio;  /*!< Whether we have audio (i.e. not with demod_off. */
+    
+    bool d_automode_enabled;
 
     /* dock widgets */
     DockRxOpt      *uiDockRxOpt;
