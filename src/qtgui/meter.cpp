@@ -42,7 +42,7 @@
 #define CTRL_XAXIS_HEGHT 0.4	// vertical position of horizontal axis
 #define CTRL_NEEDLE_TOP 0.4		// vertical position of top of needle triangle
 
-#define MIN_DB -100.0f          // both values adopted for panadapter +kai
+#define MIN_DB -120.0f          // both values adopted for panadapter +kai
 #define MAX_DB 0.0f
 
 #define ALPHA_DECAY         0.5f
