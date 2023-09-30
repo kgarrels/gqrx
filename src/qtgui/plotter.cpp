@@ -920,53 +920,48 @@ void CPlotter::zoomStepX(float step, int x)
     }
 
     // calculate new range shown on FFT
-    double new_range = qBound(10.0, m_Span * (double)step, (double)m_SampleFreq * 10.0);
+    float new_span = std::min(
+        (float)m_Span * (float)step, (float)m_SampleFreq);
 
-    // Frequency where event occurred is kept fixed under mouse
-    double ratio = (double)x / (qreal)m_Size.width() / m_DPR;
-    qint64 fixed_hz = freqFromX(x);
-    double f_max = (double)fixed_hz + (1.0 - ratio) * new_range;
-    double f_min = f_max - new_range;
+    // Keep frequency under pointer the same and calculated the offset to the
+    // plot center.
+    float offset = (float)(freqFromX(x) - m_CenterFreq - m_FftCenter);
+    float new_FftCenter = (float)m_FftCenter + offset * (1.0f - step);
 
-    // ensure we don't go beyond the rangelimits
-    bool limit_hit = false;
-    double lolim = (double)(m_CenterFreq) - (double)m_SampleFreq / 2.0;
-    double hilim = (double)m_CenterFreq + (double)m_SampleFreq / 2.0;
-    if (f_min < lolim)
+    // Keep edges of plot in valid frequency range. The plot may need to be
+    // panned.
+    const float max_limit = (float)m_SampleFreq / 2.0f;
+    const float min_limit = - (float)m_SampleFreq / 2.0f;
+    float f_max = new_FftCenter + new_span / 2.0f;
+    float f_min = new_FftCenter - new_span / 2.0f;
+    if (f_min < min_limit)
     {
-        f_min = lolim;
-        limit_hit = true;
+        f_min = min_limit;
+        f_max = f_min + new_span;
     }
-    if (f_max > hilim)
+    if (f_max > max_limit)
     {
-        f_max = hilim;
-        limit_hit = true;
-    }
-
-    // the new span
-    quint32 new_span = qRound(f_max - f_min);
-    if( new_span & 1 )
-    {
-        new_span++; // keep span even to avoid rounding in span/2
+        f_max = max_limit;
+        f_min = f_max - new_span;
     }
 
-    // find new FFT center frequency
-    qint64 new_FftCenter;
-    if( limit_hit ) // cannot keep fixed_hz fixed
+    // Make span into an even integer.
+    quint32 new_span_int = qRound(f_max - f_min);
+    if( new_span_int & 1 )
     {
-    	new_FftCenter = qRound64((f_min + f_max) / 2.0) - m_CenterFreq;
+        new_span_int--;
     }
-    else // calculate new FFT center frequency that really keeps fixed_hz fixed
-    {
-    	qint64 wouldbe_hz = (m_CenterFreq + m_FftCenter - new_span / 2) + ratio * new_span;
-    	new_FftCenter = m_FftCenter + (fixed_hz - wouldbe_hz);
-    }
-    setFftCenterFreq(new_FftCenter);
-    setSpanFreq(new_span);
 
-    double factor = (double)m_SampleFreq / (double)m_Span;
-    emit newZoomLevel(factor);
-    qCDebug(plotter) << QString("Spectrum zoom: %1x").arg(factor, 0, 'f', 1);
+    // Explicitly set m_Span instead of calling setSpanFreq(), which also calls
+    // setFftCenterFreq() and updateOverlay() internally. Span needs to be set
+    // before frequency limits can be checked in setFftCenterFreq().
+    m_Span = new_span;
+    setFftCenterFreq(qRound64((f_max + f_min) / 2.0f));
+    updateOverlay();
+
+    double zoom = (double)m_SampleFreq / (double)m_Span;
+    emit newZoomLevel(zoom);
+    qCDebug(plotter) << QString("Spectrum zoom: %1x").arg(zoom, 0, 'f', 1);
 
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
@@ -977,7 +972,7 @@ void CPlotter::zoomStepX(float step, int x)
 void CPlotter::zoomOnXAxis(float level)
 {
     float current_level = (float)m_SampleFreq / (float)m_Span;
-    zoomStepX(current_level / level, xFromFreq(m_DemodCenterFreq));
+    zoomStepX(current_level / level, qRound((qreal)m_Size.width() * m_DPR / 2.0));
     updateOverlay();
 }
 
@@ -1912,7 +1907,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         double currentZoom = (double)m_SampleFreq / (double)m_Span;
         double maxZoom = (double)m_fftDataSize / 4.0;
         if (currentZoom > maxZoom)
-            zoomStepX(currentZoom / maxZoom, xFromFreq(m_CenterFreq + m_FftCenter));
+            zoomStepX(currentZoom / maxZoom, qRound((qreal)m_Size.width() * m_DPR / 2.0));
     }
 
     // For dBFS, define full scale as peak (not RMS). A 1.0 FS peak sine wave
@@ -2199,31 +2194,24 @@ void CPlotter::drawOverlay()
         m_BandPlanHeight = metrics.height() + VER_MARGIN;
         for (auto & band : bands)
         {
-            int band_left = xFromFreq(band.minFrequency);
-            int band_right = xFromFreq(band.maxFrequency);
+            int band_left = std::max(xFromFreq(band.minFrequency), 0);
+            int band_right = std::min(xFromFreq(band.maxFrequency), (int)w);
             int band_width = band_right - band_left;
             QRectF rect(band_left, xAxisTop - m_BandPlanHeight, band_width, m_BandPlanHeight);
             painter.fillRect(rect, band.color);
-            QString band_label = band.name + " (" + band.modulation + ")";
-            qreal textWidth = metrics.boundingRect(band_label).width();
-            if (band_left < w && band_width > textWidth + 20)
-            {
-                painter.setOpacity(1.0);
-                QRectF textRect(band_left, xAxisTop - m_BandPlanHeight, band_width, metrics.height());
-                painter.setPen(QPen(QColor(PLOTTER_TEXT_COLOR), m_DPR));
-                painter.drawText(textRect, Qt::AlignCenter, band_label);
-            }
+            QString band_label = metrics.elidedText(band.name + " (" + band.modulation + ")", Qt::ElideRight, band_width - 10);
+            painter.setOpacity(1.0);
+            QRectF textRect(band_left, xAxisTop - m_BandPlanHeight, band_width, metrics.height());
+            painter.setPen(QPen(QColor(PLOTTER_TEXT_COLOR), m_DPR));
+            painter.drawText(textRect, Qt::AlignCenter, band_label);
         }
     }
 
     if (m_CenterLineEnabled)
     {
         x = xFromFreq(m_CenterFreq);
-        if (x > 0 && x < w)
-        {
-            painter.setPen(QPen(QColor(PLOTTER_CENTER_LINE_COLOR), m_DPR));
-            painter.drawLine(QPointF(x, 0), QPointF(x, xAxisTop));
-        }
+        painter.setPen(QPen(QColor(PLOTTER_CENTER_LINE_COLOR), m_DPR));
+        painter.drawLine(QPointF(x, 0), QPointF(x, xAxisTop));
     }
 
     if (m_MarkersEnabled)
@@ -2238,35 +2226,31 @@ void CPlotter::drawOverlay()
         if (m_MarkerFreqA != MARKER_OFF) {
             x = xFromFreq(m_MarkerFreqA);
             m_MarkerAX = x;
-            if (x > 0 && x < w) {
-                QPolygon poly;
-                QPainterPath path;
-                poly << QPoint(x - markerSize/2, 0)
-                     << QPoint(x + markerSize/2, 0)
-                     << QPoint(x, markerSize);
-                path.addPolygon(poly);
-                painter.drawPolygon(poly);
-                painter.fillPath(path, brush);
-                painter.drawLine(x, markerSize, x, xAxisTop);
-                painter.drawStaticText(QPointF(x + markerSize/2, 0), QStaticText("A"));
-            }
+            QPolygon poly;
+            QPainterPath path;
+            poly << QPoint(x - markerSize/2, 0)
+                    << QPoint(x + markerSize/2, 0)
+                    << QPoint(x, markerSize);
+            path.addPolygon(poly);
+            painter.drawPolygon(poly);
+            painter.fillPath(path, brush);
+            painter.drawLine(x, markerSize, x, xAxisTop);
+            painter.drawStaticText(QPointF(x + markerSize/2, 0), QStaticText("A"));
         }
 
         if (m_MarkerFreqB != MARKER_OFF) {
             x = xFromFreq(m_MarkerFreqB);
             m_MarkerBX = x;
-            if (x > 0 && x < w) {
-                QPolygon poly;
-                QPainterPath path;
-                poly << QPoint(x - markerSize/2, 0)
-                     << QPoint(x + markerSize/2, 0)
-                     << QPoint(x, markerSize);
-                path.addPolygon(poly);
-                painter.drawPolygon(poly);
-                painter.fillPath(path, brush);
-                painter.drawLine(x, markerSize, x, xAxisTop);
-                painter.drawStaticText(QPointF(x + markerSize/2, 0), QStaticText("B"));
-            }
+            QPolygon poly;
+            QPainterPath path;
+            poly << QPoint(x - markerSize/2, 0)
+                    << QPoint(x + markerSize/2, 0)
+                    << QPoint(x, markerSize);
+            path.addPolygon(poly);
+            painter.drawPolygon(poly);
+            painter.fillPath(path, brush);
+            painter.drawLine(x, markerSize, x, xAxisTop);
+            painter.drawStaticText(QPointF(x + markerSize/2, 0), QStaticText("B"));
         }
     }
 
@@ -2313,8 +2297,9 @@ void CPlotter::drawOverlay()
     // Level grid
     qint64 mindBAdj64 = 0;
     qint64 dbDivSize = 0;
+    qint64 dbSpan = (qint64) (m_PandMaxdB - m_PandMindB);
 
-    calcDivSize((qint64) m_PandMindB, (qint64) m_PandMaxdB,
+    calcDivSize((qint64) m_PandMindB, ((qint64) m_PandMindB) + dbSpan,
                 qMax(h / (m_VdivDelta * m_DPR), (qreal)VERT_DIVS_MIN),
                 mindBAdj64, dbDivSize, m_VerDivs);
 
@@ -2447,17 +2432,16 @@ int CPlotter::xFromFreq(qint64 freq)
                        + (double)m_FftCenter
                        - (double)m_Span / 2.0;
     int x = qRound(w * ((double)freq - startFreq) / (double)m_Span);
-    if (x < 0)
-        return 0;
-    if (x > (int)w)
-        return w;
     return x;
 }
 
 // Convert from screen coordinate to frequency
 qint64 CPlotter::freqFromX(int x)
 {
-    double ratio = (double)x / (qreal)m_Size.width() / m_DPR;
+    double ratio = 0;
+    if ((m_Size.width() > 0) && (m_DPR > 0))
+        ratio = (double)x / (qreal)m_Size.width() / m_DPR;
+
     qint64 f = qRound64((double)m_CenterFreq + (double)m_FftCenter
                         - (double)m_Span / 2.0 + ratio * (double)m_Span);
     return f;

@@ -69,6 +69,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     d_lnb_lo(0),
     d_hw_freq(0),
     d_fftAvg(0.25),
+    d_fftWindowType(0),
     d_fftNormalizeEnergy(false),
     d_have_audio(true),
     dec_afsk1200(nullptr)
@@ -699,6 +700,15 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     }
 
     {
+        // Center frequency for FFT plotter
+        int64_val = m_settings->value("fft/fft_center", 0).toLongLong(&conv_ok);
+
+        if (conv_ok) {
+            ui->plotter->setFftCenterFreq(int64_val);
+        }
+    }
+
+    {
         int flo = m_settings->value("receiver/filter_low_cut", 0).toInt(&conv_ok);
         int fhi = m_settings->value("receiver/filter_high_cut", 0).toInt(&conv_ok);
 
@@ -794,6 +804,8 @@ void MainWindow::storeSession()
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
         m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
         
+        m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
+
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
         uiDockFft->saveSettings(m_settings);
