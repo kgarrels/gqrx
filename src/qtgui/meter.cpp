@@ -202,7 +202,6 @@ void CMeter::draw()
         pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
         painter.setBrush(QBrush(color));
-        painter.setOpacity(1.0);
 
         painter.drawRect(QRectF(marg, ht + 2, x - marg, 4));
 
@@ -228,6 +227,8 @@ void CMeter::draw()
     float nf = 10*log10(m_Noisefloor);
     m_Str.setNum(m_dBFSPeak - nf -40, 'f', 1);        // some correction of noisefloor level
     painter.drawText(marg, h - 2, m_Str + " dB SNR" );
+    //m_Str.setNum(m_dBFS, 'f', 1);
+    //painter.drawText(marg, h - 2, m_Str + " dBFS" );
 
     update();
 }

@@ -759,9 +759,9 @@ void receiver::set_iq_fft_window(int window_type, bool normalize_energy)
 }
 
 /** Get latest baseband FFT data. */
-void receiver::get_iq_fft_data(float* fftPoints)
+int receiver::get_iq_fft_data(float* fftPoints)
 {
-    iq_fft->get_fft_data(fftPoints);
+    return iq_fft->get_fft_data(fftPoints);
 }
 
 unsigned int receiver::audio_fft_size() const
@@ -770,9 +770,9 @@ unsigned int receiver::audio_fft_size() const
 }
 
 /** Get latest audio FFT data. */
-void receiver::get_audio_fft_data(float* fftPoints)
+int receiver::get_audio_fft_data(float* fftPoints)
 {
-    audio_fft->get_fft_data(fftPoints);
+    return audio_fft->get_fft_data(fftPoints);
 }
 
 /** Set noiseblanker for fft */

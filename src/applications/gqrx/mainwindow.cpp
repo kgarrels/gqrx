@@ -1533,9 +1533,8 @@ void MainWindow::iqFftTimeout()
     }
     d_last_fft_ms = now_ms;
 
-    rx->get_iq_fft_data(d_iqFftData.data());
-
-    ui->plotter->setNewFftData(d_iqFftData.data(), fftsize);
+    if (rx->get_iq_fft_data(d_iqFftData.data()) >= 0)
+        ui->plotter->setNewFftData(d_iqFftData.data(), fftsize);
 }
 
 /** Audio FFT plot timeout. */
@@ -1553,9 +1552,8 @@ void MainWindow::audioFftTimeout()
     if (!d_have_audio || !uiDockAudio->isVisible())
         return;
 
-    rx->get_audio_fft_data(d_audioFftData.data());
-
-    uiDockAudio->setNewFftData(d_audioFftData.data(), fftsize);
+    if (rx->get_audio_fft_data(d_audioFftData.data()) >= 0)
+        uiDockAudio->setNewFftData(d_audioFftData.data(), fftsize);
 }
 
 /** RDS message display timeout. */
@@ -2119,33 +2117,6 @@ void MainWindow::on_actionSaveSettings_triggered()
     QFileInfo fi(cfgfile);
     if (m_cfg_dir != fi.absolutePath())
         m_last_dir = fi.absolutePath();
-}
-
-void MainWindow::on_actionSaveWaterfall_triggered()
-{
-    QDateTime   dt(QDateTime::currentDateTimeUtc());
-
-    // previously used location
-    auto save_path = m_settings->value("wf_save_dir", "").toString();
-    if (!save_path.isEmpty())
-        save_path += "/";
-    save_path += dt.toString("gqrx_wf_yyyyMMdd_hhmmss.png");
-
-    auto wffile = QFileDialog::getSaveFileName(this, tr("Save waterfall"),
-                                          save_path, nullptr);
-    if (wffile.isEmpty())
-        return;
-
-    if (!ui->plotter->saveWaterfall(wffile))
-    {
-        QMessageBox::critical(this,
-                              tr("Error"),
-                              tr("There was an error saving the waterfall"));
-    }
-
-    // store the location used for the waterfall file
-    QFileInfo fi(wffile);
-    m_settings->setValue("wf_save_dir", fi.absolutePath());
 }
 
 /** Show I/Q player. */
