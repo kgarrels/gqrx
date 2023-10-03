@@ -73,30 +73,9 @@ for lib in ${soapy_module_libs[@]}; do
     linuxdeploy_lib_args+=( "-l" "$lib" )
 done
 
-# force otherwise excluded libraries that we really need because of library
-# dependence on newer versions
-linuxdeploy_lib_args+=(
-    "-l" "$PREFIX"/lib/libasound.so.2
-    "-l" "$PREFIX"/lib/libexpat.so.1
-    "-l" "$PREFIX"/lib/libfontconfig.so.1
-    "-l" "$PREFIX"/lib/libfreetype.so.6
-    "-l" "$PREFIX"/lib/libgcc_s.so.1
-    "-l" "$PREFIX"/lib/libgmp.so.10
-    "-l" "$PREFIX"/lib/libgpg-error.so.0
-    "-l" "$PREFIX"/lib/libharfbuzz.so.0
-    "-l" "$PREFIX"/lib/libjack.so.0
-    "-l" "$PREFIX"/lib/libstdc++.so.6
-    "-l" "$PREFIX"/lib/libusb-1.0.so.0
-    "-l" "$PREFIX"/lib/libuuid.so.1
-    "-l" "$PREFIX"/lib/libxcb.so.1
-    "-l" "$PREFIX"/lib/libz.so.1
-)
-
 mkdir -p ./AppDir/apprun-hooks
 echo 'export CONDA_PREFIX="$APPDIR/usr"' >./AppDir/apprun-hooks/soapy-hook.sh
 echo 'export UHD_PKG_PATH="$APPDIR/usr"' >./AppDir/apprun-hooks/uhd-hook.sh
-echo 'export FONTCONFIG_FILE="$APPDIR/etc/fonts/fonts.conf"
-export FONTCONFIG_PATH="$APPDIR/etc/fonts"' >./AppDir/apprun-hooks/fontconfig-hook.sh
 
 # since libs come from prefix, little use in querying copyright files with dpkg-query
 export DISABLE_COPYRIGHT_FILES_DEPLOYMENT=1
@@ -109,14 +88,6 @@ RESULT=$?
 
 # copy Soapy modules into their expected path in the AppDir
 cp -R "$PREFIX"/lib/SoapySDR ./AppDir/usr/lib/SoapySDR
-
-# copy fontconfig configuration files that the FONTCONFIG_FILE env var points to
-mkdir -p ./AppDir/etc/
-cp -RL "$PREFIX"/etc/fonts ./AppDir/etc/fonts
-# remove any config file lines that refer to the old prefix if it's not /usr
-if [ "${PREFIX:0:4}" != "/usr" ] ; then
-    sed -i "\|$PREFIX|d" ./AppDir/etc/fonts/fonts.conf
-fi
 
 # finally make the AppImage
 ./appimagetool-x86_64.AppImage AppDir/
