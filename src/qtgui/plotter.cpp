@@ -2649,6 +2649,13 @@ void CPlotter::setMarkers(qint64 a, qint64 b)
     updateOverlay();
 }
 
+void CPlotter::clearWaterfall()
+{
+    if (!m_WaterfallPixmap.isNull()) {
+        m_WaterfallPixmap.fill(Qt::black);
+    }
+}
+
 void CPlotter::calcDivSize (qint64 low, qint64 high, int divswanted, qint64 &adjlow, qint64 &step, int& divs)
 {
 /*
