@@ -394,12 +394,16 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 // move waterfall horizontally
                 int w, h;
                 
-                w = m_WaterfallPixmap.width();
-                h = m_WaterfallPixmap.height();
+                w = m_WaterfallImage.width();
+                h = m_WaterfallImage.height();
                 QRegion exposed;
-                m_WaterfallPixmap.scroll(-delta_px, 0, 0, 0, w, h, &exposed);
-                QPainter painter1(&m_WaterfallPixmap);
+                QPixmap wf_pixmap;
+
+                wf_pixmap = QPixmap::fromImage(m_WaterfallImage); 
+                wf_pixmap.scroll(delta_px, 0, 0, 0, w, h, &exposed);
+                QPainter painter1(&wf_pixmap);
                 painter1.fillRect(exposed.boundingRect(), Qt::black);
+                m_WaterfallImage = wf_pixmap.toImage(); 
 
                 m_MaxHoldValid = false;
                 m_MinHoldValid = false;
@@ -620,10 +624,11 @@ void CPlotter::clearWaterfallBuf()
  *
  * We assume that frequency strings are up to date
  */
+/*
 bool CPlotter::saveWaterfall(const QString & filename) const
 {
     QBrush          axis_brush(QColor(0x00, 0x00, 0x00, 0x70), Qt::SolidPattern);
-    QPixmap         pixmap(m_WaterfallPixmap);
+    QPixmap         pixmap(m_WaterfallImage);
     QPainter        painter(&pixmap);
     QRect           rect;
     QDateTime       tt;
@@ -685,6 +690,7 @@ bool CPlotter::saveWaterfall(const QString & filename) const
 
     return pixmap.save(filename, nullptr, -1);
 }
+*/
 
 /** Get waterfall time resolution in milleconds / line. */
 quint64 CPlotter::getWfTimeRes() const
@@ -2503,16 +2509,20 @@ void CPlotter::setCenterFreq(quint64 f)
 
     deltaX = xFromFreq(old_f) - xFromFreq(f);
 
-    w = m_WaterfallPixmap.width();
-    h = m_WaterfallPixmap.height();
+    w = m_WaterfallImage.width();
+    h = m_WaterfallImage.height();
     qCDebug(plotter) << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
     old_f = f;
     if (abs(deltaX) < w/2)
     {
         QRegion exposed;
-        m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
-        QPainter painter1(&m_WaterfallPixmap);
+        QPixmap wf_pixmap;
+
+        wf_pixmap = QPixmap::fromImage(m_WaterfallImage); 
+        wf_pixmap.scroll(deltaX, 0, 0, 0, w, h, &exposed);
+        QPainter painter1(&wf_pixmap);
         painter1.fillRect(exposed.boundingRect(), Qt::black);
+        m_WaterfallImage = wf_pixmap.toImage(); 
 
         updateOverlay();
     }

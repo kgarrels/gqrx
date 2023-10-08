@@ -56,19 +56,10 @@ private:
     void draw(QPainter &painter);
     void drawOverlay(QPainter &painter);
 
-    QFont   m_Font;
-    QPixmap m_2DPixmap;
-    QPixmap m_OverlayPixmap;
-    QSize   m_Size;
-    QString m_Str;
-    qreal   m_pixperdb;     // pixels / dB 
     qreal   m_dBFSPeak=0;
     qreal   m_SiglevelPeak;
     qreal   m_Siglevel;
     float   m_dBFS;
     float   m_Noisefloor=0;
     qreal   m_Sql;
-    qreal   m_SqlLevel;
-    float   m_dBFS;
-    float   m_Sql;
 };

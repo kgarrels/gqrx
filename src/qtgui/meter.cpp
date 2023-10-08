@@ -42,7 +42,7 @@
 #define CTRL_XAXIS_HEGHT 0.4    // vertical position of horizontal axis
 #define CTRL_NEEDLE_TOP 0.4     // vertical position of top of needle triangle
 
-#define MIN_DB -120.0f          // both values adopted for panadapter +kai
+#define MIN_DB -100.0f          // both values adopted for panadapter +kai
 #define MAX_DB 0.0f
 
 #define ALPHA_DECAY         0.5f
@@ -72,6 +72,8 @@ QSize CMeter::sizeHint() const
     return QSize(100, 30);
 }
 
+
+/*
 void CMeter::resizeEvent(QResizeEvent *)
 {
     if (!size().isValid())
@@ -97,6 +99,7 @@ void CMeter::resizeEvent(QResizeEvent *)
     DrawOverlay();
     draw();
 }
+*/
 
 void CMeter::setLevel(float dbfs, float noisefloor)
 {
@@ -105,33 +108,22 @@ void CMeter::setLevel(float dbfs, float noisefloor)
     else if (dbfs > MAX_DB)
         dbfs = MAX_DB;
 
-    float level = m_dBFS;
-    float levelPeak = m_dBFSPeak;
-    float alpha  = dbfs < level ? ALPHA_DECAY : ALPHA_RISE;
-    float alphaPeak  = dbfs < levelPeak ? ALPHA_PEAK_DECAY : ALPHA_PEAK_RISE;
+    float alpha  = dbfs < m_dBFS ? ALPHA_DECAY : ALPHA_RISE;
+    float alphaPeak  = dbfs < m_dBFSPeak ? ALPHA_PEAK_DECAY : ALPHA_PEAK_RISE;
 
-    m_dBFS -= alpha * (level - dbfs);
-    m_Siglevel = (level - MIN_DB) * m_pixperdb;
+    m_dBFS -= alpha * (m_dBFS - dbfs);
+    m_dBFSPeak -= alphaPeak * (m_dBFSPeak - dbfs);
 
     m_Noisefloor = noisefloor;
-    
-    m_dBFSPeak -= alphaPeak * (levelPeak - dbfs);
-    m_SiglevelPeak = (int)((levelPeak - MIN_DB) * m_pixperdb);
 
-    draw();
-void CMeter::setLevel(float dbfs)
-{
-    float alpha = dbfs < m_dBFS ? ALPHA_DECAY : ALPHA_RISE;
-    m_dBFS -= alpha * (m_dBFS - dbfs);
     update();
 }
-/*
+
 void CMeter::setSqlLevel(float dbfs)
 {
     m_Sql = dbfs;
     update();
 }
-*/
 
 // Called by QT when screen needs to be redrawn
 void CMeter::paintEvent(QPaintEvent *)
@@ -158,14 +150,19 @@ void CMeter::draw(QPainter &painter)
         painter.setPen(pen);
         painter.setBrush(QBrush(color));
 
-        painter.drawRect(QRectF(marg, ht + 2, x - marg, 4));
+        painter.drawRect(QRectF(marg, ht + 2, (qreal)(std::min(m_dBFS, MAX_DB) - MIN_DB) * pixperdb, 4));
 
-        painter.setPen(QPen(Qt::green, 1, Qt::SolidLine));              // peak level
-        painter.drawLine(QLineF(xPeak, hline+2, xPeak, hline + 6));
+        // draw peak level
+        qreal x = marg + (qreal)(m_dBFSPeak - MIN_DB) * pixperdb;
+        painter.setPen(QPen(Qt::green, 1, Qt::SolidLine));             
+        painter.drawLine(QLineF(x, hline+2, x, hline+6));
     }
 
-    if (m_SqlLevel > 0.0f)
-        painter.drawRect(QRectF(marg, ht + 2, (qreal)(std::min(m_dBFS, MAX_DB) - MIN_DB) * pixperdb, 4));
+    if (m_Sql > MIN_DB)
+    {
+        qreal x = marg + (qreal)(m_Sql - MIN_DB) * pixperdb;
+        painter.setPen(QPen(Qt::yellow, 1, Qt::SolidLine));
+        painter.drawLine(QLineF(x, hline, x, hline + 8));
     }
 
     if (m_Sql > MIN_DB)
@@ -178,16 +175,13 @@ void CMeter::draw(QPainter &painter)
     QFont font("Arial");
     font.setPixelSize(height() / 4);
     painter.setFont(font);
-
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
-    painter.setOpacity(1.0);
+
+    //painter.drawText(marg, height() - 2, QString::number(m_dBFS, 'f', 1) + " dBFS" );
     
     // calculate SNR by using signalPeak and noisefloor
     float nf = 10*log10(m_Noisefloor);
-    m_Str.setNum(m_dBFSPeak - nf -40, 'f', 1);        // some correction of noisefloor level
-    painter.drawText(marg, h - 2, m_Str + " dB SNR" );
-    //m_Str.setNum(m_dBFS, 'f', 1);
-    //painter.drawText(marg, h - 2, m_Str + " dBFS" );
+    painter.drawText(marg, height() - 2, QString::number(m_dBFSPeak - nf-40, 'f', 1) + " dB SN" );
 
     update();
 }
