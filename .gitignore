@@ -6,7 +6,6 @@
 /*.dmg
 /AppDir/
 /Gqrx.app/
-/version.txt
 .idea/
 cmake-build*/
 version.txt
