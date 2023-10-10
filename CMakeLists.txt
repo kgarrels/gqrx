@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.2)
 project(gqrx)
 set(${PROJECT_NAME}_MAJOR "2")
 set(${PROJECT_NAME}_MINOR "17")
-set(${PROJECT_NAME}_PATCH "0")
+set(${PROJECT_NAME}_PATCH "2")
 set(IS_RELEASE FALSE)
 #SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
 
@@ -124,10 +124,20 @@ else()
 endif()
 
 # 3rd Party Dependency Stuff
-find_package(Qt6  COMPONENTS Core Network Widgets Svg SvgWidgets)
-if(NOT Qt6_FOUND)
-   find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
+option(FORCE_QT6 "Force Qt6 to be used" OFF)
+option(FORCE_QT5 "Force Qt5 to be used" OFF)
+
+if(FORCE_QT6)
+    find_package(Qt6 QUIET COMPONENTS Core Network Widgets Svg SvgWidgets)
+elseif(FORCE_QT5)
+    find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
+else()
+    find_package(Qt6 QUIET COMPONENTS Core Network Widgets Svg SvgWidgets)
+    if(NOT Qt6_FOUND)
+        find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
+    endif()
 endif()
+
 include(FindPkgConfig)
 find_package(Gnuradio-osmosdr REQUIRED)
 

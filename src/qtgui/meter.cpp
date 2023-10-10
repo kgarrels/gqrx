@@ -177,10 +177,10 @@ void CMeter::draw(QPainter &painter)
     painter.setFont(font);
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
 
-    //painter.drawText(marg, height() - 2, QString::number(m_dBFS, 'f', 1) + " dBFS" );
+    //painter.drawText(marg, height() - 2, QString::number((double)m_dBFS, 'f', 1) + " dBFS" );
     
     // calculate SNR by using signalPeak and noisefloor
-    float nf = 10*log10(m_Noisefloor);
+    double nf = 10*log10(m_Noisefloor);
     painter.drawText(marg, height() - 2, QString::number(m_dBFSPeak - nf-40, 'f', 1) + " dB SN" );
 
     update();
