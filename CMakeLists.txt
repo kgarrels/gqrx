@@ -103,17 +103,6 @@ function(add_source_files list)
     set_property(GLOBAL APPEND PROPERTY ${list} "${SRCS}")
 endfunction(add_source_files)
 
-if(APPLE AND EXISTS /usr/local/opt/qt5)
-    # Homebrew installs Qt5 (up to at least 5.9.1) in
-    # /usr/local/opt/qt5, ensure it can be found by CMake since
-    # it is not in the default /usr/local prefix.
-    list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt5")
-endif()
-
-#if(APPLE AND EXISTS /Users/kai/Qt/6.2.4/macos/usr/local/opt/qt6)
-#    list(APPEND CMAKE_PREFIX_PATH "/Users/kai/Qt/6.2.4/macos")
-#endif()
-
 if(APPLE AND EXISTS /usr/local/opt/icu4c/lib)
     # With Homebrew icu4c, `-licudata -licui18n -licuuc`
     # are required, which reside in /usr/local/opt/icu4c/lib.
@@ -124,7 +113,7 @@ else()
 endif()
 
 # 3rd Party Dependency Stuff
-option(FORCE_QT6 "Force Qt6 to be used" OFF)
+option(FORCE_QT6 "Force Qt6 to be used" ON)
 option(FORCE_QT5 "Force Qt5 to be used" OFF)
 
 if(FORCE_QT6)
