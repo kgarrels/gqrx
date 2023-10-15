@@ -2010,10 +2010,10 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         // set values to new bounds
         float mindB = 10*log10f(minAvg);
 
-        m_WfMindB = mindB   + (-10 + 160+m_WfMindBSlider);          // slider is -160 to 0, allow for -20 correction
-        m_WfMaxdB = m_WfMindB           +  +0 - m_WfMaxdBSlider;          // 54dB=S9, allow to correct down
-        m_PandMindB = mindB + (-10 + 160+m_PandMindBSlider);        // slider is -160 to 0, allow for -20 correction
-        m_PandMaxdB = m_PandMindB       +  +0- m_PandMaxdBSlider;        // 54dB=S9, allow to correct down
+        m_WfMindB = mindB    +140+m_WfMindBSlider;          // slider is -160 to 0, allow for -20 correction
+        m_WfMaxdB = m_WfMindB           +60 + m_WfMaxdBSlider;          // 54dB=S9, allow to correct down
+        m_PandMindB = mindB + 140+m_PandMindBSlider;        // slider is -160 to 0, allow for -20 correction
+        m_PandMaxdB = m_PandMindB       +60 + m_PandMaxdBSlider;        // 54dB=S9, allow to correct down
 
         qCDebug(plotter) << "fft min" << mindB << m_WfMindB << m_WfMaxdB << m_WfMindBSlider << m_WfMaxdBSlider;
     } // m_autorange_active
