@@ -1024,6 +1024,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     // zoom faster when Ctrl is held
     double zoomBase = (event->modifiers() & Qt::ControlModifier) ? 0.7 : 0.9;
 
+    //qCDebug(plotter) << "wheel event " << event;
+   
     if (m_CursorCaptured == YAXIS)
     {
         // Vertical zoom. Wheel down: zoom out, wheel up: zoom in
@@ -1999,8 +2001,6 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         }
         minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
         
-        m_Noisefloor = minAvg;          // publish the noisefloor to allow meter correction +kai
-
         // set the panadapter limits
         static float minAvg_old = 0;
         if (minAvg != minAvg_old) {
@@ -2009,13 +2009,25 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         }
         // set values to new bounds
         float mindB = 10*log10f(minAvg);
-
+        m_Noisefloor = mindB;          // publish the noisefloor to allow meter correction +kai
+        
+        m_WfMindB = mindB    +5;
+        m_WfMaxdB = m_WfMindB +40;
+        m_PandMindB = m_WfMindB;
+        m_PandMaxdB = m_WfMaxdB;
+        
+/*
         m_WfMindB = mindB    +140+m_WfMindBSlider;          // slider is -160 to 0, allow for -20 correction
         m_WfMaxdB = m_WfMindB           +60 + m_WfMaxdBSlider;          // 54dB=S9, allow to correct down
         m_PandMindB = mindB + 140+m_PandMindBSlider;        // slider is -160 to 0, allow for -20 correction
         m_PandMaxdB = m_PandMindB       +60 + m_PandMaxdBSlider;        // 54dB=S9, allow to correct down
 
-        qCDebug(plotter) << "fft min" << mindB << m_WfMindB << m_WfMaxdB << m_WfMindBSlider << m_WfMaxdBSlider;
+*/
+        static int debug_cnt = 0;
+        
+        debug_cnt++;
+        debug_cnt %= 50;
+        if (debug_cnt ==0) qCDebug(plotter) << "fft min" << mindB << m_WfMindB << m_WfMaxdB << m_WfMindBSlider << m_WfMaxdBSlider;
     } // m_autorange_active
 
     m_DrawOverlay = true;
