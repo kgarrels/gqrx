@@ -1974,7 +1974,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float lowestValue;
         static float minAvg = 0;
 
-        float fftCopy[MAX_FFT_SIZE] = {0};
+        static float fftCopy[MAX_FFT_SIZE] = {0};
         long i, offset;
 
         offset = (long) size / 8;
@@ -1994,7 +1994,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         const float alpha = 0.1f;
 
         // we have a huge jump, reset moving average
-        if(abs(log(minAvg)-log(lowestValue)) > 3) {
+        if(abs(log(minAvg)-log(lowestValue)) > 5) {
             minAvg = lowestValue;
             m_fftDataSize = 0 ;     // reset everything
         }
@@ -2010,8 +2010,8 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float mindB = 10*log10f(minAvg);
         m_Noisefloor = mindB;          // publish the noisefloor to allow meter correction +kai
         
-        m_WfMindB = mindB    +5;
-        m_WfMaxdB = m_WfMindB +40;
+        m_WfMindB = mindB       +5;
+        m_WfMaxdB = m_WfMindB   +40;
         m_PandMindB = m_WfMindB;
         m_PandMaxdB = m_WfMaxdB;
         
