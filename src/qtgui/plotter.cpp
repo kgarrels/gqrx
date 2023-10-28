@@ -366,7 +366,6 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                 
                 m_MaxHoldValid = false;
                 m_MinHoldValid = false;
-
                 m_histIIRValid = false;
                 
                 m_Yzero = py;
@@ -2514,8 +2513,6 @@ void CPlotter::setCenterFreq(quint64 f)
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
     m_histIIRValid = false;
-    m_IIRValid = false;
-    m_fftDataSize = 0;      //+kai reset everything
 
     // move waterfall horizontally
     int w, h;
@@ -2538,6 +2535,10 @@ void CPlotter::setCenterFreq(quint64 f)
         painter1.fillRect(exposed.boundingRect(), Qt::black);
         m_WaterfallImage = wf_pixmap.toImage(); 
 
+        m_MaxHoldValid = false;
+        m_MinHoldValid = false;
+        m_histIIRValid = false;
+        
         updateOverlay();
     }
 
