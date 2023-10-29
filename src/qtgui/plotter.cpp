@@ -1877,7 +1877,6 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     // Make sure zeros don't get through to log calcs
     const float fmin = 1e-20;
 
-
     if (size != m_fftDataSize)
     {
         // Reallocate and invalidate IIRs
@@ -1974,30 +1973,25 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float lowestValue;
         static float minAvg = 0;
 
-        static float fftCopy[MAX_FFT_SIZE] = {0};
-        long i, offset;
-
-        offset = (long) size / 8;
-        for (i=offset; i<=size-offset; i++) {
-            fftCopy[i-offset] = m_fftData[i];      // we use the fftIIR that is averaged
-        }
-     
-        // sort bins
-        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);
+        static std::vector<float>fftCopy;
+        fftCopy.resize(size);
+        
+        long offset = (long) size / 8;
+        std::copy(&m_fftIIR[offset], &m_fftIIR[size-offset], &fftCopy[0]);      // copy from +offset to size-offet
+        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);      // sort
 
         //m_fftData = fftCopy;    // test only, view sorted bins in fft
 
-        const long bins=(m_fftDataSize -2*offset)/10;
+        const long bins=(size -2*offset)/10;
         lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
         
+        // we have a huge jump, reset all averages
+        if(std::max(minAvg, lowestValue) / std::min(minAvg, lowestValue) > 20 ) {
+            minAvg = lowestValue;
+            m_fftDataSize = 0;      // reset everything
+        }
         // do a moving averge
         const float alpha = 0.1f;
-
-        // we have a huge jump, reset moving average
-        if(abs(log(minAvg)-log(lowestValue)) > 5) {
-            minAvg = lowestValue;
-            m_fftDataSize = 0 ;     // reset everything
-        }
         minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
         
         // set the panadapter limits
@@ -2010,7 +2004,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float mindB = 10*log10f(minAvg);
         m_Noisefloor = mindB;          // publish the noisefloor to allow meter correction +kai
         
-        m_WfMindB = mindB       +5;
+        m_WfMindB = mindB       -3;
         m_WfMaxdB = m_WfMindB   +40;
         m_PandMindB = m_WfMindB;
         m_PandMaxdB = m_WfMaxdB;
