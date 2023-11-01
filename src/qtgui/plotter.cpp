@@ -348,6 +348,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
     {
         if (event->buttons() & Qt::LeftButton)
         {
+            if (m_autoRangeActive) return;              // no dragging of  y-axis if autorange is active
             setCursor(QCursor(Qt::ClosedHandCursor));
             // move Y scale up/down
             float delta_px = m_Yzero - py;
@@ -852,8 +853,13 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
     else
     {
         if (m_CursorCaptured == YAXIS)
+        {
+            // double click toggles autorange
+            if (event->type() == QEvent::MouseButtonDblClick) m_autoRangeActive = !m_autoRangeActive;
+            
             // get ready for moving Y axis
             m_Yzero = py;
+        }
         else if (m_CursorCaptured == XAXIS)
         {
             m_Xzero = px;
@@ -1952,17 +1958,17 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     m_IIRValid = true;
 
-
-    if (m_autoRangeActive) {
     
-        /*
+    if(m_autoRangeActive)
+    {
+    /*
         Noise Floor detection a la Simon Brown
         A few weeks previously a reasonable logic was implemented for measuring the noise floor.
         Purists will not be happy - they rarely are, but it works for me.
         Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering,
         and we're left with a healthy 70% of the signal.
         Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
-         */
+     */
         
         
         // automatic determination of the noise level
@@ -2332,9 +2338,9 @@ void CPlotter::drawOverlay()
             painter.drawText(shadowRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
             // Foreground
             painter.setPen(QPen(QColor(PLOTTER_TEXT_COLOR)));
-            if(m_autoRangeActive) painter.setPen(QPen(QColor(Qt::darkGreen)));          // green dB when autorange active
             QRectF textRect(HOR_MARGIN, y - th / 2,
                             m_YAxisWidth - 2 * HOR_MARGIN, th);
+            if (m_autoRangeActive) painter.setPen(Qt::darkGreen);
             painter.drawText(textRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
         }
     }
@@ -2638,8 +2644,6 @@ void CPlotter::setAutoRange(bool enabled)
     m_autoRangeActive = enabled;
     qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
 }
-
-
 
 
 void CPlotter::setMarkers(qint64 a, qint64 b)
