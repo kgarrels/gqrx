@@ -35,6 +35,8 @@
 #include "meter.h"
 #include "plotter.h"    // for m_Noisefloor
 
+Q_LOGGING_CATEGORY(meter, "meter")
+
 // ratio to total control width or height
 #define CTRL_MARGIN 0.07        // left/right margin
 #define CTRL_MAJOR_START 0.3    // top of major tic line
@@ -180,7 +182,7 @@ void CMeter::draw(QPainter &painter)
     //painter.drawText(marg, height() - 2, QString::number((double)m_dBFS, 'f', 1) + " dBFS" );
     
     // calculate SNR by using signalPeak and noisefloor
-    painter.drawText(marg, height() - 2, QString::number(m_dBFSPeak - m_Noisefloor-32, 'f', 1) + " dB SN" );
+    painter.drawText(marg, height() - 2, QString::number(m_dBFSPeak - m_NoisefloorCorrection, 'f', 1) + " dB SN" );
 
     update();
 }
@@ -220,4 +222,11 @@ void CMeter::drawOverlay(QPainter &painter)
         painter.drawText(rect, Qt::AlignHCenter|Qt::AlignVCenter, QString::number(x));
         rect.translate(rwidth, 0);
     }
+}
+
+
+void CMeter::mousePressEvent(QMouseEvent *event)
+{
+    m_NoisefloorCorrection = m_dBFSPeak;
+    qCDebug(meter) << "noisefloor correction: " << m_NoisefloorCorrection;
 }

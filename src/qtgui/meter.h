@@ -51,6 +51,8 @@ public slots:
 
 protected:
     void paintEvent(QPaintEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+
 
 private:
     void draw(QPainter &painter);
@@ -61,5 +63,6 @@ private:
     qreal   m_Siglevel;
     float   m_dBFS;
     float   m_Noisefloor=0;
+    float   m_NoisefloorCorrection=-100;
     qreal   m_Sql;
 };
