@@ -63,6 +63,6 @@ private:
     qreal   m_Siglevel;
     float   m_dBFS;
     float   m_Noisefloor=0;
-    float   m_NoisefloorCorrection=-100;
+    float   m_NoisefloorCorrection=26;  // correction for fft size/sample rate -> 7Hz RBW to 2800Hz demod BW
     qreal   m_Sql;
 };

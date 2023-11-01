@@ -182,7 +182,7 @@ void CMeter::draw(QPainter &painter)
     //painter.drawText(marg, height() - 2, QString::number((double)m_dBFS, 'f', 1) + " dBFS" );
     
     // calculate SNR by using signalPeak and noisefloor
-    painter.drawText(marg, height() - 2, QString::number(m_dBFSPeak - m_NoisefloorCorrection, 'f', 1) + " dB SN" );
+    painter.drawText(marg, height() - 2, QString::number(m_dBFSPeak - m_Noisefloor - m_NoisefloorCorrection, 'f', 1) + " dB SN" );
 
     update();
 }
@@ -227,6 +227,6 @@ void CMeter::drawOverlay(QPainter &painter)
 
 void CMeter::mousePressEvent(QMouseEvent *event)
 {
-    m_NoisefloorCorrection = m_dBFSPeak;
+    m_NoisefloorCorrection = m_dBFSPeak - m_Noisefloor ;
     qCDebug(meter) << "noisefloor correction: " << m_NoisefloorCorrection;
 }
