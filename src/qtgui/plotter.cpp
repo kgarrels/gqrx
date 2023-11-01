@@ -1979,18 +1979,21 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float lowestValue;
         static float minAvg = 0;
 
-        static std::vector<float>fftCopy;
-        fftCopy.resize(size);
-        
         long offset = (long) size / 8;
+
+#define nf_old
+#ifdef nf_old
+        //old method
+        static std::vector<float>fftCopy;
+        fftCopy.resize(size - 2*offset);
         std::copy(&m_fftIIR[offset], &m_fftIIR[size-offset], &fftCopy[0]);      // copy from +offset to size-offet
         std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);      // sort
-
-        //m_fftData = fftCopy;    // test only, view sorted bins in fft
-
         const long bins=(size -2*offset)/10;
         lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
-        
+#else
+        // new method: brute force minimum
+        lowestValue = *std::min_element(&m_fftIIR[offset], &m_fftIIR[size-offset]);
+#endif
         // we have a huge jump, reset all averages
         if(std::max(minAvg, lowestValue) / std::min(minAvg, lowestValue) > 20 ) {
             minAvg = lowestValue;
