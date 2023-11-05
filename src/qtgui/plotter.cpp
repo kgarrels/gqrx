@@ -195,13 +195,13 @@ QSize CPlotter::sizeHint() const
 void CPlotter::mouseMoveEvent(QMouseEvent* event)
 {
     QPoint pt = event->pos();
-
+    
     int w = m_OverlayPixmap.width();
     int h = m_OverlayPixmap.height();
     int px = qRound((qreal)pt.x() * m_DPR);
     int py = qRound((qreal)pt.y() * m_DPR);
     QPoint ppos = QPoint(px, py);
-
+    
     /* mouse enter / mouse leave events */
     if (py < h)
     {
@@ -297,9 +297,9 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
                     QString toolTipText;
                     qint64 hoverFrequency = freqFromX(px);
                     toolTipText = QString("%1 kHz\nΔ %2 kHz")
-                                          .arg(hoverFrequency/1.e3, 0, 'f', 3)
-                                          .arg(locale().toString((hoverFrequency - m_DemodCenterFreq)/1.e3, 'f', 3));
-
+                        .arg(hoverFrequency/1.e3, 0, 'f', 3)
+                        .arg(locale().toString((hoverFrequency - m_DemodCenterFreq)/1.e3, 'f', 3));
+                    
                     QFontMetricsF metrics(m_Font);
                     qreal bandTopY = ((qreal)h) - metrics.height() - 2 * VER_MARGIN - m_BandPlanHeight;
                     QList<BandInfo> hoverBands = BandPlan::Get().getBandsEncompassing(hoverFrequency);
@@ -321,7 +321,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
         {
             if (NOCAP != m_CursorCaptured)
                 setCursor(QCursor(Qt::ArrowCursor));
-
+            
             m_CursorCaptured = NOCAP;
             m_GrabPosition = 0;
         }
@@ -338,10 +338,10 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             else{
                 timeStr = "[time not valid]";
             }
-
+            
             showToolTip(event, QString("%1\n%2 kHz")
-                                       .arg(timeStr)
-                                       .arg(freqFromX(px)/1.e3, 0, 'f', 3));
+                        .arg(timeStr)
+                        .arg(freqFromX(px)/1.e3, 0, 'f', 3));
         }
     }
     // process mouse moves while in cursor capture modes
@@ -349,6 +349,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
     {
         if (event->buttons() & Qt::LeftButton)
         {
+            if (m_autoRangeActive) return;              // no dragging of  y-axis if autorange is active
             setCursor(QCursor(Qt::ClosedHandCursor));
             // move Y scale up/down
             float delta_px = m_Yzero - py;
@@ -364,11 +365,13 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             else
             {
                 emit pandapterRangeChanged(m_PandMindB, m_PandMaxdB);
-
+                
+                m_MaxHoldValid = false;
+                m_MinHoldValid = false;
                 m_histIIRValid = false;
-
+                
                 m_Yzero = py;
-
+                
                 updateOverlay();
             }
         }
@@ -381,27 +384,22 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             // pan viewable range or move center frequency
             int delta_px = m_Xzero - px;
             qint64 delta_hz = qRound64((qreal)delta_px * (qreal)m_Span / (qreal)w);
-            if (delta_hz != 0) // update m_Xzero only on real change
+            if (event->buttons() & Qt::LeftButton)
             {
-                if (event->buttons() & Qt::MiddleButton)
-                {
-                    m_CenterFreq += delta_hz;
-                    m_DemodCenterFreq += delta_hz;
-                    emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
-                }
-                else
-                {
-                    setFftCenterFreq(m_FftCenter + delta_hz);
-                }
-
-                m_MaxHoldValid = false;
-                m_MinHoldValid = false;
-                m_histIIRValid = false;
-
-                m_Xzero = px;
-
-                updateOverlay();
+                setCenterFreq(m_CenterFreq + delta_hz);
+                emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
+            else
+            {
+                setFftCenterFreq(m_FftCenter + delta_hz);
+            }
+
+            m_MaxHoldValid = false;
+            m_MinHoldValid = false;
+            m_histIIRValid = false;
+
+            updateOverlay();            
+            m_Xzero = px;
         }
     }
     else if (LEFT == m_CursorCaptured)
@@ -602,6 +600,82 @@ void CPlotter::clearWaterfallBuf()
         m_wfbuf[i] = 0.0;
 }
 
+
+/**
+ * @brief Save waterfall to a graphics file
+ * @param filename
+ * @return TRUE if the save successful, FALSE if an error occurred.
+ *
+ * We assume that frequency strings are up to date
+ */
+/*
+bool CPlotter::saveWaterfall(const QString & filename) const
+{
+    QBrush          axis_brush(QColor(0x00, 0x00, 0x00, 0x70), Qt::SolidPattern);
+    QPixmap         pixmap(m_WaterfallImage);
+    QPainter        painter(&pixmap);
+    QRect           rect;
+    QDateTime       tt;
+    QFont           font("sans-serif");
+    QFontMetricsF   font_metrics(font);
+    float           pixperdiv;
+    int             x, y, w, h;
+    int             hxa, wya;
+    int             i;
+
+    w = pixmap.width();
+    h = pixmap.height();
+    hxa = font_metrics.height() + 5;    // height of X axis
+    wya = font_metrics.boundingRect("2008.08.08").width() + 5; // width of Y axis
+    y = h - hxa;
+    pixperdiv = (float) w / (float) m_HorDivs;
+
+    painter.setBrush(axis_brush);
+    painter.setPen(QColor(0x0, 0x0, 0x0, 0x70));
+    painter.drawRect(0, y, w, hxa);
+    painter.drawRect(0, 0, wya, h - hxa - 1);
+    painter.setFont(font);
+    painter.setPen(QColor(0xFF, 0xFF, 0xFF, 0xFF));
+
+    // skip last frequency entry
+    for (i = 2; i < m_HorDivs - 1; i++)
+    {
+        // frequency tick marks
+        x = (int)((float)i * pixperdiv);
+        painter.drawLine(x, y, x, y + 5);
+
+        // frequency strings
+        x = (int)((float)i * pixperdiv - pixperdiv / 2.0f);
+        rect.setRect(x, y, (int)pixperdiv, hxa);
+        painter.drawText(rect, Qt::AlignHCenter|Qt::AlignBottom, m_HDivText[i]);
+    }
+    rect.setRect(w - pixperdiv - 10, y, pixperdiv, hxa);
+    painter.drawText(rect, Qt::AlignRight|Qt::AlignBottom, tr("MHz"));
+
+    quint64 msec;
+    int tdivs = h / 70 + 1;
+    pixperdiv = (float) h / (float) tdivs;
+    tt.setTimeSpec(Qt::OffsetFromUTC);
+    for (i = 1; i < tdivs; i++)
+    {
+        y = (int)((float)i * pixperdiv);
+        if (msec_per_wfline > 0)
+            msec =  tlast_wf_ms - qRound(y * msec_per_wfline);
+        else
+            msec =  tlast_wf_ms - qRound(y * 1000.0 / fft_rate);
+
+        tt.setMSecsSinceEpoch(msec);
+        rect.setRect(0, y - font_metrics.height(), wya - 5, font_metrics.height());
+        painter.drawText(rect, Qt::AlignRight|Qt::AlignVCenter, tt.toString("yyyy.MM.dd"));
+        painter.drawLine(wya - 5, y, wya, y);
+        rect.setRect(0, y, wya - 5, font_metrics.height());
+        painter.drawText(rect, Qt::AlignRight|Qt::AlignVCenter, tt.toString("hh:mm:ss"));
+    }
+
+    return pixmap.save(filename, nullptr, -1);
+}
+*/
+
 /** Get waterfall time resolution in milleconds / line. */
 quint64 CPlotter::getWfTimeRes() const
 {
@@ -763,8 +837,14 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
     else
     {
         if (m_CursorCaptured == YAXIS)
+        {
+            // double click toggles autorange of allowed
+            if (event->type() == QEvent::MouseButtonDblClick) {
+                if (m_autoRangeAllowed) m_autoRangeActive = !m_autoRangeActive;
+            }
             // get ready for moving Y axis
             m_Yzero = py;
+        }
         else if (m_CursorCaptured == XAXIS)
         {
             m_Xzero = px;
@@ -934,6 +1014,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
     // zoom faster when Ctrl is held
     double zoomBase = (event->modifiers() & Qt::ControlModifier) ? 0.7 : 0.9;
 
+    //qCDebug(plotter) << "wheel event " << event;
+   
     if (m_CursorCaptured == YAXIS)
     {
         // Vertical zoom. Wheel down: zoom out, wheel up: zoom in
@@ -988,8 +1070,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
         numSteps = m_CumWheelDelta / (8.0 * 15.0);
 
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/5);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/5 );
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1848,6 +1930,10 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     {
         // Reallocate and invalidate IIRs
         m_fftData.resize(size);
+
+        const int offset = (long) size / 8;      // for auto mode: offset to skip the 1st and last eigth of the spectrum
+        m_fftCopy.resize(size -2*offset);
+
         m_fftIIR.resize(size);
         m_X.resize(size);
 
@@ -1919,6 +2005,67 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     m_IIRValid = true;
 
+    
+    if(m_autoRangeActive)
+    {
+    /*
+        Noise Floor detection a la Simon Brown
+        A few weeks previously a reasonable logic was implemented for measuring the noise floor.
+        Purists will not be happy - they rarely are, but it works for me.
+        Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering,
+        and we're left with a healthy 70% of the signal.
+        Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
+     */
+        
+        
+        // automatic determination of the noise level
+        // ignore the first and last offset bins
+
+        // cut away the first/last partsof the waterfall
+        #define MAX_FFT_SIZE 1048576
+        float lowestValue;
+        static float minAvg = 0;
+
+        long offset = (long) size / 4;      // skip the 1st quarter and the last quarter of the spectrum
+
+        std::vector<float>fftCopy(m_fftIIR.size());                                          // will be too big, who cares
+        std::copy(m_fftIIR.begin()+offset, m_fftIIR.end()-offset , fftCopy.begin());        // copy from +offset to size-offet
+        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);                  // sort
+        
+        const long bins = 20; //=(size -2*offset)/10;
+        lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
+        
+        // protect against NaN
+        if (lowestValue != lowestValue) {
+            qCDebug(plotter) << "lowestValue NaN";
+            return;
+        }
+
+        // do a moving averge
+        const float alpha = 0.1f;
+        minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
+        
+        float mindB = 10*log10f(minAvg);
+        static float mindB_old = 0;
+
+        // set the panadapter limits if it changed <0.1dB
+        if (abs(mindB-mindB_old) > 0.1) {
+            m_DrawOverlay = true;
+            mindB_old = mindB;
+            
+            // set values to new bounds
+            m_Noisefloor = mindB;          // publish the noisefloor to allow meter correction +kai
+           
+            m_PandMindB = mindB;
+            m_PandMaxdB = m_PandMindB   +40;
+            m_WfMindB = mindB            +0;     // give some more blue
+            m_WfMaxdB = m_WfMindB       +40;
+            qCDebug(plotter) << "fft min" << mindB;
+        }
+ 
+    } // m_autorange_active
+
+    m_DrawOverlay = true;
     draw(true);
 }
 
@@ -1931,6 +2078,7 @@ void CPlotter::setFftRange(float min, float max)
 {
     setWaterfallRange(min, max);
     setPandapterRange(min, max);
+
 }
 
 void CPlotter::setPandapterRange(float min, float max)
@@ -1940,6 +2088,11 @@ void CPlotter::setPandapterRange(float min, float max)
 
     m_PandMindB = min;
     m_PandMaxdB = max;
+    m_PandMindBSlider = min;
+    m_PandMaxdBSlider = max;
+
+    m_MaxHoldValid = false;
+    m_MinHoldValid = false;
     m_histIIRValid = false;
     updateOverlay();
 }
@@ -1948,9 +2101,13 @@ void CPlotter::setWaterfallRange(float min, float max)
 {
     if (out_of_range(min, max))
         return;
-
     m_WfMindB = min;
     m_WfMaxdB = max;
+    m_WfMindBSlider = min;
+    m_WfMaxdBSlider = max;
+  
+    qCDebug(plotter) << "new WaterfallRange: " << min << " to " << max;
+
     // no overlay change is necessary
 }
 
@@ -2188,10 +2345,10 @@ void CPlotter::drawOverlay()
     pixperdiv = h * (qreal) dbstepsize / (qreal) (m_PandMaxdB - m_PandMindB);
     adjoffset = h * (mindbadj - (qreal) m_PandMindB) / (qreal) (m_PandMaxdB - m_PandMindB);
 
-    qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
-                     << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
-                     << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
-
+    // qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
+    //                  << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
+    //                  << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
+    
     // Hairline for grid lines
     painter.setPen(QPen(QColor::fromRgba(PLOTTER_GRID_COLOR), 0.0, Qt::DotLine));
     for (int i = 0; i <= m_VerDivs; i++)
@@ -2216,9 +2373,10 @@ void CPlotter::drawOverlay()
                               m_YAxisWidth - 2 * HOR_MARGIN, th);
             painter.drawText(shadowRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
             // Foreground
-            painter.setPen(QPen(QColor::fromRgba(PLOTTER_TEXT_COLOR)));
+            painter.setPen(QPen(QColor(PLOTTER_TEXT_COLOR)));
             QRectF textRect(HOR_MARGIN, y - th / 2,
                             m_YAxisWidth - 2 * HOR_MARGIN, th);
+            if (m_autoRangeActive) painter.setPen(Qt::darkGreen);
             painter.drawText(textRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
         }
     }
@@ -2254,7 +2412,7 @@ void CPlotter::makeFrequencyStrs()
 {
     qint64  StartFreq = m_StartFreqAdj;
     double  freq;
-    int     i,j;
+    qint64     i,j;
 
     if ((1 == m_FreqUnits) || (m_FreqDigits == 0))
     {
@@ -2277,14 +2435,14 @@ void CPlotter::makeFrequencyStrs()
     }
     // now find the division text with the longest non-zero digit
     // to the right of the decimal point.
-    int max = 0;
+    qint64 max = 0;
     for (i = 0; i <= m_HorDivs; i++)
     {
-        int dp = m_HDivText[i].indexOf('.');
-        int l = m_HDivText[i].length()-1;
+        qint64 dp = m_HDivText[i].indexOf('.');
+        qint64 l = m_HDivText[i].length()-1;
         for (j = l; j > dp; j--)
         {
-            if (m_HDivText[i][j] != '0')
+            if (m_HDivText[i][(uint)j] != '0')
                 break;
         }
         if ((j - dp) > max)
@@ -2391,9 +2549,55 @@ void CPlotter::setCenterFreq(quint64 f)
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
     m_histIIRValid = false;
-    m_IIRValid = false;
 
-    updateOverlay();
+    // move waterfall horizontally
+    int w, h;
+    static qint64 old_f=0;      // remember old freq
+
+    int    w = m_WaterfallImage.width();
+    int    h = m_WaterfallImage.height();
+    static quint64 old_f=0;
+
+    qreal  ratio = (qreal)w / (qreal)m_Span;
+    
+    qint64 deltaf = f - old_f;
+    qreal deltax = deltaf * ratio;
+
+    // Shift left or right
+    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta x " << deltax << "width " << w;
+
+    // scroll waterfall horizontally
+    if (abs(deltax) < w/2)
+    {
+        m_WaterfallImage = m_WaterfallImage.copy(deltax, 0, w, h);
+
+        m_MaxHoldValid = false;
+        m_MinHoldValid = false;
+        m_histIIRValid = false;
+    }
+     
+    
+    old_f = f;
+    if (abs(deltaX) < w/2)
+    {
+        QRegion *exposed = new QRegion;
+        QPixmap wf_pixmap = QPixmap::fromImage(m_WaterfallImage);
+
+        wf_pixmap.scroll(deltaX, 0, 0, 0, w, h, exposed);
+        qCDebug(plotter) << "exposed: " << *exposed;
+
+        QPainter painter1(&wf_pixmap);
+        painter1.fillRect(exposed->boundingRect(), Qt::black);
+
+        m_WaterfallImage = wf_pixmap.toImage();
+        
+        m_MaxHoldValid = false;
+        m_MinHoldValid = false;
+        m_histIIRValid = false;
+        
+        updateOverlay();
+    }
+
 }
 
 // Invalidate overlay. If not running, force a redraw.
@@ -2489,6 +2693,14 @@ void CPlotter::enableMarkers(bool enabled)
     m_MarkersEnabled = enabled;
 }
 
+/** Set auto range on or off. */
+void CPlotter::setAutoRange(bool enabled)
+{
+    m_autoRangeActive = enabled;      
+    qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
+}
+
+
 void CPlotter::setMarkers(qint64 a, qint64 b)
 {
     // Invalidate x positions
@@ -2510,10 +2722,11 @@ void CPlotter::clearWaterfall()
 
 void CPlotter::calcDivSize (qint64 low, qint64 high, int divswanted, qint64 &adjlow, qint64 &step, int& divs)
 {
+/*
     qCDebug(plotter) << "low:" << low;
     qCDebug(plotter) << "high:" << high;
     qCDebug(plotter) << "divswanted:" << divswanted;
-
+*/
     if (divswanted == 0)
         return;
 
@@ -2540,9 +2753,11 @@ void CPlotter::calcDivSize (qint64 low, qint64 high, int divswanted, qint64 &adj
     if (adjlow < low)
         adjlow += step;
 
+/*
     qCDebug(plotter) << "adjlow:" << adjlow;
     qCDebug(plotter) << "step:" << step;
     qCDebug(plotter) << "divs:" << divs;
+*/
 }
 
 void CPlotter::showToolTip(QMouseEvent* event, QString toolTipText)
