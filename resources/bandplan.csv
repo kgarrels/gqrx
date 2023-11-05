@@ -7,11 +7,11 @@
 3500000,      3600000,      CW,  10, #90009470, 80m CW/Data Ham Band
 3600000,      4000000,      CW,  10, #90009470, 80m Phone Ham Band
 5351500,      5366500,      USB, 10, #90009470, 60m Ham Band
-7000000,      7125000,      CW,  10, #90009470, 40m CW/Data Ham Band
-7125000,      7300000,      LSB, 10, #90009470, 40m Phone Ham Band
+7000000,      7100000,      CW,  10, #90009470, 40m CW/Data Ham Band
+7100000,      7200000,      LSB, 10, #90009470, 40m Phone Ham Band
 10100000,     10150000,     CW,  10, #90009470, 30m CW/Data Ham Band
-14000000,     14150000,     CW,  10, #90009470, 20m CW/Data Ham Band
-14150000,     14350000,     USB, 10, #90009470, 20m Phone Ham Band
+14000000,     14100000,     CW,  10, #90009470, 20m CW/Data Ham Band
+14100000,     14350000,     USB, 10, #90009470, 20m Phone Ham Band
 18068000,     18110000,     CW,  10, #90009470, 17m CW/Data Ham Band
 18110000,     18168000,     USB, 10, #90009470, 17m Ham Band
 21000000,     21200000,     CW,  10, #90009470, 15m CW/Data Ham Band
