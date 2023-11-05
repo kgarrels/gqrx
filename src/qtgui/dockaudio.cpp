@@ -28,7 +28,7 @@
 #include "dockaudio.h"
 #include "ui_dockaudio.h"
 
-#define DEFAULT_FFT_SPLIT 100
+#define DEFAULT_FFT_SPLIT 40
 
 DockAudio::DockAudio(QWidget *parent) :
     QDockWidget(parent),
@@ -65,6 +65,7 @@ DockAudio::DockAudio(QWidget *parent) :
     ui->audioSpectrum->setVdivDelta(40);
     ui->audioSpectrum->setFreqDigits(1);
     ui->audioSpectrum->setRunningState(true);
+    ui->audioSpectrum->m_autoRangeActive = false;   // no autorange for the audio plotter
 
     QShortcut *rec_toggle_shortcut = new QShortcut(QKeySequence(Qt::Key_R), this);
     QShortcut *mute_toggle_shortcut = new QShortcut(QKeySequence(Qt::Key_M), this);
