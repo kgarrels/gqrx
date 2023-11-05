@@ -178,12 +178,12 @@ int portaudio_sink::work(int noutput_items,
         *ptr++ = *data_r++;
     }
 
-    err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);
-    if (err)
-        fprintf(stderr,
-                "portaudio_sink::work(): Error writing to audio device: %s\n",
-                Pa_GetErrorText(err));
-
+    // audiobuffer will contain zeros if muted
+    if (audio_buffer[0] != 0.f) {
+        err = Pa_WriteStream(d_stream, audio_buffer, noutput_items);
+        if (err) fprintf(stderr, "portaudio_sink::work(): Error writing to audio device: %s\n", Pa_GetErrorText(err));
+    }
+    
     return noutput_items;
 
 // code below supports 1 or 2 channels
