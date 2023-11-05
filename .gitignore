@@ -8,4 +8,5 @@
 /Gqrx.app/
 .idea/
 cmake-build*/
+version.txt
 /CMakeLists.txt.user
