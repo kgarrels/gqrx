@@ -24,20 +24,20 @@
 #include <math.h>
 #include <gnuradio/io_signature.h>
 #include <gnuradio/gr_complex.h>
-#include "dsp/rx_noise_blanker_cc.h"
+#include "dsp/fft_noise_blanker_cc.h"
 
-rx_nb_cc_sptr make_rx_nb_cc(double sample_rate, float thld1, float thld2)
+fft_nb_cc_sptr make_fft_nb_cc(double sample_rate, float thld1, float thld2)
 {
-    return gnuradio::get_initial_sptr(new rx_nb_cc(sample_rate, thld1, thld2));
+    return gnuradio::get_initial_sptr(new fft_nb_cc(sample_rate, thld1, thld2));
 }
 
 
 /*! \brief Create noise blanker object.
  *
- * Use make_rx_nb_cc() instead.
+ * Use make_fft_nb_cc() instead.
  */
-rx_nb_cc::rx_nb_cc(double sample_rate, float thld1, float thld2)
-    : gr::sync_block ("rx_nb_cc",
+fft_nb_cc::fft_nb_cc(double sample_rate, float thld1, float thld2)
+    : gr::sync_block ("fft_nb_cc",
           gr::io_signature::make(1, 1, sizeof(gr_complex)),
           gr::io_signature::make(1, 1, sizeof(gr_complex))),
       d_nb1_on(false),
@@ -55,7 +55,7 @@ rx_nb_cc::rx_nb_cc(double sample_rate, float thld1, float thld2)
 
 }
 
-rx_nb_cc::~rx_nb_cc()
+fft_nb_cc::~fft_nb_cc()
 {
 
 }
@@ -65,7 +65,7 @@ rx_nb_cc::~rx_nb_cc()
  *  \param input_items
  *  \param output_items
  */
-int rx_nb_cc::work(int noutput_items,
+int fft_nb_cc::work(int noutput_items,
                    gr_vector_const_void_star &input_items,
                    gr_vector_void_star &output_items)
 {
@@ -87,7 +87,7 @@ int rx_nb_cc::work(int noutput_items,
     }
     if (d_nb2_on)
     {
-        process_nb2(out, noutput_items);
+        // process_nb2(out, noutput_items);     // not for fft_nb
     }
 
     return noutput_items;
@@ -102,7 +102,7 @@ int rx_nb_cc::work(int noutput_items,
  *
  * FIXME: Needs different constants for higher sample rates?
  */
-void rx_nb_cc::process_nb1(gr_complex *buf, int num)
+void fft_nb_cc::process_nb1(gr_complex *buf, int num)
 {
     float cmag;
     gr_complex zero(0.0, 0.0);
@@ -111,10 +111,10 @@ void rx_nb_cc::process_nb1(gr_complex *buf, int num)
     {
         cmag = abs(buf[i]);
         d_delay[d_sigidx] = buf[i];
-        d_avgmag_nb1 = 0.999*d_avgmag_nb1 + 0.001*cmag;
+        d_avgmag_nb1 = 0.99*d_avgmag_nb1 + 0.01*cmag;
 
         if ((d_hangtime == 0) && (cmag > (d_thld_nb1*d_avgmag_nb1)))
-            d_hangtime = 7;
+            d_hangtime = HANG;
 
         if (d_hangtime > 0)
         {
@@ -126,8 +126,8 @@ void rx_nb_cc::process_nb1(gr_complex *buf, int num)
             buf[i] = d_delay[d_delidx];
         }
 
-        d_sigidx = (d_sigidx + 7) & 7;
-        d_delidx = (d_delidx + 7) & 7;
+        d_sigidx = (d_sigidx + HANG) & HANG;
+        d_delidx = (d_delidx + HANG) & HANG;
     }
 }
 
@@ -140,7 +140,7 @@ void rx_nb_cc::process_nb1(gr_complex *buf, int num)
  *
  * FIXME: Needs different constants for higher sample rates?
  */
-void rx_nb_cc::process_nb2(gr_complex *buf, int num)
+void fft_nb_cc::process_nb2(gr_complex *buf, int num)
 {
     float cmag;
     gr_complex c1(0.75);
@@ -157,13 +157,13 @@ void rx_nb_cc::process_nb2(gr_complex *buf, int num)
     }
 }
 
-void rx_nb_cc::set_threshold1(float threshold)
+void fft_nb_cc::set_threshold1(float threshold)
 {
     if ((threshold >= 1.0) && (threshold <= 20.0))
         d_thld_nb1 = threshold;
 }
 
-void rx_nb_cc::set_threshold2(float threshold)
+void fft_nb_cc::set_threshold2(float threshold)
 {
     if ((threshold >= 0.0) && (threshold <= 15.0))
         d_thld_nb2 = threshold;

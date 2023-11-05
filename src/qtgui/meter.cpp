@@ -33,6 +33,9 @@
 #include <cmath>
 #include <QDebug>
 #include "meter.h"
+#include "plotter.h"    // for m_Noisefloor
+
+Q_LOGGING_CATEGORY(meter, "meter")
 
 // ratio to total control width or height
 #define CTRL_MARGIN 0.07        // left/right margin
@@ -41,11 +44,13 @@
 #define CTRL_XAXIS_HEGHT 0.4    // vertical position of horizontal axis
 #define CTRL_NEEDLE_TOP 0.4     // vertical position of top of needle triangle
 
-#define MIN_DB -100.0f
-#define MAX_DB +0.0f
+#define MIN_DB -100.0f          // both values adopted for panadapter +kai
+#define MAX_DB 0.0f
 
-#define ALPHA_DECAY     0.25f
-#define ALPHA_RISE      0.70f
+#define ALPHA_DECAY         0.5f
+#define ALPHA_RISE          0.5f
+#define ALPHA_PEAK_DECAY    0.05f   // +kai peak indicator
+#define ALPHA_PEAK_RISE     0.95f
 
 CMeter::CMeter(QWidget *parent) : QFrame(parent)
 {
@@ -69,10 +74,50 @@ QSize CMeter::sizeHint() const
     return QSize(100, 30);
 }
 
-void CMeter::setLevel(float dbfs)
+
+/*
+void CMeter::resizeEvent(QResizeEvent *)
 {
-    float alpha = dbfs < m_dBFS ? ALPHA_DECAY : ALPHA_RISE;
+    if (!size().isValid())
+        return;
+
+    if (m_Size != size())
+    {
+        // if size changed, resize pixmaps to new screensize
+        m_Size = size();
+        qreal dpr = devicePixelRatioF();
+        m_OverlayPixmap = QPixmap(m_Size.width() * dpr, m_Size.height() * dpr);
+        m_OverlayPixmap.setDevicePixelRatio(dpr);
+        m_OverlayPixmap.fill(Qt::black);
+        m_2DPixmap = QPixmap(m_Size.width() * dpr, m_Size.height() * dpr);
+        m_2DPixmap.setDevicePixelRatio(dpr);
+        m_2DPixmap.fill(Qt::black);
+
+        qreal w = (m_2DPixmap.width() / dpr) - 2 * CTRL_MARGIN * (m_2DPixmap.width() / dpr);
+        m_pixperdb = w / fabs((double)(MAX_DB - MIN_DB));
+        setSqlLevel(m_Sql);
+    }
+
+    DrawOverlay();
+    draw();
+}
+*/
+
+void CMeter::setLevel(float dbfs, float noisefloor)
+{
+    if (dbfs < MIN_DB)
+        dbfs = MIN_DB;
+    else if (dbfs > MAX_DB)
+        dbfs = MAX_DB;
+
+    float alpha  = dbfs < m_dBFS ? ALPHA_DECAY : ALPHA_RISE;
+    float alphaPeak  = dbfs < m_dBFSPeak ? ALPHA_PEAK_DECAY : ALPHA_PEAK_RISE;
+
     m_dBFS -= alpha * (m_dBFS - dbfs);
+    m_dBFSPeak -= alphaPeak * (m_dBFSPeak - dbfs);
+
+    m_Noisefloor = noisefloor;
+
     update();
 }
 
@@ -106,7 +151,20 @@ void CMeter::draw(QPainter &painter)
         pen.setJoinStyle(Qt::MiterJoin);
         painter.setPen(pen);
         painter.setBrush(QBrush(color));
+
         painter.drawRect(QRectF(marg, ht + 2, (qreal)(std::min(m_dBFS, MAX_DB) - MIN_DB) * pixperdb, 4));
+
+        // draw peak level
+        qreal x = marg + (qreal)(m_dBFSPeak - MIN_DB) * pixperdb;
+        painter.setPen(QPen(Qt::green, 1, Qt::SolidLine));             
+        painter.drawLine(QLineF(x, hline+2, x, hline+6));
+    }
+
+    if (m_Sql > MIN_DB)
+    {
+        qreal x = marg + (qreal)(m_Sql - MIN_DB) * pixperdb;
+        painter.setPen(QPen(Qt::yellow, 1, Qt::SolidLine));
+        painter.drawLine(QLineF(x, hline, x, hline + 8));
     }
 
     if (m_Sql > MIN_DB)
@@ -119,9 +177,14 @@ void CMeter::draw(QPainter &painter)
     QFont font("Arial");
     font.setPixelSize(height() / 4);
     painter.setFont(font);
-
     painter.setPen(QColor(0xDA, 0xDA, 0xDA, 0xFF));
-    painter.drawText(marg, height() - 2, QString::number((double)m_dBFS, 'f', 1) + " dBFS" );
+
+    //painter.drawText(marg, height() - 2, QString::number((double)m_dBFS, 'f', 1) + " dBFS" );
+    
+    // calculate SNR by using signalPeak and noisefloor
+    painter.drawText(marg, height() - 2, QString::number(m_dBFSPeak - m_Noisefloor - m_NoisefloorCorrection, 'f', 1) + " dB SN" );
+
+    update();
 }
 
 // Called to draw an overlay bitmap containing items that
@@ -159,4 +222,11 @@ void CMeter::drawOverlay(QPainter &painter)
         painter.drawText(rect, Qt::AlignHCenter|Qt::AlignVCenter, QString::number(x));
         rect.translate(rwidth, 0);
     }
+}
+
+
+void CMeter::mousePressEvent(QMouseEvent *event)
+{
+    m_NoisefloorCorrection = m_dBFSPeak - m_Noisefloor ;
+    qCDebug(meter) << "noisefloor correction: " << m_NoisefloorCorrection;
 }

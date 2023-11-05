@@ -289,6 +289,12 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("split");
 
+    if (ui->fftZoomSlider->value() != 1)
+        settings->setValue("fft_zoom", ui->fftZoomSlider->value());
+    else
+        settings->remove("fft_zoom");
+
+
     QColor fftColor = ui->colorPicker->currentColor();
     if (fftColor != QColor(0xFF,0xFF,0xFF,0xFF))
         settings->setValue("pandapter_color", fftColor);
@@ -331,6 +337,12 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("db_ranges_locked");
 
+    // autorange
+    if (ui->autoCheckBox->isChecked())
+        settings->setValue("auto_range_enabled", true);
+    else
+        settings->remove("auto_range_enabled");
+
     // Band Plan
     if (ui->bandPlanCheckBox->isChecked())
         settings->setValue("bandplan", true);
@@ -354,6 +366,14 @@ void DockFft::saveSettings(QSettings *settings)
     else
         settings->remove("peak_hold");
 
+    // NoiseBlanker for FFT/Waterfall
+    if (ui->fftNbCheckbox->isChecked())
+        settings->setValue("fft_noiseblanker", true);
+    else
+        settings->setValue("fft_noiseblanker", false);
+    intval = ui->fftNbSlider->value();
+    settings->setValue("fft_noiseblanker_value", intval);
+
     if (ui->minHoldCheckBox->isChecked())
         settings->setValue("min_hold", true);
     else
@@ -363,6 +383,13 @@ void DockFft::saveSettings(QSettings *settings)
         settings->setValue("waterfall_colormap", ui->cmapComboBox->currentData().toString());
     else
         settings->remove("waterfall_colormap");
+    // autorange
+    if (ui->autoCheckBox->isChecked())
+        settings->setValue("auto_range_enabled", true);
+    else
+        settings->remove("auto_range_enabled");
+
+
 
     // FFT Zoom
     if (ui->fftZoomSlider->value() != DEFAULT_FFT_ZOOM)
@@ -461,6 +488,10 @@ void DockFft::readSettings(QSettings *settings)
     if (conv_ok)
         ui->fftSplitSlider->setValue(intval);
 
+    intval = settings->value("fft_zoom", 1).toInt(&conv_ok);
+    if (conv_ok)
+        ui->fftZoomSlider->setValue(intval);
+
     color = settings->value("pandapter_color", QColor(0xFF,0xFF,0xFF,0xFF)).value<QColor>();
     ui->colorPicker->setCurrentColor(color);
 
@@ -487,10 +518,19 @@ void DockFft::readSettings(QSettings *settings)
     bool_val = settings->value("db_ranges_locked", false).toBool();
     ui->lockCheckBox->setChecked(bool_val);
 
+    bool_val = settings->value("auto_range_enabled", false).toBool();
+    ui->autoCheckBox->setChecked(bool_val);
+
     bool_val = settings->value("bandplan", false).toBool();
     ui->bandPlanCheckBox->setChecked(bool_val);
     emit bandPlanChanged(bool_val);
 
+    bool_val = settings->value("fft_noiseblanker", false).toBool();
+    ui->fftNbCheckbox->setChecked(bool_val);
+    emit fftNbChanged(bool_val);
+    int int_val = settings->value("fft_noiseblanker_value", DEFAULT_FFT_MAX_DB).toInt();
+    ui->fftNbSlider->setValue(int_val);
+    emit fftNbSliderChanged(int_val);
     bool_val = settings->value("markers", false).toBool();
     ui->markersCheckBox->setChecked(bool_val);
     emit markersChanged(bool_val);
@@ -510,6 +550,8 @@ void DockFft::readSettings(QSettings *settings)
     QString cmap = settings->value("waterfall_colormap", "gqrx").toString();
     ui->cmapComboBox->setCurrentIndex(ui->cmapComboBox->findData(cmap));
 
+    bool_val = settings->value("auto_range_enabled", false).toBool();
+    ui->autoCheckBox->setChecked(bool_val);
     // FFT Zoom
     intval = settings->value("fft_zoom", DEFAULT_FFT_ZOOM).toInt(&conv_ok);
     if (conv_ok)
@@ -599,7 +641,7 @@ void DockFft::on_wfSpanComboBox_currentIndexChanged(int index)
 /** Set waterfall time resolution. */
 void DockFft::setWfResolution(quint64 msec_per_line)
 {
-    float res = 1.0e-3f * (float)msec_per_line;
+    float res = 1.0e-3 * (float)msec_per_line;
 
     ui->wfResLabel->setText(QString("Res: %1 s").arg((double)res, 0, 'f', 2));
 }
@@ -620,8 +662,8 @@ void DockFft::on_fftAvgSlider_valueChanged(int value)
     // slider.
     const float v = value;
     const float x = ui->fftAvgSlider->maximum();
-    const float limit = 1.0f - 1.0f/x;
-    const float avg = 1.0f - limit * v / x;
+    const float limit = 1.0 - 1.0/x;
+    const float avg = 1.0 - limit * v / x;
 
     emit fftAvgChanged(avg);
 }
@@ -726,6 +768,24 @@ void DockFft::on_peakDetectCheckBox_stateChanged(int state)
     emit peakDetectToggled(state == Qt::Checked);
 }
 
+/** Auto button toggled */
+void DockFft::on_autoCheckBox_toggled(bool checked)
+{
+    emit autoCheckBoxToggled(checked);
+}
+
+/** fftNbCheckbox changed */
+void DockFft::on_fftNbCheckbox_toggled(bool checked)
+{
+    emit fftNbChanged(checked);
+}
+
+/** fftNbCheckbox changed */
+void DockFft::on_fftNbSlider_valueChanged(int value)
+{
+    emit fftNbSliderChanged(value);
+}
+
 void DockFft::on_bandPlanCheckBox_stateChanged(int state)
 {
     emit bandPlanChanged(state == Qt::Checked);
@@ -791,7 +851,7 @@ void DockFft::updateInfoLabels(void)
     else
     {
         interval_ms = 1000 / rate;
-        interval_samples = m_sample_rate * (interval_ms / 1000.0f);
+        interval_samples = m_sample_rate * (interval_ms / 1000.0);
         if (interval_samples >= size)
             ovr = 0;
         else

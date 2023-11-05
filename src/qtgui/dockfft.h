@@ -78,6 +78,10 @@ signals:
     void bandPlanChanged(bool enabled);            /*! Toggle Band Plan at bottom of FFT area. */
     void markersChanged(bool enabled);             /*! Toggle markers and on-plot controls. */
     void wfColormapChanged(const QString &cmap);
+    void autoCheckBoxToggled(bool enabled);           /*! Enable peak detection in FFT plot */
+    void fftNbChanged(bool enabled);                /*! Enable noise blanker in FFT plot */
+    void fftNbSliderChanged(int value);      /*! change FFT Noise balnker threshold */
+
 
 public slots:
     void setPandapterRange(float min, float max);
@@ -88,6 +92,10 @@ public slots:
     void setActualFrameRate(float rate, bool dropping);
 
 private slots:
+    void on_fftNbSlider_valueChanged(int value);
+
+private slots:
+    
     void on_fftSizeComboBox_currentIndexChanged(int index);
     void on_fftRateComboBox_currentIndexChanged(int index);
     void on_fftWinComboBox_currentIndexChanged(int index);
@@ -113,6 +121,8 @@ private slots:
     void on_bandPlanCheckBox_stateChanged(int state);
     void on_markersCheckBox_stateChanged(int state);
     void on_cmapComboBox_currentIndexChanged(int index);
+    void on_autoCheckBox_toggled(bool checked);
+    void on_fftNbCheckbox_toggled(bool checked);
 
 private:
     void updateInfoLabels(void);

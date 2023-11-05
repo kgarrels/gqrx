@@ -118,7 +118,7 @@ void DockAudio::setAudioGain(int gain)
  */
 void DockAudio::setAudioGainDb(float gain)
 {
-    ui->audioGainSlider->setValue(int(std::round(gain*10.0f)));
+    ui->audioGainSlider->setValue(int(std::round(gain*10.0)));
 }
 
 
@@ -186,7 +186,7 @@ void DockAudio::setWfColormap(const QString &cmap)
  */
 void DockAudio::on_audioGainSlider_valueChanged(int value)
 {
-    float gain = float(value) / 10.0f;
+    float gain = float(value) / 10.0;
 
     // update dB label
     ui->audioGainDbLabel->setText(QString("%1 dB").arg((double)gain, 5, 'f', 1));
@@ -285,7 +285,7 @@ void DockAudio::on_audioMuteButton_clicked(bool checked)
     else
     {
         int value = ui->audioGainSlider->value();
-        float gain = float(value) / 10.0f;
+        float gain = float(value) / 10.0;
         emit audioGainChanged(gain);
     }
 }
@@ -327,6 +327,7 @@ void DockAudio::setAudioPlayButtonState(bool checked)
 void DockAudio::saveSettings(QSettings *settings)
 {
     int     ival, fft_min, fft_max;
+    bool    muted;
 
     if (!settings)
         return;
@@ -335,12 +336,16 @@ void DockAudio::saveSettings(QSettings *settings)
 
     settings->setValue("gain", audioGain());
 
+    muted = ui->audioMuteButton->isChecked();
+    settings->setValue("muted", muted);
+    
     ival = audioOptions->getFftSplit();
     if (ival != DEFAULT_FFT_SPLIT)
         settings->setValue("fft_split", ival);
     else
         settings->remove("fft_split");
 
+   
     audioOptions->getPandapterRange(&fft_min, &fft_max);
     if (fft_min != -80)
         settings->setValue("pandapter_min_db", fft_min);
@@ -392,7 +397,7 @@ void DockAudio::saveSettings(QSettings *settings)
 void DockAudio::readSettings(QSettings *settings)
 {
     int     bool_val, ival, fft_min, fft_max;
-    bool    conv_ok = false;
+    bool    conv_ok = false, muted;
 
     if (!settings)
         return;
@@ -403,6 +408,10 @@ void DockAudio::readSettings(QSettings *settings)
     if (conv_ok)
         setAudioGain(ival);
 
+    muted = settings->value("muted", false).toBool();
+    on_audioMuteButton_clicked(muted);
+    ui->audioMuteButton->setChecked(muted);
+    
     ival = settings->value("fft_split", DEFAULT_FFT_SPLIT).toInt(&conv_ok);
     if (conv_ok)
         audioOptions->setFftSplit(ival);

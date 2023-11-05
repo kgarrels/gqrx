@@ -50,8 +50,8 @@ resampler_cc::resampler_cc(float rate)
     */
 
     /* generate taps */
-    double cutoff = rate > 1.0f ? 0.4 : 0.4*(double)rate;
-    double trans_width = rate > 1.0f ? 0.2 : 0.2*(double)rate;
+    double cutoff = rate > 1.0 ? 0.4 : 0.4*rate;
+    double trans_width = rate > 1.0 ? 0.2 : 0.2*rate;
     unsigned int flt_size = 32;
 
     d_taps = gr::filter::firdes::low_pass(flt_size, flt_size, cutoff, trans_width);
@@ -73,8 +73,8 @@ resampler_cc::~resampler_cc()
 void resampler_cc::set_rate(float rate)
 {
     /* generate taps */
-    double cutoff = rate > 1.0f ? 0.4 : 0.4*(double)rate;
-    double trans_width = rate > 1.0f ? 0.2 : 0.2*(double)rate;
+    double cutoff = rate > 1.0 ? 0.4 : 0.4*rate;
+    double trans_width = rate > 1.0 ? 0.2 : 0.2*rate;
     unsigned int flt_size = 32;
     d_taps = gr::filter::firdes::low_pass(flt_size, flt_size, cutoff, trans_width);
 
@@ -113,8 +113,8 @@ resampler_ff::resampler_ff(float rate)
     */
 
     /* generate taps */
-    double cutoff = rate > 1.0f ? 0.4 : 0.4*(double)rate;
-    double trans_width = rate > 1.0f ? 0.2 : 0.2*(double)rate;
+    double cutoff = rate > 1.0 ? 0.4 : 0.4*rate;
+    double trans_width = rate > 1.0 ? 0.2 : 0.2*rate;
     unsigned int flt_size = 32;
 
     d_taps = gr::filter::firdes::low_pass(flt_size, flt_size, cutoff, trans_width);
@@ -135,8 +135,8 @@ resampler_ff::~resampler_ff()
 void resampler_ff::set_rate(float rate)
 {
     /* generate taps */
-    double cutoff = rate > 1.0f ? 0.4 : 0.4*(double)rate;
-    double trans_width = rate > 1.0f ? 0.2 : 0.2*(double)rate;
+    double cutoff = rate > 1.0 ? 0.4 : 0.4*rate;
+    double trans_width = rate > 1.0 ? 0.2 : 0.2*rate;
     unsigned int flt_size = 32;
     d_taps = gr::filter::firdes::low_pass(flt_size, flt_size, cutoff, trans_width);
 

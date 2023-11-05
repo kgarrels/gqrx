@@ -54,6 +54,7 @@
 
 /* Qt Designer files */
 #include "ui_mainwindow.h"
+#include "ui_dockfft.h"
 
 /* DSP */
 #include "receiver.h"
@@ -103,6 +104,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     setMarkerA(MARKER_OFF);
     setMarkerB(MARKER_OFF);
     d_show_markers = true;
+    ui->statusBar->hide();
 
     /* frequency control widget */
     ui->freqCtrl->setup(0, 0, 9999e6, 1, FCTL_UNIT_NONE);
@@ -167,6 +169,11 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     auto *freq_shortcut = new QShortcut(QKeySequence(Qt::Key_F), this);
     QObject::connect(freq_shortcut, &QShortcut::activated, this, &MainWindow::frequencyFocusShortcut);
 
+    /* fft autorange shortcut */
+    auto *auto_shortcut = new QShortcut(QKeySequence(Qt::Key_A), this);
+    QObject::connect(auto_shortcut, &QShortcut::activated, this, &MainWindow::toggleAutoRange);
+
+    
     // zero cursor (rx filter offset)
     auto *rx_offset_zero_shortcut = new QShortcut(QKeySequence(Qt::Key_Z), this);
     QObject::connect(rx_offset_zero_shortcut, &QShortcut::activated, this, &MainWindow::rxOffsetZeroShortcut);
@@ -285,6 +292,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(uiDockFft, SIGNAL(gotoFftCenter()), ui->plotter, SLOT(moveToCenterFreq()));
     connect(uiDockFft, SIGNAL(gotoDemodFreq()), ui->plotter, SLOT(moveToDemodFreq()));
     connect(uiDockFft, SIGNAL(bandPlanChanged(bool)), ui->plotter, SLOT(enableBandPlan(bool)));
+    connect(uiDockFft, SIGNAL(autoCheckBoxToggled(bool)), this, SLOT(setAutoRange(bool)));        //+kai auto mode for plotter
     connect(uiDockFft, SIGNAL(markersChanged(bool)), ui->plotter, SLOT(enableMarkers(bool)));
     connect(uiDockFft, SIGNAL(markersChanged(bool)), this, SLOT(enableMarkers(bool)));
     connect(uiDockFft, SIGNAL(wfColormapChanged(const QString)), ui->plotter, SLOT(setWfColormap(const QString)));
@@ -306,6 +314,14 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(ui->plotter, SIGNAL(newZoomLevel(float)),
             uiDockFft, SLOT(setZoomLevel(float)));
     connect(ui->plotter, SIGNAL(newSize()), this, SLOT(setWfSize()));
+
+    connect(uiDockFft, SIGNAL(fftColorChanged(QColor)), this, SLOT(setFftColor(QColor)));
+    connect(uiDockFft, SIGNAL(fftFillToggled(bool)), this, SLOT(enableFftFill(bool)));
+    connect(uiDockFft, SIGNAL(fftMaxHoldToggled(bool)), ui->plotter, SLOT(enableMaxHold(bool)));
+    connect(uiDockFft, SIGNAL(fftMinHoldToggled(bool)), ui->plotter, SLOT(enableMinHold(bool)));
+    connect(uiDockFft, SIGNAL(peakDetectToggled(bool)), ui->plotter, SLOT(enablePeakDetect(bool)));
+    connect(uiDockFft, SIGNAL(fftNbSliderChanged(int)), this, SLOT(fftNbSliderChanged(int)));
+    connect(uiDockRDS, SIGNAL(rdsDecoderToggled(bool)), this, SLOT(setRdsDecoder(bool)));
     connect(ui->plotter, SIGNAL(markerSelectA(qint64)), this, SLOT(setMarkerA(qint64)));
     connect(ui->plotter, SIGNAL(markerSelectB(qint64)), this, SLOT(setMarkerB(qint64)));
 
@@ -349,7 +365,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(rds_timer, SIGNAL(timeout()), this, SLOT(rdsTimeout()));
 
     // enable frequency tooltips on FFT plot
-    ui->plotter->setTooltipsEnabled(true);
+    ui->plotter->setTooltipsEnabled(false);     // +kai, to nervous on display
 
     // Create list of input devices. This must be done before the configuration is
     // restored because device probing might change the device configuration
@@ -389,6 +405,8 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     }
 
     qsvg_dummy = new QSvgWidget();
+    on_actionDSP_triggered(true); //+kai autostart
+
 }
 
 MainWindow::~MainWindow()
@@ -526,6 +544,10 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     if (bool_val)
         ui->mainToolBar->hide();
 
+    // fullscreen
+    bool_val = m_settings->value("gui/fullscreen", true).toBool();
+    on_actionFullScreen_triggered(bool_val);
+
     // main window settings
     if (restore_mainwindow)
     {
@@ -534,6 +556,11 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
         restoreState(m_settings->value("gui/state", saveState()).toByteArray());
     }
 
+    // locked window
+    bool_val = m_settings->value("gui/lockedwindow", false).toBool();
+    ui->actionLock_Window->setChecked(bool_val);
+    on_actionLock_Window_triggered(bool_val);
+    
     QString indev = m_settings->value("input/device", "").toString();
     if (!indev.isEmpty())
     {
@@ -779,6 +806,8 @@ void MainWindow::storeSession()
     if (m_settings)
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
+        m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
+        
         m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
 
         uiDockInputCtl->saveSettings(m_settings);
@@ -793,7 +822,9 @@ void MainWindow::storeSession()
         {
             int     flo, fhi;
             ui->plotter->getHiLowCutFrequencies(&flo, &fhi);
-            if (flo != fhi)
+
+            // if (flo != fhi)    // FIXME: +kai why? It would not save filter settings when demod if off, lo=0 and high=0
+            if (true)
             {
                 m_settings->setValue("receiver/filter_low_cut", flo);
                 m_settings->setValue("receiver/filter_high_cut", fhi);
@@ -998,7 +1029,7 @@ void MainWindow::setLnbLo(double freq_mhz)
     ui->plotter->setCenterFreq(d_lnb_lo + d_hw_freq);
 
     // update LNB LO in settings
-    if (freq_mhz == 0.)
+    if (freq_mhz == 0.f)
         m_settings->remove("input/lnb_lo");
     else
         m_settings->setValue("input/lnb_lo", d_lnb_lo);
@@ -1260,7 +1291,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(-40000, -100, -5000, 0, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_USB:
@@ -1268,7 +1299,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(0, 5000, 100, 40000, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_CWL:
@@ -1293,7 +1324,7 @@ void MainWindow::selectDemod(int mode_idx)
         qDebug() << "Unsupported mode selection (can't happen!): " << mode_idx;
         flo = -5000;
         fhi = 5000;
-        click_res = 100;
+        click_res = 500;
         break;
     }
 
@@ -1465,8 +1496,10 @@ void MainWindow::meterTimeout()
     float level;
 
     level = rx->get_signal_pwr();
-    ui->sMeter->setLevel(level);
+    
+    ui->sMeter->setLevel(level, ui->plotter->m_Noisefloor);
     remote->setSignalLevel(level);
+    remote->setNoisefloor(ui->plotter->m_Noisefloor);
 }
 
 /** Baseband FFT plot timeout. */
@@ -1483,15 +1516,15 @@ void MainWindow::iqFftTimeout()
     // Track the frame rate and warn if not keeping up. Since the interval is ms, the timer can
     // not be set exactly to all rates.
     const quint64 now_ms = QDateTime::currentMSecsSinceEpoch();
-    const float expected_rate = 1000.0f / (float)iq_fft_timer->interval();
-    const float last_fft_rate = 1000.0f / (float)(now_ms - d_last_fft_ms);
-    const float alpha = std::pow(expected_rate, -0.75f);
-    if (d_avg_fft_rate == 0.0f)
+    const float expected_rate = 1000.0 / (float)iq_fft_timer->interval();
+    const float last_fft_rate = 1000.0 / (float)(now_ms - d_last_fft_ms);
+    const float alpha = std::pow(expected_rate, -0.75);
+    if (d_avg_fft_rate == 0.0)
         d_avg_fft_rate = expected_rate;
     else
-        d_avg_fft_rate = (1.0f - alpha) * d_avg_fft_rate + alpha * last_fft_rate;
+        d_avg_fft_rate = (1.0 - alpha) * d_avg_fft_rate + alpha * last_fft_rate;
 
-    const bool drop = d_avg_fft_rate < expected_rate * 0.95f;
+    const bool drop = d_avg_fft_rate < expected_rate * 0.95;
     if (drop != d_frame_drop) {
         if (drop) {
             uiDockFft->setActualFrameRate(d_avg_fft_rate, true);
@@ -1921,6 +1954,45 @@ void MainWindow::enableFftFill(bool enable)
     uiDockAudio->setFftFill(enable);
 }
 
+void MainWindow::setFftPeakHold(bool enable)
+{
+    ui->plotter->enablePeakDetect(enable);
+}
+
+void MainWindow::setPeakDetection(bool enabled)
+{
+    ui->plotter->enablePeakDetect(enabled);
+}
+
+void MainWindow::setAutoRange(bool enabled)
+{
+    d_automode_enabled = enabled;
+    
+    ui->plotter->setAutoRange(enabled);
+    qDebug() << "main window auto range: " << enabled;
+}
+
+void MainWindow::toggleAutoRange()
+{
+    
+    d_automode_enabled = !d_automode_enabled;
+    ui->plotter->setAutoRange(d_automode_enabled);
+    
+    qDebug() << "main window auto range: " << d_automode_enabled;
+}
+
+
+void MainWindow::fftNbChanged(bool state)
+{
+    rx->fftNbChanged(state);
+}
+
+void MainWindow::fftNbSliderChanged(int value)
+{
+    rx->fftNbSliderChanged(value);
+}
+
+
 /**
  * @brief Start/Stop DSP processing.
  * @param checked Flag indicating whether DSP processing should be ON or OFF.
@@ -2122,15 +2194,27 @@ void MainWindow::on_actionFullScreen_triggered(bool checked)
 {
     if (checked)
     {
-        ui->statusBar->hide();
         showFullScreen();
     }
     else
     {
-        ui->statusBar->show();
         showNormal();
     }
 }
+
+/** Full screen button or menu item toggled. */
+void MainWindow::on_actionStatus_Bar_triggered(bool checked)
+{
+    if (!checked)
+    {
+        ui->statusBar->hide();
+    }
+    else
+    {
+        ui->statusBar->show();
+    }
+}
+
 
 /** Remote control button (or menu item) toggled. */
 void MainWindow::on_actionRemoteControl_triggered(bool checked)
@@ -2424,6 +2508,9 @@ void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::about(this, tr("About Gqrx"),
         tr("<p>This is Gqrx %1</p>"
+           "<p>compiled %2 %3</p>"
+           "<p>Copyright (C) 2011-2020 Alexandru Csete & contributors.</p>"
+           "<p>Copyright (C) 2011-2022 Alexandru Csete & contributors.</p>"
            "<p>Copyright (C) 2011-2023 Alexandru Csete & contributors.</p>"
            "<p>Gqrx is a software defined radio (SDR) receiver powered by "
            "<a href='https://www.gnuradio.org/'>GNU Radio</a> and the Qt toolkit. "
@@ -2435,8 +2522,8 @@ void MainWindow::on_actionAbout_triggered()
            "<a href='https://gqrx.dk/'>Gqrx website</a>."
            "</p>"
            "<p>"
-           "Gqrx is licensed under the <a href='https://www.gnu.org/licenses/gpl-3.0.html'>GNU General Public License</a>."
-           "</p>").arg(VERSION));
+           "Gqrx is licensed under the <a href='http://www.gnu.org/licenses/gpl.html'>GNU General Public License</a>."
+           "</p>").arg(VERSION).arg(__DATE__).arg(__TIME__));
 }
 
 /**
@@ -2533,6 +2620,42 @@ void MainWindow::updateClusterSpots()
 void MainWindow::frequencyFocusShortcut()
 {
     ui->freqCtrl->setFrequencyFocus();
+}
+
+
+/*
+void MainWindow::showLocked()
+{
+    
+    this->show();
+
+    // update locked window
+    bool bool_val = m_settings->value("gui/lockedwindow", true).toBool();
+    on_actionLock_Window_triggered(bool_val);
+  
+}
+*/
+
+
+void MainWindow::on_actionLock_Window_triggered(bool checked)
+{
+    QRect geometry = this->geometry();
+    
+    if (checked)
+    {
+        this->setWindowFlags(this->windowFlags() | (Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    else
+    {
+        this->setWindowFlags(this->windowFlags() & !(Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    m_settings->setValue("gui/lockedwindow", checked);
+    
+    this->setGeometry(geometry);
+    
+    //qDebug() << "windows flags" << this->windowFlags();
+    qDebug() << "checked, window geometry:" << checked << geometry;
+    this->show();
 }
 
 void MainWindow::rxOffsetZeroShortcut()

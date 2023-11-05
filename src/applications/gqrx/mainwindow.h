@@ -71,6 +71,8 @@ public slots:
     void setMarkerB(qint64 freq);
     void enableMarkers(bool enable);
 
+
+
 private:
     Ui::MainWindow *ui;
 
@@ -96,6 +98,8 @@ private:
 
     std::vector<float> d_audioFftData;
     bool d_have_audio;  /*!< Whether we have audio (i.e. not with demod_off. */
+    
+    bool d_automode_enabled;
 
     /* dock widgets */
     DockRxOpt      *uiDockRxOpt;
@@ -184,6 +188,8 @@ private slots:
     double setSqlLevelAuto();
     void setAudioGain(float gain);
     void setPassband(int bandwidth);
+    void fftNbChanged(bool state);
+    void fftNbSliderChanged(int value);
 
     /* audio recording and playback */
     void startAudioRec(const QString& filename);
@@ -209,6 +215,11 @@ private slots:
     void setIqFftSplit(int pct_wf);
     void setAudioFftRate(int fps);
     void setFftColor(const QColor& color);
+    //void setFftFill(bool enable);
+    void setPeakDetection(bool enabled);
+    void setAutoRange(bool enabled);
+    void toggleAutoRange();
+    void setFftPeakHold(bool enable);
     void enableFftFill(bool enable);
     void setWfTimeSpan(quint64 span_ms);
     void setWfSize();
@@ -233,6 +244,7 @@ private slots:
     void on_actionSaveSettings_triggered();
     void on_actionIqTool_triggered();
     void on_actionFullScreen_triggered(bool checked);
+    void on_actionStatus_Bar_triggered(bool checked);
     void on_actionRemoteControl_triggered(bool checked);
     void on_actionRemoteConfig_triggered();
     void on_actionAFSK1200_triggered();
@@ -244,6 +256,9 @@ private slots:
     void on_actionAboutQt_triggered();
     void on_actionAddBookmark_triggered();
     void on_actionDX_Cluster_triggered();
+    void on_actionLock_Window_triggered(bool checked);
+
+
 
     /* markers*/
     void on_setMarkerButtonA_clicked();

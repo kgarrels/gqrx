@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.2)
 
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Project name
 project(gqrx)
 set(${PROJECT_NAME}_MAJOR "2")
 set(${PROJECT_NAME}_MINOR "17")
 set(${PROJECT_NAME}_PATCH "3")
 set(IS_RELEASE FALSE)
+SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
 
 if(IS_RELEASE)
     if(${PROJECT_NAME}_PATCH EQUAL 0)
@@ -47,6 +52,7 @@ endif()
 # Workaround for naming collision with log4cpp for Debug builds
 add_definitions(-DLOG4CPP_FIX_ERROR_COLLISION=1)
 
+message(${CMAKE_CXX_COMPILER_ID})
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # using regular Clang or AppleClang
     set(CMAKE_COMPILER_IS_CLANGXX 1)
@@ -55,7 +61,7 @@ endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
     add_definitions(-Wall)
     add_definitions(-Wextra)
-    add_definitions(-Wdouble-promotion)
+    #add_definitions(-Wdouble-promotion)
     add_definitions(-Wno-unused-parameter)
     add_definitions(-Wsign-compare)
 endif()
@@ -101,17 +107,6 @@ function(add_source_files list)
     set_property(GLOBAL APPEND PROPERTY ${list} "${SRCS}")
 endfunction(add_source_files)
 
-if(APPLE AND EXISTS /usr/local/opt/qt5)
-    # Homebrew installs Qt5 (up to at least 5.9.1) in
-    # /usr/local/opt/qt5, ensure it can be found by CMake since
-    # it is not in the default /usr/local prefix.
-    list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt5")
-endif()
-
-if(APPLE AND EXISTS /usr/local/opt/qt6)
-    list(APPEND CMAKE_PREFIX_PATH "/usr/local/opt/qt6")
-endif()
-
 if(APPLE AND EXISTS /usr/local/opt/icu4c/lib)
     # With Homebrew icu4c, `-licudata -licui18n -licuuc`
     # are required, which reside in /usr/local/opt/icu4c/lib.
@@ -122,7 +117,7 @@ else()
 endif()
 
 # 3rd Party Dependency Stuff
-option(FORCE_QT6 "Force Qt6 to be used" OFF)
+option(FORCE_QT6 "Force Qt6 to be used" ON)
 option(FORCE_QT5 "Force Qt5 to be used" OFF)
 
 if(FORCE_QT6)

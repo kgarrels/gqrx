@@ -35,8 +35,11 @@
 #include "dsp/correct_iq_cc.h"
 #include "dsp/filter/fir_decim.h"
 #include "dsp/rx_fft.h"
+#include "dsp/fft_noise_blanker_cc.h"
 #include "receivers/nbrx.h"
 #include "receivers/wfmrx.h"
+
+#include "qtgui/dockfft.h"
 
 #ifdef WITH_PULSEAUDIO
 #include "pulseaudio/pa_sink.h"
@@ -114,7 +117,11 @@ receiver::receiver(const std::string input_device,
     ddc = make_downconverter_cc(d_ddc_decim, 0.0, d_decim_rate);
     rx  = make_nbrx(d_quad_rate, d_audio_rate);
 
-    iq_swap = make_iq_swap_cc(false);
+    // create a noiseblanker for the fft/waterfall visualization
+    fft_nb = make_fft_nb_cc(d_quad_rate, 5, 5);
+
+
+    //iq_swap = make_iq_swap_cc(false);
     dc_corr = make_dc_corr_cc(d_decim_rate, 1.0);
     iq_fft = make_rx_fft_c(DEFAULT_FFT_SIZE, d_decim_rate, gr::fft::window::WIN_HANN);
 
@@ -129,6 +136,7 @@ receiver::receiver(const std::string input_device,
     audio_snk = make_pa_sink(audio_device, d_audio_rate, "GQRX", "Audio output");
 #elif WITH_PORTAUDIO
     audio_snk = make_portaudio_sink(audio_device, d_audio_rate, "GQRX", "Audio output");
+
 #else
     audio_snk = gr::audio::sink::make(d_audio_rate, audio_device, true);
 #endif
@@ -202,22 +210,22 @@ void receiver::set_input_device(const std::string device)
     if (d_decim >= 2)
     {
         tb->disconnect(src, 0, input_decim, 0);
-        tb->disconnect(input_decim, 0, iq_swap, 0);
+        //tb->disconnect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->disconnect(src, 0, iq_swap, 0);
+        //tb->disconnect(src, 0, iq_swap, 0);
     }
 
 #if GNURADIO_VERSION < 0x030802
     //Work around GNU Radio bug #3184
     //temporarily connect dummy source to ensure that previous device is closed
     src = osmosdr::source::make("file="+escape_filename(get_zero_file())+",freq=428e6,rate=96000,repeat=true,throttle=true");
-    tb->connect(src, 0, iq_swap, 0);
+    //tb->connect(src, 0, iq_swap, 0);
     tb->start();
     tb->stop();
     tb->wait();
-    tb->disconnect(src, 0, iq_swap, 0);
+    //tb->disconnect(src, 0, iq_swap, 0);
 #else
     src.reset();
 #endif
@@ -238,11 +246,11 @@ void receiver::set_input_device(const std::string device)
     if (d_decim >= 2)
     {
         tb->connect(src, 0, input_decim, 0);
-        tb->connect(input_decim, 0, iq_swap, 0);
+        //tb->connect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->connect(src, 0, iq_swap, 0);
+        //tb->connect(src, 0, iq_swap, 0);
     }
 
     if (d_running)
@@ -383,11 +391,11 @@ unsigned int receiver::set_input_decim(unsigned int decim)
     if (d_decim >= 2)
     {
         tb->disconnect(src, 0, input_decim, 0);
-        tb->disconnect(input_decim, 0, iq_swap, 0);
+        //tb->disconnect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->disconnect(src, 0, iq_swap, 0);
+        //tb->disconnect(src, 0, iq_swap, 0);
     }
 
     input_decim.reset();
@@ -424,11 +432,11 @@ unsigned int receiver::set_input_decim(unsigned int decim)
     if (d_decim >= 2)
     {
         tb->connect(src, 0, input_decim, 0);
-        tb->connect(input_decim, 0, iq_swap, 0);
+        //tb->connect(input_decim, 0, iq_swap, 0);
     }
     else
     {
-        tb->connect(src, 0, iq_swap, 0);
+        //tb->connect(src, 0, iq_swap, 0);
     }
 
 #ifdef CUSTOM_AIRSPY_KERNELS
@@ -465,7 +473,7 @@ void receiver::set_iq_swap(bool reversed)
         return;
 
     d_iq_rev = reversed;
-    iq_swap->set_enabled(d_iq_rev);
+    //iq_swap->set_enabled(d_iq_rev);
 }
 
 /**
@@ -767,6 +775,23 @@ int receiver::get_audio_fft_data(float* fftPoints)
     return audio_fft->get_fft_data(fftPoints);
 }
 
+/** Set noiseblanker for fft */
+void receiver::fftNbChanged(bool state)
+{
+    fft_nb->set_nb1_on(state);
+    fft_nb->set_nb2_on(state);
+    qDebug() << "fft noiseblanker changed" << state;
+}
+
+/** Set noiseblanker threshold for fft */
+void receiver::fftNbSliderChanged(int value)
+{
+    fft_nb->set_threshold2(value);
+    fft_nb->set_threshold2(value);
+    qDebug() << "fft noiseblanker value changed" << value;
+}
+
+
 receiver::status receiver::set_nb_on(int nbid, bool on)
 {
     if (rx->has_nb())
@@ -986,7 +1011,7 @@ receiver::status receiver::set_af_gain(float gain_db)
     float k;
 
     /* convert dB to factor */
-    k = powf(10.0f, gain_db / 20.0f);
+    k = pow(10.0, gain_db / 20.0);
     //std::cout << "G:" << gain_db << "dB / K:" << k << std::endl;
     audio_gain0->set_k(k);
     audio_gain1->set_k(k);
@@ -1353,8 +1378,8 @@ void receiver::connect_all(rx_chain type)
         tb->connect(b, 0, iq_sink, 0);
     }
 
-    tb->connect(b, 0, iq_swap, 0);
-    b = iq_swap;
+    //tb->connect(b, 0, iq_swap, 0);
+    //b = iq_swap;
 
     if (d_dc_cancel)
     {
@@ -1363,7 +1388,9 @@ void receiver::connect_all(rx_chain type)
     }
 
     // Visualization
-    tb->connect(b, 0, iq_fft, 0);
+    // nb before fft
+    tb->connect(b, 0, fft_nb, 0);
+    tb->connect(fft_nb, 0, iq_fft, 0);
 
     // RX demod chain
     switch (type)
