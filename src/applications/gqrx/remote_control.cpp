@@ -31,6 +31,9 @@
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "127.0.0.1"
 
+Q_LOGGING_CATEGORY(remote, "remote")
+
+
 RemoteControl::RemoteControl(QObject *parent) :
     QObject(parent)
 {
@@ -341,6 +344,7 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
     rc_filter_offset += delta;
     if ((rc_filter_offset > 0 && rc_filter_offset + rc_passband_hi < bwh_eff) ||
         (rc_filter_offset < 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
+//    if (false)        // +kai "center mode"
     {
         // move filter offset
         emit newFilterOffset(rc_filter_offset);
@@ -366,6 +370,11 @@ void RemoteControl::setSquelchLevel(double level)
     squelch_level = level;
 }
 
+/*! \brief Set noiseflorr level (from mainwindow). */
+void RemoteControl::setNoisefloor(double level)
+{
+    noisefloor = level;
+}
 /*! \brief Set audio gain (from mainwindow). */
 void RemoteControl::setAudioGain(float gain)
 {
@@ -684,6 +693,10 @@ QString RemoteControl::cmd_get_level(QStringList cmdlist)
     else if (lvl.compare("SQL", Qt::CaseInsensitive) == 0)
     {
         answer = QString("%1\n").arg((double)squelch_level, 0, 'f', 1);
+    }
+    else if (lvl.compare("nf", Qt::CaseInsensitive) == 0)
+    {
+        answer = QString("%1\n").arg(noisefloor, 0, 'f', 1);
     }
     else if (lvl.compare("AF", Qt::CaseInsensitive) == 0)
     {
