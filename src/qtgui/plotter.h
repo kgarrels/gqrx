@@ -269,7 +269,7 @@ private:
     eCapturetype    m_CursorCaptured;
     QPixmap     m_2DPixmap;         // Composite of everything displayed in the 2D plotter area
     QPixmap     m_OverlayPixmap;    // Grid, axes ... things that need to be drawn infrequently
-    QImage      m_WaterfallImage;
+    QPixmap     m_WaterfallPixmap;
     QColor      m_ColorTbl[256];
     QSize       m_Size;
     qreal       m_DPR{};
