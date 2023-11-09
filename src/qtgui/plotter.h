@@ -121,6 +121,15 @@ public:
         return m_FftCenter;
     }
 
+    qint64 getMinFrequency() const {
+        return m_CenterFreq + m_FftCenter - m_Span / 2;
+    }
+
+    qint64 getMaxFrequency() const {
+        return m_CenterFreq + m_FftCenter + m_Span / 2;
+    }
+
+
     int     getNearestPeak(QPoint pt);
     void    setWaterfallSpan(quint64 span_ms);
     quint64 getWfTimeRes() const;

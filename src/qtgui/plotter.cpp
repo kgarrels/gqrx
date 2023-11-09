@@ -388,6 +388,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             {
                 m_CenterFreq += delta_hz;
                 //m_DemodCenterFreq += delta_hz;    // do not move the demod freq, just move the center
+                //qCDebug(plotter) << "mouse drag: " << px << "delta hz: " << delta_hz << "center: " << m_CenterFreq << "demod: " << m_DemodCenterFreq;
                 emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
             else
@@ -601,81 +602,6 @@ void CPlotter::clearWaterfallBuf()
         m_wfbuf[i] = 0.0;
 }
 
-
-/**
- * @brief Save waterfall to a graphics file
- * @param filename
- * @return TRUE if the save successful, FALSE if an error occurred.
- *
- * We assume that frequency strings are up to date
- */
-/*
-bool CPlotter::saveWaterfall(const QString & filename) const
-{
-    QBrush          axis_brush(QColor(0x00, 0x00, 0x00, 0x70), Qt::SolidPattern);
-    QPixmap         pixmap(m_WaterfallImage);
-    QPainter        painter(&pixmap);
-    QRect           rect;
-    QDateTime       tt;
-    QFont           font("sans-serif");
-    QFontMetricsF   font_metrics(font);
-    float           pixperdiv;
-    int             x, y, w, h;
-    int             hxa, wya;
-    int             i;
-
-    w = pixmap.width();
-    h = pixmap.height();
-    hxa = font_metrics.height() + 5;    // height of X axis
-    wya = font_metrics.boundingRect("2008.08.08").width() + 5; // width of Y axis
-    y = h - hxa;
-    pixperdiv = (float) w / (float) m_HorDivs;
-
-    painter.setBrush(axis_brush);
-    painter.setPen(QColor(0x0, 0x0, 0x0, 0x70));
-    painter.drawRect(0, y, w, hxa);
-    painter.drawRect(0, 0, wya, h - hxa - 1);
-    painter.setFont(font);
-    painter.setPen(QColor(0xFF, 0xFF, 0xFF, 0xFF));
-
-    // skip last frequency entry
-    for (i = 2; i < m_HorDivs - 1; i++)
-    {
-        // frequency tick marks
-        x = (int)((float)i * pixperdiv);
-        painter.drawLine(x, y, x, y + 5);
-
-        // frequency strings
-        x = (int)((float)i * pixperdiv - pixperdiv / 2.0f);
-        rect.setRect(x, y, (int)pixperdiv, hxa);
-        painter.drawText(rect, Qt::AlignHCenter|Qt::AlignBottom, m_HDivText[i]);
-    }
-    rect.setRect(w - pixperdiv - 10, y, pixperdiv, hxa);
-    painter.drawText(rect, Qt::AlignRight|Qt::AlignBottom, tr("MHz"));
-
-    quint64 msec;
-    int tdivs = h / 70 + 1;
-    pixperdiv = (float) h / (float) tdivs;
-    tt.setTimeSpec(Qt::OffsetFromUTC);
-    for (i = 1; i < tdivs; i++)
-    {
-        y = (int)((float)i * pixperdiv);
-        if (msec_per_wfline > 0)
-            msec =  tlast_wf_ms - qRound(y * msec_per_wfline);
-        else
-            msec =  tlast_wf_ms - qRound(y * 1000.0 / fft_rate);
-
-        tt.setMSecsSinceEpoch(msec);
-        rect.setRect(0, y - font_metrics.height(), wya - 5, font_metrics.height());
-        painter.drawText(rect, Qt::AlignRight|Qt::AlignVCenter, tt.toString("yyyy.MM.dd"));
-        painter.drawLine(wya - 5, y, wya, y);
-        rect.setRect(0, y, wya - 5, font_metrics.height());
-        painter.drawText(rect, Qt::AlignRight|Qt::AlignVCenter, tt.toString("hh:mm:ss"));
-    }
-
-    return pixmap.save(filename, nullptr, -1);
-}
-*/
 
 /** Get waterfall time resolution in milleconds / line. */
 quint64 CPlotter::getWfTimeRes() const
@@ -2581,23 +2507,24 @@ void CPlotter::setCenterFreq(quint64 f)
     old_f = f;
     if (abs(deltaX) < w/2)
     {
-        QRegion *exposed = new QRegion;
-        QPixmap wf_pixmap = QPixmap::fromImage(m_WaterfallImage);
-
-        wf_pixmap.scroll(deltaX, 0, 0, 0, w, h, exposed);
-        qCDebug(plotter) << "exposed: " << *exposed;
-
-        QPainter painter1(&wf_pixmap);
-        painter1.fillRect(exposed->boundingRect(), Qt::black);
-
-        m_WaterfallImage = wf_pixmap.toImage();
-        
-        m_MaxHoldValid = false;
-        m_MinHoldValid = false;
-        m_histIIRValid = false;
-        
-        updateOverlay();
+        return;
     }
+
+    int    w = m_WaterfallImage.width();
+    int    h = m_WaterfallImage.height();
+    static quint64 old_f=0;
+
+    qreal  ratio = (qreal)w / (qreal)m_Span;
+    
+    qint64 deltaf = f - old_f;
+    qreal deltax = deltaf * ratio;
+
+    // Shift left or right
+    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta x " << deltax << "width " << w;
+    m_WaterfallImage = m_WaterfallImage.copy(deltax, 0, w, h);
+
+    old_f = f;
+    updateOverlay();
 
 }
 
