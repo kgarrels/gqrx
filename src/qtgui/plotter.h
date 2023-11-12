@@ -287,7 +287,7 @@ private:
     int         m_WaterfallOffset;
     QColor      m_ColorTbl[256];
     QSize       m_Size;
-    qreal       m_DPR{};
+    int         m_DPR{};
     QString     m_HDivText[HORZ_DIVS_MAX+1];
     bool        m_Running;
     bool        m_DrawOverlay;

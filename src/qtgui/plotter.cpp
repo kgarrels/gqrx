@@ -1177,8 +1177,8 @@ void CPlotter::paintEvent(QPaintEvent *)
         const int plotHeightS = m_2DPixmap.height();
         const QRectF plotRectS(0.0, 0.0, plotWidthS, plotHeightS);
 
-        const int plotWidthT = qRound((qreal)plotWidthS / m_DPR);
-        plotHeightT = qRound((qreal)plotHeightS / m_DPR);
+        const int plotWidthT = plotWidthS / m_DPR;
+        plotHeightT = plotHeightS / m_DPR;
         const QRectF plotRectT(0.0, 0.0, plotWidthT, plotHeightT);
 
         painter.drawPixmap(plotRectT, m_2DPixmap, plotRectS);
