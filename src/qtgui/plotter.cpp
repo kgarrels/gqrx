@@ -1092,8 +1092,8 @@ void CPlotter::paintEvent(QPaintEvent *)
         const int plotHeightS = m_2DPixmap.height();
         const QRectF plotRectS(0.0, 0.0, plotWidthS, plotHeightS);
 
-        const int plotWidthT = qRound((qreal)plotWidthS / m_DPR);
-        plotHeightT = qRound((qreal)plotHeightS / m_DPR);
+        const int plotWidthT = plotWidthS / m_DPR;
+        plotHeightT = plotHeightS / m_DPR;
         const QRectF plotRectT(0.0, 0.0, plotWidthT, plotHeightT);
 
         painter.drawPixmap(plotRectT, m_2DPixmap, plotRectS);
@@ -1105,8 +1105,8 @@ void CPlotter::paintEvent(QPaintEvent *)
         const int wfHeightS = m_WaterfallPixmap.height();
         const QRectF wfRectS(0.0, 0.0, wfWidthS, wfHeightS);
 
-        const int wfWidthT = qRound((qreal)wfWidthS / m_DPR);
-        const int wfHeightT = qRound((qreal)wfHeightS / m_DPR);
+        const int wfWidthT = wfWidthS / m_DPR;
+        const int wfHeightT = wfHeightS / m_DPR;
         const QRectF wfRectT(0.0, plotHeightT, wfWidthT, wfHeightT);
 
         painter.drawPixmap(wfRectT, m_WaterfallPixmap, wfRectS);
