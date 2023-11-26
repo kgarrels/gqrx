@@ -515,7 +515,7 @@ void receiver::set_iq_balance(bool enable)
 
     d_iq_balance = enable;
 
-    src->set_iq_balance_mode(enable ? 2 : 0);
+    //src->set_iq_balance_mode(enable ? 2 : 0);    //+kai iq_balancemode does not work for me, causes NaN  errors
 }
 
 /**
