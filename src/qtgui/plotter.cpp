@@ -2026,19 +2026,19 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
         long offset = (long) size / 8;
 
-#define nf_old
-#ifdef nf_old
-        //old method
-        static std::vector<float>fftCopy;
+        std::vector<float>fftCopy;
         fftCopy.resize(size - 2*offset);
         std::copy(&m_fftIIR[offset], &m_fftIIR[size-offset], &fftCopy[0]);      // copy from +offset to size-offet
         std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);      // sort
         const long bins=(size -2*offset)/10;
         lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
-#else
-        // new method: brute force minimum
-        lowestValue = *std::min_element(&m_fftIIR[offset], &m_fftIIR[size-offset]);
-#endif
+
+        // protect against NaN
+        if (lowestValue != lowestValue) {
+            qCDebug(plotter) << "lowestValue NaN";
+            return;
+        }
+
         // we have a huge jump, reset all averages
         if(std::max(minAvg, lowestValue) / std::min(minAvg, lowestValue) > 20 ) {
             minAvg = lowestValue;
@@ -2062,16 +2062,8 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         m_WfMaxdB = m_WfMindB   +40;
         m_PandMindB = m_WfMindB;
         m_PandMaxdB = m_WfMaxdB;
-        
-/*
-        m_WfMindB = mindB    +140+m_WfMindBSlider;          // slider is -160 to 0, allow for -20 correction
-        m_WfMaxdB = m_WfMindB           +60 + m_WfMaxdBSlider;          // 54dB=S9, allow to correct down
-        m_PandMindB = mindB + 140+m_PandMindBSlider;        // slider is -160 to 0, allow for -20 correction
-        m_PandMaxdB = m_PandMindB       +60 + m_PandMaxdBSlider;        // 54dB=S9, allow to correct down
 
-*/
         static int debug_cnt = 0;
-        
         debug_cnt++;
         debug_cnt %= 50;
         if (debug_cnt ==0) qCDebug(plotter) << "fft min" << mindB << m_WfMindB << m_WfMaxdB << m_WfMindBSlider << m_WfMaxdBSlider;
