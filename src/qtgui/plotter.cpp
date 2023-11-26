@@ -2028,13 +2028,13 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
         long offset = (long) size / 4;      // skip the 1st quarter and the last quarter of the spectrum
 
-        std::vector<float>fftCopy(m_fftIIR.size());                                          // will be too big, who cares
-        std::copy(m_fftIIR.begin()+offset, m_fftIIR.end()-offset , fftCopy.begin());        // copy from +offset to size-offet
-        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);                  // sort
-        
-        const long bins = 20; //=(size -2*offset)/10;
+        std::vector<float>fftCopy;
+        fftCopy.resize(size - 2*offset);
+        std::copy(&m_fftIIR[offset], &m_fftIIR[size-offset], &fftCopy[0]);      // copy from +offset to size-offet
+        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);      // sort
+        const long bins=(size -2*offset)/10;
         lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
-        
+
         // protect against NaN
         if (lowestValue != lowestValue) {
             qCDebug(plotter) << "lowestValue NaN";
