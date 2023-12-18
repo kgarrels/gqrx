@@ -58,6 +58,8 @@ RemoteControl::RemoteControl(QObject *parent) :
     rc_allowed_hosts.append(DEFAULT_RC_ALLOWED_HOSTS);
 
     rc_socket = 0;
+    
+    initialized = false;            // we have not yet receveived a valid f telegram
 
     connect(&rc_server, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
 }
@@ -217,8 +219,10 @@ void RemoteControl::startRead()
         QString cmd = cmdlist[0];
         if (cmd == "f")
             answer = cmd_get_freq();
-        else if (cmd == "F")
+        else if (cmd == "F") {
             answer = cmd_set_freq(cmdlist);
+            initialized = true;
+        }
         else if (cmd == "m")
             answer = cmd_get_mode();
         else if (cmd == "M")
@@ -269,6 +273,16 @@ void RemoteControl::startRead()
             qWarning() << "Unknown remote command:" << cmdlist;
             answer = QString("RPRT 1\n");
         }
+        
+        if (!initialized) {
+            // print unknown command and respond with an error
+            qWarning() << "remote not initialized:" << cmdlist;
+            answer = QString("RPRT 1\n");
+
+        }
+        
+        rc_socket->write(answer.toLatin1());
+        qCDebug(remote) << "answer: " << answer;
 
         rc_socket->write(answer.toLatin1());
     }
