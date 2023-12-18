@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.2...3.28)
+cmake_policy(SET CMP0148 OLD)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -117,8 +118,8 @@ else()
 endif()
 
 # 3rd Party Dependency Stuff
-option(FORCE_QT6 "Force Qt6 to be used" ON)
-option(FORCE_QT5 "Force Qt5 to be used" OFF)
+option(FORCE_QT6 "Force Qt6 to be used" OFF)
+option(FORCE_QT5 "Force Qt5 to be used" ON)
 
 if(FORCE_QT6)
     find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets Svg SvgWidgets)
