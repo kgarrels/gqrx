@@ -61,6 +61,10 @@ RemoteControl::RemoteControl(QObject *parent) :
     rc_port = DEFAULT_RC_PORT;
     rc_allowed_hosts.append(DEFAULT_RC_ALLOWED_HOSTS);
 
+    rc_socket = 0;
+    
+    initialized = false;            // we have not yet receveived a valid f telegram
+
     connect(&rc_server, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
 }
 
@@ -88,7 +92,7 @@ void RemoteControl::stop_server()
 	
     if (rc_server.isListening())
         rc_server.close();
-
+    initialized = false;
 }
 
 /*! \brief Read settings. */
@@ -225,8 +229,10 @@ void RemoteControl::startRead()
         QString cmd = cmdlist[0];
         if (cmd == "f")
             answer = cmd_get_freq();
-        else if (cmd == "F")
+        else if (cmd == "F") {
             answer = cmd_set_freq(cmdlist);
+            initialized = true;
+        }
         else if (cmd == "m")
             answer = cmd_get_mode();
         else if (cmd == "M")
@@ -263,6 +269,8 @@ void RemoteControl::startRead()
             answer = cmd_dump_state();
         else if (cmd == "\\get_powerstat")
             answer = QString("1\n");
+        else if (cmd == "bookmark")
+            answer = cmd_bookmark_add(cmdlist);
         else if (cmd == "q" || cmd == "Q")
         {
             // FIXME: for now we assume 'close' command
@@ -277,7 +285,16 @@ void RemoteControl::startRead()
             qWarning() << "Unknown remote command:" << cmdlist;
             answer = QString("RPRT 1\n");
         }
+        
+        if (!initialized) {
+            // print unknown command and respond with an error
+            qWarning() << "remote not initialized:" << cmdlist;
+            answer = QString("RPRT 1\n");
 
+        }
+        
+        rc_socket->write(answer.toLatin1());
+        qCDebug(remote) << "answer: " << answer;
         rc_socket->write(answer.toLatin1());
     }
 }
@@ -290,8 +307,9 @@ void RemoteControl::startRead()
  */
 void RemoteControl::setNewFrequency(qint64 freq)
 {
+    if (rc_freq == freq) return;        // we are already there
     rc_freq = freq;
-}
+ }
 
 /*! \brief Slot called when the filter offset is changed. */
 void RemoteControl::setFilterOffset(qint64 freq)
@@ -363,6 +381,7 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
 
     rc_freq = freq;
 }
+
 
 /*! \brief Set squelch level (from mainwindow). */
 void RemoteControl::setSquelchLevel(double level)
@@ -613,6 +632,11 @@ QString RemoteControl::intToModeStr(int mode)
 /* Get frequency */
 QString RemoteControl::cmd_get_freq() const
 {
+    if (!initialized) {
+        // do not accept until 1st tim recevied from remote
+        qCDebug(remote) << "remote not initialized";
+        return QString("RPRT 1\n");
+    }
     return QString("%1\n").arg(rc_freq);
 }
 
