@@ -26,6 +26,8 @@ else()
     )
 endif()
 set(VERSION "${VERSION} ${OSX_AUDIO_BACKEND}")
+string(TIMESTAMP VERSION "${VERSION} %Y-%m-%d %H:%M")
+
 message(STATUS "Version: ${VERSION}")
 add_definitions(-DVERSION="${VERSION}")
 file(WRITE ${CMAKE_BINARY_DIR}/version.txt ${VERSION})
