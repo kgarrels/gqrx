@@ -25,6 +25,8 @@ else()
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 endif()
+set(VERSION "${VERSION} ${OSX_AUDIO_BACKEND}")
+message(STATUS "Version: ${VERSION}")
 add_definitions(-DVERSION="${VERSION}")
 file(WRITE ${CMAKE_BINARY_DIR}/version.txt ${VERSION})
 
