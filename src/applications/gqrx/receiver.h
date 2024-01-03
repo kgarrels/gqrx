@@ -289,6 +289,9 @@ private:
     pa_sink_sptr              audio_snk;  /*!< Pulse audio sink. */
 #elif WITH_PORTAUDIO
     portaudio_sink_sptr       audio_snk;  /*!< portaudio sink */
+#elif WITH_NULLAUDIO
+    gr::blocks::null_sink::sptr     audio_snk;  /*!< gr audio sink */
+
 #else
     gr::audio::sink::sptr     audio_snk;  /*!< gr audio sink */
 #endif
