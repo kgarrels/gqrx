@@ -1,6 +1,6 @@
 #!/bin/bash
 
-GQRX_VERSION=$(<version.txt)
+GQRX_VERSION=$(<./build/version.txt)
 
 rm -rf Gqrx.app
 
@@ -48,7 +48,7 @@ EOM
 cp build/src/gqrx Gqrx.app/Contents/MacOS
 cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
 
-# leave dependencies out for macports version
+# leave dependencies out for conda version
 #dylibbundler -s /usr/local/opt/icu4c/lib/ -od -b -x Gqrx.app/Contents/MacOS/gqrx -d Gqrx.app/Contents/Libs/
 #/usr/local/opt/qt/bin/macdeployqt Gqrx.app -dmg -no-strip -always-overwrite
 #mv Gqrx.dmg Gqrx-$GQRX_VERSION.dmg
