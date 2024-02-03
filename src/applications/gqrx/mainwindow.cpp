@@ -25,6 +25,7 @@
 #include <vector>
 #include <volk/volk.h>
 
+#include <QApplication>
 #include <QSettings>
 #include <QByteArray>
 #include <QDateTime>
@@ -416,15 +417,6 @@ MainWindow::~MainWindow()
         m_settings->setValue("configversion", 4);
         m_settings->setValue("crashed", false);
 
-        // hide toolbar (default=false)
-        if (ui->mainToolBar->isHidden())
-            m_settings->setValue("gui/hide_toolbar", true);
-        else
-            m_settings->remove("gui/hide_toolbar");
-
-        m_settings->setValue("gui/geometry", saveGeometry());
-        m_settings->setValue("gui/state", saveState());
-
         // save session
         storeSession();
 
@@ -791,9 +783,16 @@ void MainWindow::storeSession()
     if (m_settings)
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
-        m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
-        
         m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
+
+        // hide toolbar (default=false)
+        if (ui->mainToolBar->isHidden())
+            m_settings->setValue("gui/hide_toolbar", true);
+        else
+            m_settings->remove("gui/hide_toolbar");
+        m_settings->setValue("gui/fullscreen", isFullScreen());         // save status of fullscreen
+        m_settings->setValue("gui/geometry", saveGeometry());
+        m_settings->setValue("gui/state", saveState());
 
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
