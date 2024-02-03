@@ -25,6 +25,7 @@
 #include <vector>
 #include <volk/volk.h>
 
+#include <QApplication>
 #include <QSettings>
 #include <QByteArray>
 #include <QDateTime>
@@ -416,15 +417,6 @@ MainWindow::~MainWindow()
         m_settings->setValue("configversion", 4);
         m_settings->setValue("crashed", false);
 
-        // hide toolbar (default=false)
-        if (ui->mainToolBar->isHidden())
-            m_settings->setValue("gui/hide_toolbar", true);
-        else
-            m_settings->remove("gui/hide_toolbar");
-
-        m_settings->setValue("gui/geometry", saveGeometry());
-        m_settings->setValue("gui/state", saveState());
-
         // save session
         storeSession();
 
@@ -529,15 +521,10 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     if (bool_val)
         ui->mainToolBar->hide();
 
-    // fullscreen
-    bool_val = m_settings->value("gui/fullscreen", true).toBool();
-    on_actionFullScreen_triggered(bool_val);
-
     // main window settings
     if (restore_mainwindow)
     {
-        restoreGeometry(m_settings->value("gui/geometry",
-                                          saveGeometry()).toByteArray());
+        restoreGeometry(m_settings->value("gui/geometry", saveGeometry()).toByteArray());
         restoreState(m_settings->value("gui/state", saveState()).toByteArray());
     }
 
@@ -545,7 +532,7 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     bool_val = m_settings->value("gui/lockedwindow", false).toBool();
     ui->actionLock_Window->setChecked(bool_val);
     on_actionLock_Window_triggered(bool_val);
-    
+
     QString indev = m_settings->value("input/device", "").toString();
     if (!indev.isEmpty())
     {
@@ -721,6 +708,10 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
        ui->actionRemoteControl->setChecked(true);
     }
 
+    // fullscreen, needs to come late, otherwise, it won't work
+    bool_val = m_settings->value("gui/fullscreen", true).toBool();
+    on_actionFullScreen_triggered(bool_val);
+
     emit m_recent_config->configLoaded(m_settings->fileName());
 
     return conf_ok;
@@ -791,9 +782,16 @@ void MainWindow::storeSession()
     if (m_settings)
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
-        m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
-        
         m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
+
+        // hide toolbar (default=false)
+        if (ui->mainToolBar->isHidden())
+            m_settings->setValue("gui/hide_toolbar", true);
+        else
+            m_settings->remove("gui/hide_toolbar");
+        m_settings->setValue("gui/fullscreen", isFullScreen());         // save status of fullscreen
+        m_settings->setValue("gui/geometry", saveGeometry());
+        m_settings->setValue("gui/state", saveState());
 
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
