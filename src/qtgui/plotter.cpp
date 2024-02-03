@@ -1421,7 +1421,7 @@ void CPlotter::draw(bool newData)
             if (wf_valid_since_ms == 0)
                 wf_valid_since_ms = tnow_ms;
             tlast_wf_drawn_ms = tnow_ms;
-
+            
             // move current data down one line(must do before attaching a QPainter object)
             m_WaterfallPixmap.scroll(0, 1, m_WaterfallPixmap.rect());
 
