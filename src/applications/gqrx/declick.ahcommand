@@ -1,0 +1,7 @@
+let sessionName = "declick"; //Set me to the target session
+
+let session = app.sessionWithName( sessionName )
+
+session.start()
+
+
