@@ -2025,26 +2025,21 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float lowestValue;
         static float minAvg = 0;
 
-        long offset = (long) size / 8;
+        long offset = (long) size / 4;      // skip the 1st quarter and the last quarter of the spectrum
 
-        std::vector<float>fftCopy;
-        fftCopy.resize(size - 2*offset);
-        std::copy(&m_fftIIR[offset], &m_fftIIR[size-offset], &fftCopy[0]);      // copy from +offset to size-offet
-        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);      // sort
-        const long bins=(size -2*offset)/10;
+        std::vector<float>fftCopy(m_fftIIR.size());                                          // will be too big, who cares
+        std::copy(m_fftIIR.begin()+offset, m_fftIIR.end()-offset , fftCopy.begin());        // copy from +offset to size-offet
+        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);                  // sort
+        
+        const long bins = 20; //=(size -2*offset)/10;
         lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
-
+        
         // protect against NaN
         if (lowestValue != lowestValue) {
             qCDebug(plotter) << "lowestValue NaN";
             return;
         }
 
-        // we have a huge jump, reset all averages
-        if(std::max(minAvg, lowestValue) / std::min(minAvg, lowestValue) > 20 ) {
-            minAvg = lowestValue;
-            m_fftDataSize = 0;      // reset everything
-        }
         // do a moving averge
         const float alpha = 0.1f;
         minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
@@ -2059,11 +2054,11 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float mindB = 10*log10f(minAvg);
         m_Noisefloor = mindB;          // publish the noisefloor to allow meter correction +kai
         
-        m_WfMindB = mindB       -3;
-        m_WfMaxdB = m_WfMindB   +40;
-        m_PandMindB = m_WfMindB;
-        m_PandMaxdB = m_WfMaxdB;
-
+        m_PandMindB = mindB;        
+        m_PandMaxdB = m_PandMindB   +40;
+        m_WfMindB = mindB            +0;     // give some more blue
+        m_WfMaxdB = m_WfMindB       +40;
+        
         static int debug_cnt = 0;
         debug_cnt++;
         debug_cnt %= 50;
