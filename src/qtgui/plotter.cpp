@@ -2193,15 +2193,22 @@ void CPlotter::drawOverlay()
                                                                 m_CenterFreq + m_FftCenter + m_Span / 2);
 
         m_BandPlanHeight = metrics.height() + VER_MARGIN;
+        int old_right = 0;
         for (auto & band : bands)
         {
             int band_left = std::max(xFromFreq(band.minFrequency), 0);
             int band_right = std::min(xFromFreq(band.maxFrequency), (int)w);
             int band_width = band_right - band_left;
-            QRectF rect(band_left, xAxisTop - m_BandPlanHeight, band_width, m_BandPlanHeight);
+            QRectF rect(band_left, 0, band_width, m_BandPlanHeight);
             painter.fillRect(rect, band.color);
+
+             // draw a line between band borders if they touch
+            painter.setPen(QPen(Qt::green, m_DPR));
+            if (band_left == old_right) painter.drawLine(band_left, 0, band_left, m_BandPlanHeight);         
+            old_right = band_right;
+            
             QString band_label = metrics.elidedText(band.name + " (" + band.modulation + ")", Qt::ElideRight, band_width - 10);
-            QRectF textRect(band_left, xAxisTop - m_BandPlanHeight, band_width, metrics.height());
+            QRectF textRect(band_left, 0, band_width, m_BandPlanHeight);
             painter.setPen(QPen(QColor::fromRgba(PLOTTER_TEXT_COLOR), m_DPR));
             painter.drawText(textRect, Qt::AlignCenter, band_label);
         }
