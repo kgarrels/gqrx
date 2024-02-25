@@ -1936,11 +1936,11 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float mindB = 10*log10f(minAvg);
         m_Noisefloor = mindB;          // publish the noisefloor to allow meter correction +kai
         
-        m_WfMindB = mindB       -3;
-        m_WfMaxdB = m_WfMindB   +40;
-        m_PandMindB = m_WfMindB;
-        m_PandMaxdB = m_WfMaxdB;
-
+        m_PandMindB = mindB;        
+        m_PandMaxdB = m_PandMindB   +40;
+        m_WfMindB = mindB            -2;     // give some more blue
+        m_WfMaxdB = m_WfMindB       +40;
+        
         static int debug_cnt = 0;
         debug_cnt++;
         debug_cnt %= 50;
