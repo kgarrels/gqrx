@@ -27,6 +27,7 @@
 #include <QStringList>
 #include "remote_control.h"
 #include "qtgui/dockrxopt.h"
+#include "qtgui/bookmarks.h"
 
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "127.0.0.1"
@@ -198,10 +199,16 @@ void RemoteControl::acceptConnection()
  */
 void RemoteControl::startRead()
 {
-    while (rc_socket->canReadLine()) {
-        char    buffer[1024] = {0};
-        int     bytes_read;
-        QString answer = "";
+    char    buffer[1024] = {0};
+    qint64  bytes_read;
+    QString answer = "";
+    while(rc_socket->bytesAvailable()) {
+  
+        bytes_read = rc_socket->readLine(buffer, 1024);
+            qCDebug(remote) << "got: " << QString(buffer).trimmed() << "remaining: " << rc_socket->bytesAvailable();
+  
+        if (bytes_read < 2)  // command + '\n'
+            return;
 
         bytes_read = rc_socket->readLine(buffer, 1024);
         if (bytes_read < 2)  // command + '\n'
@@ -257,8 +264,8 @@ void RemoteControl::startRead()
             answer = QString("0\n");
         else if (cmd == "\\dump_state")
             answer = cmd_dump_state();
-        else if (cmd == "\\get_powerstat")
-            answer = QString("1\n");
+        else if (cmd == "bookmark")
+            answer = cmd_bookmark_add(cmdlist);
         else if (cmd == "q" || cmd == "Q")
         {
             // FIXME: for now we assume 'close' command
@@ -274,13 +281,6 @@ void RemoteControl::startRead()
             // print unknown command and respond with an error
             qWarning() << "Unknown remote command:" << cmdlist;
             answer = QString("RPRT 1\n");
-        }
-        
-        if (!initialized) {
-            // print unknown command and respond with an error
-            qWarning() << "remote not initialized:" << cmdlist;
-            answer = QString("RPRT 1\n");
-
         }
         
         rc_socket->write(answer.toLatin1());
@@ -587,6 +587,11 @@ QString RemoteControl::intToModeStr(int mode)
 /* Get frequency */
 QString RemoteControl::cmd_get_freq() const
 {
+    if (!initialized) {
+        // do not accept until 1st tim recevied from remote
+        qWarning() << "remote not initialized";
+        return QString("RPRT 1\n");
+    }
     return QString("%1\n").arg(rc_freq);
 }
 
@@ -608,6 +613,11 @@ QString RemoteControl::cmd_set_freq(QStringList cmdlist)
 /* Get mode and passband */
 QString RemoteControl::cmd_get_mode()
 {
+    if (!initialized) {
+        // do not accept until 1st tim recevied from remote
+        qWarning() << "remote not initialized";
+        return QString("RPRT 1\n");
+    }
     return QString("%1\n%2\n")
                    .arg(intToModeStr(rc_mode))
                    .arg(rc_passband_hi - rc_passband_lo);
@@ -929,6 +939,29 @@ QString RemoteControl::cmd_lnb_lo(QStringList cmdlist)
     {
         return QString("%1\n").arg((qint64)(rc_lnb_lo_mhz * 1e6));
     }
+}
+
+/* add a bookmakr */
+QString RemoteControl::cmd_bookmark_add(QStringList cmdlist)
+{
+    auto bookmark = new BookmarkInfo;
+    
+    if(cmdlist.size() == 3)
+    {
+        bookmark->name= cmdlist[1];
+        bookmark->frequency = rc_freq;
+        bookmark->bandwidth = rc_passband_hi -rc_passband_lo;
+        bookmark->modulation = intToModeStr(rc_mode);
+        bookmark->tags.append(Bookmarks::Get().findOrAddTag(cmdlist[2]));
+
+        Bookmarks::Get().add(*bookmark);
+        emit bookmarksChanged(true);
+    }
+    else
+    {
+        return QString("RPRT 1\n");
+    }
+    return QString("RPRT 0\n");
 }
 
 /*

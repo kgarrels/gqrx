@@ -183,6 +183,7 @@ bool Bookmarks::save()
         for (int i = 0; i < m_BookmarkList.size(); i++)
         {
             BookmarkInfo& info = m_BookmarkList[i];
+            
             QString line = QString::number(info.frequency).rightJustified(12) +
                     "; " + info.name.leftJustified(25) + "; " +
                     info.modulation.leftJustified(20)+ "; " +
