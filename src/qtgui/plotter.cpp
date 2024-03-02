@@ -2195,7 +2195,7 @@ void CPlotter::drawOverlay()
 
             tagEnd[level] = x + nameWidth + slant - 1;
 
-            const auto levelNHeight = level * levelHeight;
+            const auto levelNHeight = level * levelHeight + m_BandPlanHeight;       // we have the bandplan on top
             const auto levelNHeightBottom = levelNHeight + fontHeight;
             const auto levelNHeightBottomSlant = levelNHeightBottom + slant;
 

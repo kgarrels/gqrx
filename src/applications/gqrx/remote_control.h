@@ -122,6 +122,7 @@ signals:
     void dspChanged(bool value);
     void newRDSmode(bool value);
     void newAudioMuted(bool muted);
+    void bookmarksChanged(bool value);
 
 private slots:
     void acceptConnection();
@@ -182,6 +183,8 @@ private:
     QString     cmd_LOS();
     QString     cmd_lnb_lo(QStringList cmdlist);
     QString     cmd_dump_state() const;
+    QString     cmd_bookmark_add(QStringList cmdlist);
+
 };
 
 #endif // REMOTE_CONTROL_H

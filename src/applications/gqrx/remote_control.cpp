@@ -27,6 +27,7 @@
 #include <QStringList>
 #include "remote_control.h"
 #include "qtgui/dockrxopt.h"
+#include "qtgui/bookmarks.h"
 
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "127.0.0.1"
@@ -287,13 +288,6 @@ void RemoteControl::startRead()
             // print unknown command and respond with an error
             qWarning() << "Unknown remote command:" << cmdlist;
             answer = QString("RPRT 1\n");
-        }
-        
-        if (!initialized) {
-            // print unknown command and respond with an error
-            qWarning() << "remote not initialized:" << cmdlist;
-            answer = QString("RPRT 1\n");
-
         }
         
         rc_socket->write(answer.toLatin1());
@@ -637,7 +631,7 @@ QString RemoteControl::cmd_get_freq() const
 {
     if (!initialized) {
         // do not accept until 1st tim recevied from remote
-        qCDebug(remote) << "remote not initialized";
+        qWarning() << "remote not initialized";
         return QString("RPRT 1\n");
     }
     return QString("%1\n").arg(rc_freq);
@@ -661,6 +655,11 @@ QString RemoteControl::cmd_set_freq(QStringList cmdlist)
 /* Get mode and passband */
 QString RemoteControl::cmd_get_mode()
 {
+    if (!initialized) {
+        // do not accept until 1st tim recevied from remote
+        qWarning() << "remote not initialized";
+        return QString("RPRT 1\n");
+    }
     return QString("%1\n%2\n")
                    .arg(intToModeStr(rc_mode))
                    .arg(rc_passband_hi - rc_passband_lo);
@@ -1015,6 +1014,29 @@ QString RemoteControl::cmd_lnb_lo(QStringList cmdlist)
     {
         return QString("%1\n").arg((qint64)(rc_lnb_lo_mhz * 1e6));
     }
+}
+
+/* add a bookmakr */
+QString RemoteControl::cmd_bookmark_add(QStringList cmdlist)
+{
+    auto bookmark = new BookmarkInfo;
+    
+    if(cmdlist.size() == 3)
+    {
+        bookmark->name= cmdlist[1];
+        bookmark->frequency = rc_freq;
+        bookmark->bandwidth = rc_passband_hi -rc_passband_lo;
+        bookmark->modulation = intToModeStr(rc_mode);
+        bookmark->tags.append(Bookmarks::Get().findOrAddTag(cmdlist[2]));
+
+        Bookmarks::Get().add(*bookmark);
+        emit bookmarksChanged(true);
+    }
+    else
+    {
+        return QString("RPRT 1\n");
+    }
+    return QString("RPRT 0\n");
 }
 
 /*
