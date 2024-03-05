@@ -214,10 +214,6 @@ void RemoteControl::startRead()
         int     bytes_read;
         QString answer = "";
 
-        bytes_read = rc_socket->readLine(buffer, 1024);
-        if (bytes_read < 2)  // command + '\n'
-            continue;
-
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
         QStringList cmdlist = QString(buffer).trimmed().split(" ", QString::SkipEmptyParts);
 #else
@@ -354,24 +350,38 @@ void RemoteControl::setPassband(int passband_lo, int passband_hi)
 void RemoteControl::setNewRemoteFreq(qint64 freq)
 {
     qint64 delta = freq - rc_freq;
-    qint64 bwh_eff = 0.8f * (float)bw_half;
+    qint64 bwh_eff = 0.9f * (float)bw_half;
 
+    if (abs(delta) > bw_half)                // band jump
+    {
+        rc_filter_offset = 0;
+        emit newFilterOffset(rc_filter_offset);
+        emit newFrequency(freq);
+        rc_freq = freq;
+        return;
+    }
+    
     rc_filter_offset += delta;
     if ((rc_filter_offset > 0 && rc_filter_offset + rc_passband_hi < bwh_eff) ||
         (rc_filter_offset < 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
-//    if (false)        // +kai "center mode"
     {
         // move filter offset
         emit newFilterOffset(rc_filter_offset);
     }
+    else if (abs(delta) >1000000)
+        {
+        rc_filter_offset = 0;
+        emit newFilterOffset(rc_filter_offset);
+        emit newFrequency(freq);
+        }
     else
     {
         // moving filter offset would push it too close to or beyond the edge
         // move it close to the center and adjust hardware freq
         if (rc_filter_offset < 0)
-            rc_filter_offset = -0.2f * bwh_eff;
+            rc_filter_offset = -0.5f * bwh_eff;
         else
-            rc_filter_offset = 0.2f * bwh_eff;
+            rc_filter_offset = 0.5f * bwh_eff;
         emit newFilterOffset(rc_filter_offset);
         emit newFrequency(freq);
     }
