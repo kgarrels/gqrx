@@ -386,7 +386,8 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             qint64 delta_hz = qRound64((qreal)delta_px * (qreal)m_Span / (qreal)w);
             if (event->buttons() & Qt::LeftButton)
             {
-                setCenterFreq(m_CenterFreq + delta_hz);
+                m_CenterFreq += delta_hz;
+                //m_DemodCenterFreq += delta_hz;    // do not move the demod freq, just move the center
                 emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
             else
