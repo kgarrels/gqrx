@@ -187,6 +187,8 @@ bool Bookmarks::save()
                     "; " + info.name.leftJustified(25) + "; " +
                     info.modulation.leftJustified(20)+ "; " +
                     QString::number(info.bandwidth).rightJustified(10) + "; ";
+            if (info.tags[0]->name == "temp") continue;      // do not save bookmarks with 1st tag "temp"
+
             for(int iTag = 0; iTag<info.tags.size(); ++iTag)
             {
                 TagInfo::sptr tag = info.tags[iTag];
