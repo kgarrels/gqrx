@@ -529,13 +529,11 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
         restoreState(m_settings->value("gui/state").toByteArray());
     }
 
-/*
     // locked window
     bool_val = m_settings->value("gui/lockedwindow", false).toBool();
     ui->actionLock_Window->setChecked(bool_val);
     on_actionLock_Window_triggered(bool_val);
-*/
-     
+
     QString indev = m_settings->value("input/device", "").toString();
     if (!indev.isEmpty())
     {
