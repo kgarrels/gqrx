@@ -118,6 +118,8 @@ signals:
 private slots:
     void acceptConnection();
     void startRead();
+    void report(QString info);
+
 
 private:
     QTcpServer  rc_server;         /*!< The active server object. */

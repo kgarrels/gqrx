@@ -290,6 +290,15 @@ void RemoteControl::startRead()
     }
 }
 
+void RemoteControl::report(QString info)
+{
+    if (!initialized) return;
+    rc_socket->write(info.toLatin1());
+    qCDebug(remote) << "report: " << info;
+
+}
+
+
 /*! \brief Slot called when the receiver is tuned to a new frequency.
  *  \param freq The new frequency in Hz.
  *
@@ -299,7 +308,8 @@ void RemoteControl::startRead()
 void RemoteControl::setNewFrequency(qint64 freq)
 {
     rc_freq = freq;
-}
+    report("F " + QString::number(freq) + "\n");
+ }
 
 /*! \brief Slot called when the filter offset is changed. */
 void RemoteControl::setFilterOffset(qint64 freq)
@@ -349,23 +359,18 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
     qint64 delta = freq - rc_freq;
     qint64 bwh_eff = 0.9f * (float)bw_half;
 
-    if (abs(delta) > bw_half)                // band jump
-    {
-        rc_filter_offset = 0;
-        emit newFilterOffset(rc_filter_offset);
-        emit newFrequency(freq);
-        rc_freq = freq;
-        return;
-    }
-    
     rc_filter_offset += delta;
     if ((rc_filter_offset > 0 && rc_filter_offset + rc_passband_hi < bwh_eff) ||
         (rc_filter_offset < 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
-//    if (false)        // +kai "center mode"
     {
         // move filter offset
         emit newFilterOffset(rc_filter_offset);
     }
+    else if (abs(delta) >1000000)
+        {
+            rc_filter_offset -= delta;  // keep filter offset
+            emit newFrequency(freq);
+        }
     else
     {
         // moving filter offset would push it too close to or beyond the edge
@@ -380,6 +385,7 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
 
     rc_freq = freq;
 }
+
 
 /*! \brief Set squelch level (from mainwindow). */
 void RemoteControl::setSquelchLevel(double level)
