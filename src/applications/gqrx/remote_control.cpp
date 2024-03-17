@@ -307,6 +307,13 @@ void RemoteControl::report(QString info)
  */
 void RemoteControl::setNewFrequency(qint64 freq)
 {
+    if (rc_freq == freq) return;        // we are already there
+    if (dont_report)
+    {
+        dont_report = false;
+        return;                         // do not report what we got as a command
+    }
+
     rc_freq = freq;
     report("F " + QString::number(freq) + "\n");
  }
@@ -359,6 +366,8 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
     qint64 delta = freq - rc_freq;
     qint64 bwh_eff = 0.9f * (float)bw_half;
 
+    dont_report = true;
+    
     rc_filter_offset += delta;
     if ((rc_filter_offset > 0 && rc_filter_offset + rc_passband_hi < bwh_eff) ||
         (rc_filter_offset < 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
@@ -368,8 +377,8 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
     }
     else if (abs(delta) >1000000)
         {
-            rc_filter_offset -= delta;  // keep filter offset
-            emit newFrequency(freq);
+        rc_filter_offset -= delta;  // keep filter offset
+        emit newFrequency(freq);
         }
     else
     {
