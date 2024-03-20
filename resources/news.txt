@@ -1,9 +1,18 @@
 
-    2.17.4: In progress...
+    2.17.5: In progress...
+
+       NEW: PlutoSDR and LimeSDR support in AppImage release, via SoapySDR.
+       NEW: Airspy support in Windows binary release.
+  IMPROVED: Updated GNU Radio, SDR driver, and Qt versions in AppImage release.
+     FIXED: Respond correctly to pipelined remote control commands.
+   REMOVED: FreeSRP support in AppImage release.
+
+
+    2.17.4: Released February 9, 2024
 
        NEW: Experimental Windows binary release (RTL-SDR only).
   IMPROVED: Respond to \chk_vfo remote command (needed by some clients).
-  IMPROVED: Respond to \dump_state remote command (needed by some clients).
+  IMPROVED: Respond to \get_powerstat remote command (needed by some clients).
 
 
     2.17.3: Released October 20, 2023
