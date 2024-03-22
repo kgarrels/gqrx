@@ -525,8 +525,8 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     // main window settings
     if (restore_mainwindow)
     {
-        restoreGeometry(m_settings->value("gui/geometry").toByteArray());
-        restoreState(m_settings->value("gui/state").toByteArray());
+        restoreGeometry(m_settings->value("gui/geometry", saveGeometry()).toByteArray());
+        restoreState(m_settings->value("gui/state", saveState()).toByteArray());
     }
 
     // locked window
@@ -712,7 +712,7 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     // fullscreen, needs to come late, otherwise, it won't work
     bool_val = m_settings->value("gui/fullscreen", true).toBool();
     on_actionFullScreen_triggered(bool_val);
-    
+
     emit m_recent_config->configLoaded(m_settings->fileName());
 
     return conf_ok;
