@@ -128,7 +128,6 @@ private:
     QStringList rc_allowed_hosts;  /*!< Hosts where we accept connection from. */
     int         rc_port;           /*!< The port we are listening on. */
     bool        initialized;        // remote needs to receiv one F telegram before it answers
-    bool        dont_report;        // do not report what was received as a command
 
     qint64      rc_freq;
     qint64      rc_filter_offset;
