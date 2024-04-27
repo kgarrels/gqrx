@@ -88,7 +88,7 @@ void RemoteControl::stop_server()
 
     if (rc_server.isListening())
         rc_server.close();
-
+    initialized = false;
 }
 
 /*! \brief Read settings. */
@@ -292,7 +292,7 @@ void RemoteControl::startRead()
 void RemoteControl::report(QString info)
 {
     if (!initialized) return;
-    rc_socket->write(info.toLatin1());
+    if (rc_socket !=0) rc_socket->write(info.toLatin1());
     qCDebug(remote) << "report: " << info;
 
 }

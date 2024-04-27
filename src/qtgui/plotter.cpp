@@ -387,6 +387,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             {
                 m_CenterFreq += delta_hz;
                 //m_DemodCenterFreq += delta_hz;    // do not move the demod freq, just move the center
+                qCDebug(plotter) << "mouse drag: " << px << "delta hz: " << delta_hz << "center: " << m_CenterFreq << "demod: " << m_DemodCenterFreq;
                 emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
             else
