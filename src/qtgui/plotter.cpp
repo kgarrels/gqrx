@@ -1499,7 +1499,7 @@ void CPlotter::draw(bool newData)
         }
 
         // is it time to update waterfall? msec_per_wfline is 0 in auto mode.
-        if (tnow_ms - wf_epoch > wf_count * msec_per_wfline)
+        if (tnow_ms - tlast_wf_drawn_ms > msec_per_wfline)
         {
             ++wf_count;
 
