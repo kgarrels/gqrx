@@ -210,10 +210,6 @@ void RemoteControl::startRead()
         if (bytes_read < 2)  // command + '\n'
             return;
 
-        bytes_read = rc_socket->readLine(buffer, 1024);
-        if (bytes_read < 2)  // command + '\n'
-            continue;
-
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
         QStringList cmdlist = QString(buffer).trimmed().split(" ", QString::SkipEmptyParts);
 #else
@@ -366,6 +362,12 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
         // move filter offset
         emit newFilterOffset(rc_filter_offset);
     }
+    else if (abs(delta) >1000000)
+        {
+        rc_filter_offset = 0;
+        emit newFilterOffset(rc_filter_offset);
+        emit newFrequency(freq);
+        }
     else
     {
         // moving filter offset would push it too close to or beyond the edge
