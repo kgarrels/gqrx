@@ -69,6 +69,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
     add_compile_options(-Wsign-compare)
 endif()
 
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
+
 if(MSVC)
     #get math definitions like M_PI
     add_definitions(-D_USE_MATH_DEFINES)
