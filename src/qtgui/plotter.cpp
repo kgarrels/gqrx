@@ -1904,14 +1904,16 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float lowestValue;
         static float minAvg = 0;
 
-        long offset = (long) size / 8;
+        long offset = (long) size / 4;      // skip the 1st quarter and the last quarter of the spectrum
 
         std::vector<float>fftCopy;
         fftCopy.resize(size - 2*offset);
         std::copy(&m_fftIIR[offset], &m_fftIIR[size-offset], &fftCopy[0]);      // copy from +offset to size-offet
         std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);      // sort
-        const long bins=(size -2*offset)/10;
+        
+        const long bins = 20; //=(size -2*offset)/10;
         lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
+        //lowestValue = *std::min_element(std::begin(fftCopy), std::end(fftCopy));
 
         // protect against NaN
         if (lowestValue != lowestValue) {
@@ -1940,7 +1942,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         
         m_PandMindB = mindB;        
         m_PandMaxdB = m_PandMindB   +40;
-        m_WfMindB = mindB            -2;     // give some more blue
+        m_WfMindB = mindB            +0;     // give some more blue
         m_WfMaxdB = m_WfMindB       +40;
         
         static int debug_cnt = 0;
