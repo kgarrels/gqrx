@@ -88,7 +88,7 @@ void RemoteControl::stop_server()
 
     if (rc_server.isListening())
         rc_server.close();
-
+    initialized = false;
 }
 
 /*! \brief Read settings. */
@@ -260,6 +260,8 @@ void RemoteControl::startRead()
             answer = QString("0\n");
         else if (cmd == "\\dump_state")
             answer = cmd_dump_state();
+        else if (cmd == "\\get_powerstat")
+            answer = QString("1\n");
         else if (cmd == "bookmark")
             answer = cmd_bookmark_add(cmdlist);
         else if (cmd == "q" || cmd == "Q")
@@ -278,10 +280,7 @@ void RemoteControl::startRead()
             qWarning() << "Unknown remote command:" << cmdlist;
             answer = QString("RPRT 1\n");
         }
-        
-        rc_socket->write(answer.toLatin1());
         qCDebug(remote) << "answer: " << answer;
-
         rc_socket->write(answer.toLatin1());
     }
 }
@@ -294,8 +293,9 @@ void RemoteControl::startRead()
  */
 void RemoteControl::setNewFrequency(qint64 freq)
 {
+    if (rc_freq == freq) return;        // we are already there
     rc_freq = freq;
-}
+ }
 
 /*! \brief Slot called when the filter offset is changed. */
 void RemoteControl::setFilterOffset(qint64 freq)
@@ -345,15 +345,6 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
     qint64 delta = freq - rc_freq;
     qint64 bwh_eff = 0.9f * (float)bw_half;
 
-    if (abs(delta) > bw_half)                // band jump
-    {
-        rc_filter_offset = 0;
-        emit newFilterOffset(rc_filter_offset);
-        emit newFrequency(freq);
-        rc_freq = freq;
-        return;
-    }
-    
     rc_filter_offset += delta;
     if ((rc_filter_offset > 0 && rc_filter_offset + rc_passband_hi < bwh_eff) ||
         (rc_filter_offset < 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
@@ -382,6 +373,7 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
 
     rc_freq = freq;
 }
+
 
 /*! \brief Set squelch level (from mainwindow). */
 void RemoteControl::setSquelchLevel(double level)
@@ -600,7 +592,7 @@ QString RemoteControl::cmd_get_freq() const
 {
     if (!initialized) {
         // do not accept until 1st tim recevied from remote
-        qWarning() << "remote not initialized";
+        qCDebug(remote) << "remote not initialized";
         return QString("RPRT 1\n");
     }
     return QString("%1\n").arg(rc_freq);
