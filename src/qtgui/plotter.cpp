@@ -149,7 +149,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_DrawOverlay = true;
     m_2DPixmap = QPixmap();
     m_OverlayPixmap = QPixmap();
-    m_WaterfallPixmap = QPixmap();
+    m_WaterfallImage = QImage();
     m_Size = QSize(0,0);
     m_GrabPosition = 0;
     m_Percent2DScreen = 35;	//percent of screen used for 2D display
@@ -387,7 +387,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             {
                 m_CenterFreq += delta_hz;
                 //m_DemodCenterFreq += delta_hz;    // do not move the demod freq, just move the center
-                qCDebug(plotter) << "mouse drag: " << px << "delta hz: " << delta_hz << "center: " << m_CenterFreq << "demod: " << m_DemodCenterFreq;
+                //qCDebug(plotter) << "mouse drag: " << px << "delta hz: " << delta_hz << "center: " << m_CenterFreq << "demod: " << m_DemodCenterFreq;
                 emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
             else
@@ -586,10 +586,10 @@ void CPlotter::setWaterfallSpan(quint64 span_ms)
 {
     wf_span = span_ms;
     quint64 tnow = QDateTime::currentMSecsSinceEpoch();
-    if (!m_WaterfallPixmap.isNull()) {
+    if (!m_WaterfallImage.isNull()) {
         wf_epoch = tnow;
         wf_count = 0;
-        msec_per_wfline = (double)wf_span / (qreal)m_WaterfallPixmap.height();
+        msec_per_wfline = (double)wf_span / (qreal)m_WaterfallImage.height();
     }
     wf_valid_since_ms = tnow;
     clearWaterfallBuf();
@@ -600,7 +600,6 @@ void CPlotter::clearWaterfallBuf()
     for (int i = 0; i < MAX_SCREENSIZE; i++)
         m_wfbuf[i] = 0.0;
 }
-
 
 
 /** Get waterfall time resolution in milleconds / line. */
@@ -1033,32 +1032,31 @@ void CPlotter::resizeEvent(QResizeEvent* )
         m_2DPixmap = QPixmap(w, plotHeight);
         m_2DPixmap.fill(QColor::fromRgba(PLOTTER_BGD_COLOR));
 
-        // No waterfall, use null pixmap
+        // No waterfall, use null image
         if (wfHeight == 0)
         {
-            m_WaterfallPixmap = QPixmap();
+            m_WaterfallImage = QImage();
         }
 
         // New waterfall, create blank area
-        else if (m_WaterfallPixmap.isNull()) {
-            m_WaterfallPixmap = QPixmap(w, wfHeight);
-            m_WaterfallPixmap.fill(Qt::black);
+        else if (m_WaterfallImage.isNull()) {
+            m_WaterfallImage = QImage(w, wfHeight, QImage::Format_RGB32);
+            m_WaterfallImage.setDevicePixelRatio(m_DPR);
+            m_WaterfallImage.fill(Qt::black);
         }
 
         // Existing waterfall, rescale width but no height as that would
         // invalidate time
         else
         {
-            QPixmap oldWaterfall = m_WaterfallPixmap.scaled(
-                w, m_WaterfallPixmap.height(),
+            QImage oldWaterfall = m_WaterfallImage.scaled(
+                w, m_WaterfallImage.height(),
                 Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-            m_WaterfallPixmap = QPixmap(w, wfHeight);
-            m_WaterfallPixmap.fill(Qt::black);
-            QRect copyRect(0, 0,
-                           qMin(w, oldWaterfall.width()),
-                           qMin(wfHeight, oldWaterfall.height()));
-            QPainter painter(&m_WaterfallPixmap);
-            painter.drawPixmap(QPointF(0.0, 0.0), oldWaterfall, copyRect);
+            m_WaterfallImage = QImage(w, wfHeight, QImage::Format_RGB32);
+            m_WaterfallImage.setDevicePixelRatio(m_DPR);
+            m_WaterfallImage.fill(Qt::black);
+            memcpy(m_WaterfallImage.bits(), oldWaterfall.bits(),
+                m_WaterfallImage.bytesPerLine() * std::min(m_WaterfallImage.height(), oldWaterfall.height()));
         }
 
         // Invalidate on resize
@@ -1101,17 +1099,9 @@ void CPlotter::paintEvent(QPaintEvent *)
         painter.drawPixmap(plotRectT, m_2DPixmap, plotRectS);
     }
 
-    if (!m_WaterfallPixmap.isNull())
+    if (!m_WaterfallImage.isNull())
     {
-        const int wfWidthS = m_WaterfallPixmap.width();
-        const int wfHeightS = m_WaterfallPixmap.height();
-        const QRectF wfRectS(0.0, 0.0, wfWidthS, wfHeightS);
-
-        const int wfWidthT = wfWidthS / m_DPR;
-        const int wfHeightT = wfHeightS / m_DPR;
-        const QRectF wfRectT(0.0, plotHeightT, wfWidthT, wfHeightT);
-
-        painter.drawPixmap(wfRectT, m_WaterfallPixmap, wfRectS);
+        painter.drawImage(QPointF(0.0, plotHeightT), m_WaterfallImage);
     }
 }
 
@@ -1179,7 +1169,7 @@ void CPlotter::draw(bool newData)
     const qint32 maxbin = std::min(endBin + 1, m_fftDataSize - 1);
 
     const qint32 xmin = qRound((double)(minbin - startBin) * xScale);
-    const qint32 xmax = qRound((double)(maxbin - startBin) * xScale);
+    const qint32 xmax = std::min(qRound((double)(maxbin - startBin) * xScale), qRound(w));
 
     const float frameTime = 1.0f / (float)fft_rate;
 
@@ -1212,7 +1202,7 @@ void CPlotter::draw(bool newData)
 
     // Waterfall is advanced only if visible and running, and if there is new
     // data. Repaints for other reasons do not require any action here.
-    const bool doWaterfall = !m_WaterfallPixmap.isNull() && m_Running && newData;
+    const bool doWaterfall = !m_WaterfallImage.isNull() && m_Running && newData;
 
     // Draw avg line, except in max mode. Suppress if it would clutter histogram.
     const bool doAvgLine = m_PlotMode != PLOT_MODE_MAX
@@ -1425,15 +1415,12 @@ void CPlotter::draw(bool newData)
             tlast_wf_drawn_ms = tnow_ms;
             
             // move current data down one line(must do before attaching a QPainter object)
-            m_WaterfallPixmap.scroll(0, 1, m_WaterfallPixmap.rect());
-
-            QPainter painter1(&m_WaterfallPixmap);
+            memmove(m_WaterfallImage.scanLine(1), m_WaterfallImage.scanLine(0),
+                m_WaterfallImage.bytesPerLine() * (m_WaterfallImage.height() - 1));
 
             // draw new line of fft data at top of waterfall bitmap
             // draw black areas where data will not be draw
-            painter1.setPen(QPen(Qt::black));
-            painter1.drawLine(0.0, 0.0, xmin - 1, 0.0);
-            painter1.drawLine(xmax, 0.0, w - 1, 0.0);
+            memset(m_WaterfallImage.scanLine(0), 0, m_WaterfallImage.bytesPerLine());
 
             const bool useWfBuf = msec_per_wfline > 0;
             float _lineFactor;
@@ -1448,12 +1435,10 @@ void CPlotter::draw(bool newData)
             for (i = 0; i < npts; ++i)
             {
                 const int ix = i + xmin;
-                const qreal ixPlot = (qreal)ix;
                 const float v = useWfBuf ? m_wfbuf[ix] * lineFactor : dataSource[ix];
                 qint32 cidx = qRound((m_WfMaxdB - 10.0f * log10f(v)) * wfdBGainFactor);
                 cidx = std::max(std::min(cidx, 255), 0);
-                painter1.setPen(m_ColorTbl[255 - cidx]);
-                painter1.drawPoint(QPointF(ixPlot, 0));
+                m_WaterfallImage.setPixel(ix, 0, m_ColorTbl[255 - cidx].rgb());
             }
 
             wf_avg_count = 0;
@@ -1941,7 +1926,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         static int debug_cnt = 0;
         debug_cnt++;
         debug_cnt %= 50;
-        if (debug_cnt ==0) qCDebug(plotter) << "fft min" << mindB << m_WfMindB << m_WfMaxdB << m_WfMindBSlider << m_WfMaxdBSlider;
+        //if (debug_cnt ==0) qCDebug(plotter) << "fft min" << mindB << m_WfMindB << m_WfMaxdB << m_WfMindBSlider << m_WfMaxdBSlider;
     } // m_autorange_active
 
     m_DrawOverlay = true;
@@ -2429,32 +2414,26 @@ void CPlotter::setCenterFreq(quint64 f)
     m_MinHoldValid = false;
     m_histIIRValid = false;
 
-    // move waterfall horizontally
-    int w, h;
-    static qint64 old_f=0;      // remember old freq
-
-    int deltaX = xFromFreq(old_f) - xFromFreq(f);
-
-    w = m_WaterfallPixmap.width();
-    h = m_WaterfallPixmap.height();
-    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << "delta" << (old_f - m_CenterFreq) << " pixel " << deltaX << "width " << w;
-    old_f = f;
-    if (abs(deltaX) < w/2)
+    if(m_WaterfallImage.isNull())
     {
-        QRegion *exposed = new QRegion;
-
-        m_WaterfallPixmap.scroll(deltaX, 0, 0, 0, w, h, exposed);
-        qCDebug(plotter) << "exposed: " << *exposed;
-
-        QPainter painter1(&m_WaterfallPixmap);
-        painter1.fillRect(exposed->boundingRect(), Qt::black);
-
-        m_MaxHoldValid = false;
-        m_MinHoldValid = false;
-        m_histIIRValid = false;
-        
-        updateOverlay();
+        return;
     }
+
+    int    w = m_WaterfallImage.width();
+    int    h = m_WaterfallImage.height();
+    static quint64 old_f=0;
+
+    qreal  ratio = (qreal)w / (qreal)m_Span;
+    
+    qint64 deltaf = f - old_f;
+    qreal deltax = deltaf * ratio;
+
+    // Shift left or right
+    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta x " << deltax << "width " << w;
+    m_WaterfallImage = m_WaterfallImage.copy(deltax, 0, w, h);
+
+    old_f = f;
+    updateOverlay();
 
 }
 
@@ -2574,8 +2553,8 @@ void CPlotter::setMarkers(qint64 a, qint64 b)
 
 void CPlotter::clearWaterfall()
 {
-    if (!m_WaterfallPixmap.isNull()) {
-        m_WaterfallPixmap.fill(Qt::black);
+    if (!m_WaterfallImage.isNull()) {
+        m_WaterfallImage.fill(Qt::black);
     }
 }
 

@@ -121,6 +121,15 @@ public:
         return m_FftCenter;
     }
 
+    qint64 getMinFrequency() const {
+        return m_CenterFreq + m_FftCenter - m_Span / 2;
+    }
+
+    qint64 getMaxFrequency() const {
+        return m_CenterFreq + m_FftCenter + m_Span / 2;
+    }
+
+
     int     getNearestPeak(QPoint pt);
     void    setWaterfallSpan(quint64 span_ms);
     quint64 getWfTimeRes() const;
@@ -269,7 +278,7 @@ private:
     eCapturetype    m_CursorCaptured;
     QPixmap     m_2DPixmap;         // Composite of everything displayed in the 2D plotter area
     QPixmap     m_OverlayPixmap;    // Grid, axes ... things that need to be drawn infrequently
-    QPixmap     m_WaterfallPixmap;
+    QImage      m_WaterfallImage;
     QColor      m_ColorTbl[256];
     QSize       m_Size;
     int         m_DPR{};
