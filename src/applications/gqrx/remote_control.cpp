@@ -608,7 +608,7 @@ QString RemoteControl::cmd_get_freq() const
 {
     if (!initialized) {
         // do not accept until 1st tim recevied from remote
-        qWarning() << "remote not initialized";
+        qCDebug(remote) << "remote not initialized";
         return QString("RPRT 1\n");
     }
     return QString("%1\n").arg(rc_freq);
