@@ -21,10 +21,10 @@ mkdir -p Gqrx.app/Contents/Resources
     <key>SOAPY_SDR_ROOT</key>
     <string>/usr/local</string>
     <key>QT_LOGGING_RULES</key>
-    <string>="*=false"</string>
+    <string>*=false</string>
   </dict>
   <key>CFBundleExecutable</key>
-  <string>gqrx</string>
+  <string>Gqrx</string>
   <key>CFBundleIdentifier</key>
   <string>dk.gqrx.www</string>
   <key>CFBundleName</key>
