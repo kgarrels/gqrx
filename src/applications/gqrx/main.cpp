@@ -158,7 +158,27 @@ int main(int argc, char *argv[])
         if (w.configOk)
         {
             w.show();
+
+            // start node-red for synching with the TRX
+
+            QString program = "/Users/kai/radioconda/bin/node-red";
+            QStringList arguments;
+            arguments << "";
+
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("PATH", "/Users/kai/radioconda/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
+           
+            QProcess *nodeProcess = new QProcess();
+            nodeProcess->setProcessEnvironment(env);
+
+            qInfo() << "launch " << program << " " << arguments;
+            nodeProcess->start(program, arguments);
+            qInfo() << "result" << nodeProcess->error();
+
             return_code = QApplication::exec();
+
+            // end node-red
+            nodeProcess->terminate();
         }
         else
         {
