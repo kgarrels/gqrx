@@ -3,10 +3,10 @@
 /.config/
 /build/
 /xcode/
+/Gqrx.app/
 /*.AppImage
 /*.dmg
 /AppDir/
-/Gqrx.app/
 .idea/
 cmake-build*/
 version.txt
