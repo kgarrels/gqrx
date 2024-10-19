@@ -386,9 +386,11 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             qint64 delta_hz = qRound64((qreal)delta_px * (qreal)m_Span / (qreal)w);
             if (event->buttons() & Qt::LeftButton)
             {
+                m_Running = false;
                 m_CenterFreq += delta_hz;
                 //m_DemodCenterFreq += delta_hz;    // do not move the demod freq, just move the center
                 //qCDebug(plotter) << "mouse drag: " << px << "delta hz: " << delta_hz << "center: " << m_CenterFreq << "demod: " << m_DemodCenterFreq;
+                setCenterFreq(m_CenterFreq);
                 emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
             else
@@ -801,6 +803,7 @@ void CPlotter::mouseReleaseEvent(QMouseEvent * event)
     QPoint pt = event->pos();
     int py = qRound((qreal)pt.y() * m_DPR);
 
+    m_Running = true;
     if (py >= m_OverlayPixmap.height())
     {
         // not in Overlay region
