@@ -1,8 +1,10 @@
 .DS_Store
 /.vscode/
+/.config/
 /build/
 /xcode/
 /Gqrx.app/
+/gqrx.app/
 /*.AppImage
 /*.dmg
 /AppDir/
@@ -10,3 +12,15 @@
 cmake-build*/
 version.txt
 /CMakeLists.txt.user
+gqrx.app/Contents/_CodeSignature/CodeResources
+gqrx.app/Contents/document.wflow
+gqrx.app/Contents/Info.plist
+gqrx.app/Contents/MacOS/Automator Application Stub
+gqrx.app/Contents/Resources/ApplicationStub.icns
+gqrx.app/Contents/Resources/InfoPlist.loctable
+gqrx.app/Contents/_CodeSignature/CodeResources
+gqrx.app/Contents/document.wflow
+gqrx.app/Contents/Info.plist
+gqrx.app/Contents/MacOS/Automator Application Stub
+gqrx.app/Contents/Resources/ApplicationStub.icns
+gqrx.app/Contents/Resources/InfoPlist.loctable
