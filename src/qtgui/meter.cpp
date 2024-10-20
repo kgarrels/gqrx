@@ -79,15 +79,13 @@ void CMeter::setLevel(float dbfs, float noisefloor)
 {
     const float old = m_dBFS;
     
-    m_dBFS -= alpha * (m_dBFS - dbfs);
     if (dbfs < MIN_DB)
         dbfs = MIN_DB;
     else if (dbfs > MAX_DB)
         dbfs = MAX_DB;
-
+    
     float alpha  = dbfs < m_dBFS ? ALPHA_DECAY : ALPHA_RISE;
     float alphaPeak  = dbfs < m_dBFSPeak ? ALPHA_PEAK_DECAY : ALPHA_PEAK_RISE;
-
     m_dBFS -= alpha * (m_dBFS - dbfs);
     m_dBFSPeak -= alphaPeak * (m_dBFSPeak - dbfs);
 
