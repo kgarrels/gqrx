@@ -1116,19 +1116,26 @@ void CPlotter::paintEvent(QPaintEvent *)
 
     if (!m_WaterfallImage.isNull())
     {
+      
+#undef SLIDING
+#ifdef SLIDING
         const int wfWidth = m_WaterfallImage.width();
         const int wfWidthT = qRound((qreal)wfWidth / m_DPR);
         const int wfHeight = m_WaterfallImage.height();
         const int firstHeightS = wfHeight - m_WaterfallOffset;
         const qreal firstHeightT = firstHeightS / m_DPR;
         const qreal secondHeightT = m_WaterfallOffset / m_DPR;
+      
         // draw the waterfall in two parts based on the location of the offset:
         // the first draw is the section below the offset to be drawm at top
         painter.drawImage(QRectF(0.0, plotHeightT, wfWidthT, firstHeightT), m_WaterfallImage,
             QRectF(0.0, m_WaterfallOffset, wfWidth, firstHeightS));
         // the second draw is the section above the offset to be drawn below
-        painter.drawImage(QRectF(0.0, plotHeightT + firstHeightT, wfWidthT, secondHeightT), m_WaterfallImage,
+        painter.drawImage(QRectF(0.0, plotHeightT + firstHeightT+1, wfWidthT, secondHeightT), m_WaterfallImage,
             QRectF(0.0, 0.0, wfWidth, m_WaterfallOffset));
+#else
+        painter.drawImage(QPointF(0.0, plotHeightT), m_WaterfallImage);
+#endif
     }
 }
 
@@ -1438,6 +1445,7 @@ void CPlotter::draw(bool newData)
                 wf_valid_since_ms = tnow_ms;
             tlast_wf_drawn_ms = tnow_ms;
 
+#ifdef SLIDING
             // move the offset "up"
             // this changes how the resulting waterfall is drawn
             // it is more efficient than moving all of the image scan lines
@@ -1468,7 +1476,33 @@ void CPlotter::draw(bool newData)
             {
                 m_WaterfallOffset = m_WaterfallImage.height();
             }
+#else
+            // move current data down one line(must do before attaching a QPainter object)
+           memmove(m_WaterfallImage.scanLine(1), m_WaterfallImage.scanLine(0),
+               m_WaterfallImage.bytesPerLine() * (m_WaterfallImage.height() - 1));
 
+           // draw new line of fft data at top of waterfall bitmap
+           // draw black areas where data will not be draw
+           memset(m_WaterfallImage.scanLine(0), 0, m_WaterfallImage.bytesPerLine());
+
+           const bool useWfBuf = msec_per_wfline > 0;
+           float _lineFactor;
+           if (useWfBuf && m_WaterfallMode != WATERFALL_MODE_MAX)
+               _lineFactor = 1.0f / (float)wf_avg_count;
+           else
+               _lineFactor = 1.0f;
+           const float lineFactor = _lineFactor;
+           wf_avg_count = 0;
+           // Use buffer (max or average) if in manual mode, else current data
+           for (i = 0; i < npts; ++i)
+           {
+               const int ix = i + xmin;
+               const float v = useWfBuf ? m_wfbuf[ix] * lineFactor : dataSource[ix];
+               qint32 cidx = qRound((m_WfMaxdB - 10.0f * log10f(v)) * wfdBGainFactor);
+               cidx = std::max(std::min(cidx, 255), 0);
+               m_WaterfallImage.setPixel(ix, 0, m_ColorTbl[255 - cidx].rgb());
+           }
+#endif
             wf_avg_count = 0;
             if (msec_per_wfline > 0)
                 clearWaterfallBuf();
