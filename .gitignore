@@ -1,8 +1,10 @@
 .DS_Store
 /.vscode/
+/.config/
 /build/
 /xcode/
 /Gqrx.app/
+/gqrx.app/
 /*.AppImage
 /*.dmg
 /AppDir/
@@ -10,3 +12,10 @@
 cmake-build*/
 version.txt
 /CMakeLists.txt.user
+
+/gqrx.app
+/gqrx.app/
+gqrx.app
+gqrx.app/
+*.plist
+*.plist
