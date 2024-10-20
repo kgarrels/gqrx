@@ -1122,7 +1122,7 @@ void CPlotter::paintEvent(QPaintEvent *)
         const qreal firstHeightT = firstHeightS / m_DPR;
         const qreal secondHeightT = m_WaterfallOffset / m_DPR;
       
-#define SLIDING
+#undef SLIDING
 #ifdef SLIDING
         // draw the waterfall in two parts based on the location of the offset:
         // the first draw is the section below the offset to be drawm at top
