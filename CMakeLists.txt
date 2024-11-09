@@ -122,14 +122,18 @@ else()
 endif()
 
 # 3rd Party Dependency Stuff
-option(FORCE_QT6 "Force Qt6 to be used" OFF)
-option(FORCE_QT5 "Force Qt5 to be used" ON)
+option(FORCE_QT6 "Force Qt6 to be used" ON)
+option(FORCE_QT5 "Force Qt5 to be used" OFF)
 
 if(FORCE_QT6)
+    set( QT_HOST_PATH "/Users/kai/radioconda/lib")
+    set( QT_HOST_PATH_CMAKE_DIR "/Users/kai/radioconda/lib/cmake")
     find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets Svg SvgWidgets)
 elseif(FORCE_QT5)
     find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
 else()
+    set( QT_HOST_PATH "~/radioconda/lib/qt6")
+    set( QT_HOST_PATH_CMAKE_DIR "~/radioconda/lib/cmake")
     find_package(Qt6 QUIET COMPONENTS Core Network Widgets Svg SvgWidgets)
     if(NOT Qt6_FOUND)
         find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
@@ -307,4 +311,10 @@ configure_file(
     IMMEDIATE @ONLY)
 add_custom_target(uninstall
     ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+)
+
+#add_custom_target(App ALL DEPENDS ./scr/gqrx)
+add_custom_target(app ALL
+    COMMAND ../mp_macosbundle.sh
+    DEPENDS ./scr/gqrx
 )
