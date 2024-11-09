@@ -158,6 +158,7 @@ int main(int argc, char *argv[])
         if (w.configOk)
         {
             w.show();
+            w.on_actionDSP_triggered(true); //+kai autostart
 
             // start node-red for synching with the TRX
 

@@ -104,6 +104,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     setMarkerA(MARKER_OFF);
     setMarkerB(MARKER_OFF);
     d_show_markers = true;
+    ui->statusBar->hide();
 
     /* frequency control widget */
     ui->freqCtrl->setup(0, 0, 9999e6, 1, FCTL_UNIT_NONE);
@@ -286,7 +287,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(uiDockFft, SIGNAL(gotoFftCenter()), ui->plotter, SLOT(moveToCenterFreq()));
     connect(uiDockFft, SIGNAL(gotoDemodFreq()), ui->plotter, SLOT(moveToDemodFreq()));
     connect(uiDockFft, SIGNAL(bandPlanChanged(bool)), ui->plotter, SLOT(enableBandPlan(bool)));
-    connect(uiDockFft, SIGNAL(markersChanged(bool)), ui->plotter, SLOT(enableMarkers(bool)));
+        connect(uiDockFft, SIGNAL(markersChanged(bool)), ui->plotter, SLOT(enableMarkers(bool)));
     connect(uiDockFft, SIGNAL(markersChanged(bool)), this, SLOT(enableMarkers(bool)));
     connect(uiDockFft, SIGNAL(wfColormapChanged(const QString)), ui->plotter, SLOT(setWfColormap(const QString)));
     connect(uiDockFft, SIGNAL(wfColormapChanged(const QString)), uiDockAudio, SLOT(setWfColormap(const QString)));
@@ -300,7 +301,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     connect(uiDockFft, SIGNAL(fftMinHoldToggled(bool)), ui->plotter, SLOT(enableMinHold(bool)));
     connect(uiDockFft, SIGNAL(peakDetectToggled(bool)), ui->plotter, SLOT(enablePeakDetect(bool)));
     connect(uiDockRDS, SIGNAL(rdsDecoderToggled(bool)), this, SLOT(setRdsDecoder(bool)));
-
+    
     // Plotter
     connect(ui->plotter, SIGNAL(pandapterRangeChanged(float,float)),
             uiDockFft, SLOT(setPandapterRange(float,float)));
@@ -401,6 +402,10 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
 
     qsvg_dummy = new QSvgWidget();
     dxc_options->dxcConnect();          // autostart dxc
+
+    // restore fullscreen
+    bool bool_val = m_settings->value("gui/fullscreen", true).toBool();
+    if (bool_val) QMainWindow::showFullScreen();
 
 
 }
@@ -534,15 +539,15 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     // main window settings
     if (restore_mainwindow)
     {
-        restoreGeometry(m_settings->value("gui/geometry", saveGeometry()).toByteArray());
         restoreState(m_settings->value("gui/state", saveState()).toByteArray());
+        restoreGeometry(m_settings->value("gui/geometry", saveGeometry()).toByteArray());
     }
 
     // locked window
-    bool_val = m_settings->value("gui/lockedwindow", false).toBool();
-    ui->actionLock_Window->setChecked(bool_val);
-    on_actionLock_Window_triggered(bool_val);
-
+    //bool_val = m_settings->value("gui/lockedwindow", false).toBool();
+    //ui->actionLock_Window->setChecked(bool_val);
+    //on_actionLock_Window_triggered(bool_val);
+    
     QString indev = m_settings->value("input/device", "").toString();
     if (!indev.isEmpty())
     {
@@ -720,7 +725,7 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
 
     // fullscreen, needs to come late, otherwise, it won't work
     bool_val = m_settings->value("gui/fullscreen", true).toBool();
-    on_actionFullScreen_triggered(bool_val);
+    //on_actionFullScreen_triggered(bool_val);
 
     emit m_recent_config->configLoaded(m_settings->fileName());
 
@@ -792,6 +797,8 @@ void MainWindow::storeSession()
     if (m_settings)
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
+        m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
+        
         m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
 
         // hide toolbar (default=false)
@@ -815,7 +822,9 @@ void MainWindow::storeSession()
         {
             int     flo, fhi;
             ui->plotter->getHiLowCutFrequencies(&flo, &fhi);
-            if (flo != fhi)
+
+            // if (flo != fhi)    // FIXME: +kai why? It would not save filter settings when demod if off, lo=0 and high=0
+            if (true)
             {
                 m_settings->setValue("receiver/filter_low_cut", flo);
                 m_settings->setValue("receiver/filter_high_cut", fhi);
@@ -1020,7 +1029,7 @@ void MainWindow::setLnbLo(double freq_mhz)
     ui->plotter->setCenterFreq(d_lnb_lo + d_hw_freq);
 
     // update LNB LO in settings
-    if (freq_mhz == 0.)
+    if (freq_mhz == 0.f)
         m_settings->remove("input/lnb_lo");
     else
         m_settings->setValue("input/lnb_lo", d_lnb_lo);
@@ -1282,7 +1291,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(-40000, -100, -5000, 0, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_USB:
@@ -1290,7 +1299,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(0, 5000, 100, 40000, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_CWL:
@@ -1315,7 +1324,7 @@ void MainWindow::selectDemod(int mode_idx)
         qDebug() << "Unsupported mode selection (can't happen!): " << mode_idx;
         flo = -5000;
         fhi = 5000;
-        click_res = 100;
+        click_res = 500;
         break;
     }
 
@@ -1487,8 +1496,10 @@ void MainWindow::meterTimeout()
     float level;
 
     level = rx->get_signal_pwr();
-    ui->sMeter->setLevel(level);
+    
+    ui->sMeter->setLevel(level, ui->plotter->m_Noisefloor);
     remote->setSignalLevel(level);
+    remote->setNoisefloor(ui->plotter->m_Noisefloor);
 }
 
 /** Baseband FFT plot timeout. */
@@ -2144,15 +2155,27 @@ void MainWindow::on_actionFullScreen_triggered(bool checked)
 {
     if (checked)
     {
-        ui->statusBar->hide();
         showFullScreen();
     }
     else
     {
-        ui->statusBar->show();
         showNormal();
     }
 }
+
+/** Full screen button or menu item toggled. */
+void MainWindow::on_actionStatus_Bar_triggered(bool checked)
+{
+    if (!checked)
+    {
+        ui->statusBar->hide();
+    }
+    else
+    {
+        ui->statusBar->show();
+    }
+}
+
 
 /** Remote control button (or menu item) toggled. */
 void MainWindow::on_actionRemoteControl_triggered(bool checked)
@@ -2555,6 +2578,29 @@ void MainWindow::updateClusterSpots()
 void MainWindow::frequencyFocusShortcut()
 {
     ui->freqCtrl->setFrequencyFocus();
+}
+
+
+void MainWindow::on_actionLock_Window_triggered(bool checked)
+{
+    
+    QRect geometry = this->geometry();
+    
+    if (checked)
+    {
+        this->setWindowFlags(this->windowFlags() | (Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    else
+    {
+        this->setWindowFlags(this->windowFlags() & !(Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    m_settings->setValue("gui/lockedwindow", checked);
+    
+    this->setGeometry(geometry);
+    
+    qDebug() << "windows flags" << this->windowFlags();
+    qDebug() << "checked, window geometry:" << checked << geometry;
+    this->show();
 }
 
 void MainWindow::rxOffsetZeroShortcut()

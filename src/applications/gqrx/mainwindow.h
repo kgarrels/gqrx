@@ -63,6 +63,7 @@ public:
     bool saveConfig(const QString& cfgfile);
     void storeSession();
 
+
     bool configOk; /*!< Main app uses this flag to know whether we should abort or continue. */
 
 public slots:
@@ -70,6 +71,9 @@ public slots:
     void setMarkerA(qint64 freq);
     void setMarkerB(qint64 freq);
     void enableMarkers(bool enable);
+    void on_actionDSP_triggered(bool checked);
+
+
 
 private:
     Ui::MainWindow *ui;
@@ -96,7 +100,8 @@ private:
 
     std::vector<float> d_audioFftData;
     bool d_have_audio;  /*!< Whether we have audio (i.e. not with demod_off. */
-
+    
+    
     /* dock widgets */
     DockRxOpt      *uiDockRxOpt;
     DockAudio      *uiDockAudio;
@@ -184,7 +189,7 @@ private slots:
     double setSqlLevelAuto();
     void setAudioGain(float gain);
     void setPassband(int bandwidth);
-
+    
     /* audio recording and playback */
     void startAudioRec(const QString& filename);
     void stopAudioRec();
@@ -227,12 +232,12 @@ private slots:
     void updateClusterSpots();
 
     /* menu and toolbar actions */
-    void on_actionDSP_triggered(bool checked);
     int  on_actionIoConfig_triggered();
     void on_actionLoadSettings_triggered();
     void on_actionSaveSettings_triggered();
     void on_actionIqTool_triggered();
     void on_actionFullScreen_triggered(bool checked);
+    void on_actionStatus_Bar_triggered(bool checked);
     void on_actionRemoteControl_triggered(bool checked);
     void on_actionRemoteConfig_triggered();
     void on_actionAFSK1200_triggered();
@@ -244,6 +249,9 @@ private slots:
     void on_actionAboutQt_triggered();
     void on_actionAddBookmark_triggered();
     void on_actionDX_Cluster_triggered();
+    void on_actionLock_Window_triggered(bool checked);
+
+
 
     /* markers*/
     void on_setMarkerButtonA_clicked();
