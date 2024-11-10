@@ -2538,7 +2538,7 @@ void CPlotter::setCenterFreq(quint64 f)
     qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta x " << deltax << "width " << w;
 
     // scroll waterfall horizontally
-    if (abs(deltax) < w/2)
+    if (abs(deltax) < w)
     {
         m_WaterfallImage = m_WaterfallImage.copy(deltax, 0, w, h);
 
