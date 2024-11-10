@@ -112,22 +112,15 @@ function(add_source_files list)
     set_property(GLOBAL APPEND PROPERTY ${list} "${SRCS}")
 endfunction(add_source_files)
 
-if(APPLE AND EXISTS /usr/local/opt/icu4c/lib)
-    # With Homebrew icu4c, `-licudata -licui18n -licuuc`
-    # are required, which reside in /usr/local/opt/icu4c/lib.
-    # See src/CMakeFiles/gqrx.dir/link.txt in the build directory.
-    set(ICU4C_LIBRARY_DIRS "/usr/local/opt/icu4c/lib")
-else()
-    set(ICU4C_LIBRARY_DIRS "")
-endif()
 
 # 3rd Party Dependency Stuff
-option(FORCE_QT6 "Force Qt6 to be used" ON)
+option(FORCE_QT6 "Force Qt6 to be used" OFF)
 option(FORCE_QT5 "Force Qt5 to be used" OFF)
+message(STATUS "QT version Qt5=" ${FORCE_QT5} " Qt6=" ${FORCE_QT6})
 
 if(FORCE_QT6)
-    set( QT_HOST_PATH "/Users/kai/radioconda/lib")
-    set( QT_HOST_PATH_CMAKE_DIR "/Users/kai/radioconda/lib/cmake")
+    set( QT_HOST_PATH "~/radioconda/lib/qt6")
+    set( QT_HOST_PATH_CMAKE_DIR "~/radioconda/lib/cmake")
     find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets Svg SvgWidgets)
 elseif(FORCE_QT5)
     find_package(Qt5 REQUIRED COMPONENTS Core Network Widgets Svg)
