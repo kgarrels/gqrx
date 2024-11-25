@@ -368,7 +368,7 @@ void RemoteControl::setNewRemoteFreq(qint64 freq)
         // move filter offset
         emit newFilterOffset(rc_filter_offset);
     }
-    else if (abs(delta) >1000000)
+    else if (abs(delta) >2*bwh_eff)
         {
         rc_filter_offset = 0;
         emit newFilterOffset(rc_filter_offset);
