@@ -162,24 +162,30 @@ int main(int argc, char *argv[])
 
             // start node-red for synching with the TRX
 
-            QString program = "/Users/kai/radioconda/bin/node-red";
-            QStringList arguments;
-            arguments << "";
-
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
             env.insert("PATH", "/Users/kai/radioconda/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
            
             QProcess *nodeProcess = new QProcess();
             nodeProcess->setProcessEnvironment(env);
 
-            qInfo() << "launch " << program << " " << arguments;
-            nodeProcess->start(program, arguments);
-            qInfo() << "result" << nodeProcess->error();
+            QString program = "/Users/kai/radioconda/bin/node-red";
+            qInfo() << "launch " << program;
+            nodeProcess->startCommand(program);
+            //qInfo() << "result" << nodeProcess->errorString();
+
+            QProcess *ahProcess = new QProcess();
+            ahProcess->setProcessEnvironment(env);
+            program = "open -j \"/Applications/Audio Hijack.app\"";
+            qInfo() << "launch " << program;
+            ahProcess->startCommand(program);
+            //qInfo() << "result" << nodeProcess->errorString();
 
             return_code = QApplication::exec();
 
             // end node-red
             nodeProcess->terminate();
+            ahProcess->terminate();
+            ahProcess->startCommand("pkill \"Audio Hijack\"");
         }
         else
         {
