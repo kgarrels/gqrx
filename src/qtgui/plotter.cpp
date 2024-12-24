@@ -1986,7 +1986,6 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         // ignore the first and last offset bins
 
         // cut away the first/last partsof the waterfall
-        #define MAX_FFT_SIZE 1048576
         float lowestValue;
         static float minAvg = 0;
 
@@ -2006,7 +2005,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         }
 
         // do a moving averge
-        const float alpha = 0.1f;
+        const float alpha = 0.3f;
         minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
         
         float mindB = 10*log10f(minAvg);
@@ -2024,7 +2023,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
             m_PandMaxdB = m_PandMindB   +40;
             m_WfMindB = mindB            +0;     // give some more blue
             m_WfMaxdB = m_WfMindB       +40;
-            qCDebug(plotter) << "fft min" << mindB;
+            //qCDebug(plotter) << "fft min" << mindB;
         }
  
     } // m_autorange_active
@@ -2532,10 +2531,10 @@ void CPlotter::setCenterFreq(quint64 f)
     qreal  ratio = (qreal)w / (qreal)m_Span;
     
     qint64 deltaf = f - old_f;
-    qreal deltax = deltaf * ratio;
+    qint64 deltax = round(deltaf * ratio);
 
     // Shift left or right
-    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta x " << deltax << "width " << w;
+    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta f " << deltaf << " delta x " << deltax << "width " << w;
 
     // scroll waterfall horizontally
     if (abs(deltax) < w)
