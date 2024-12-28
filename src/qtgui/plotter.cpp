@@ -35,6 +35,11 @@
 #include <QPainter>
 #include <QtGlobal>
 #include <QToolTip>
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
 #include "plotter.h"
 #include "bandplan.h"
 #include "bookmarks.h"
@@ -1972,14 +1977,14 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     
     if(m_autoRangeActive)
     {
-    /*
-        Noise Floor detection a la Simon Brown
-        A few weeks previously a reasonable logic was implemented for measuring the noise floor.
-        Purists will not be happy - they rarely are, but it works for me.
-        Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering,
-        and we're left with a healthy 70% of the signal.
-        Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
-     */
+        /*
+            Noise Floor detection a la Simon Brown
+            A few weeks previously a reasonable logic was implemented for measuring the noise floor.
+            Purists will not be happy - they rarely are, but it works for me.
+            Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering,
+            and we're left with a healthy 70% of the signal.
+            Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
+        */
         
         
         // automatic determination of the noise level
@@ -1989,13 +1994,14 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         float lowestValue;
         static float minAvg = 0;
 
-        long offset = (long) size / 4;      // skip the 1st quarter and the last quarter of the spectrum
+        const int offset = (long) size / 8;      // skip the 1st and last eigth of the spectrum
 
-        std::vector<float>fftCopy;
-        fftCopy.resize(size - 2*offset);
-        std::copy(&m_fftIIR[offset], &m_fftIIR[size-offset], &fftCopy[0]);      // copy from +offset to size-offet
-        std::sort(std::begin(fftCopy), std::begin(fftCopy)+size-2*offset);      // sort
-        const long bins=(size -2*offset)/10;
+        std::vector<float>fftCopy(m_fftIIR.size() -2*offset);                                
+        std::copy(m_fftIIR.begin()+offset, m_fftIIR.end()-offset , fftCopy.begin());         // copy from +offset to size-offet
+        std::sort(std::begin(fftCopy), std::end(fftCopy));                                   // sort
+        
+        // average the lowest bins
+        const int bins = (fftCopy.size()/16);
         lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
 
         // protect against NaN
@@ -2005,7 +2011,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         }
 
         // do a moving averge
-        const float alpha = 0.3f;
+        const float alpha = 0.1f;
         minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
         
         float mindB = 10*log10f(minAvg);
@@ -2531,10 +2537,11 @@ void CPlotter::setCenterFreq(quint64 f)
     qreal  ratio = (qreal)w / (qreal)m_Span;
     
     qint64 deltaf = f - old_f;
-    qint64 deltax = round(deltaf * ratio);
+    qint64 deltax = qRound(deltaf * ratio);
 
     // Shift left or right
     qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta f " << deltaf << " delta x " << deltax << "width " << w;
+    emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
 
     // scroll waterfall horizontally
     if (abs(deltax) < w)
