@@ -158,6 +158,8 @@ int main(int argc, char *argv[])
         if (w.configOk)
         {
             w.show();
+            w.showFullScreen();             // FIXME: does not respect fullscree setting
+
             w.on_actionDSP_triggered(true); //+kai autostart
 
             // start node-red for synching with the TRX

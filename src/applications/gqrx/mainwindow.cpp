@@ -404,8 +404,8 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     dxc_options->dxcConnect();          // autostart dxc
 
     // restore fullscreen
-    bool bool_val = m_settings->value("gui/fullscreen", true).toBool();
-    if (bool_val) QMainWindow::showFullScreen();
+    //bool bool_val = m_settings->value("gui/fullscreen", true).toBool();
+    //if (bool_val) QMainWindow::showFullScreen();
 
 
 }
