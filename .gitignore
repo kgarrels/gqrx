@@ -3,8 +3,6 @@
 /.config/
 /build/
 /xcode/
-/Gqrx.app/
-/gqrx.app/
 /*.AppImage
 /*.dmg
 /AppDir/
@@ -17,5 +15,4 @@ version.txt
 /gqrx.app/
 gqrx.app
 gqrx.app/
-*.plist
 *.plist
