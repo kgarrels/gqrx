@@ -62,7 +62,7 @@ RemoteControl::RemoteControl(QObject *parent) :
     rc_port = DEFAULT_RC_PORT;
     rc_allowed_hosts.append(DEFAULT_RC_ALLOWED_HOSTS);
 
-    rc_socket = 0;
+    //rc_sockets = 0;
     
     initialized = false;            // we have not yet receveived a valid f telegram
 
@@ -84,11 +84,12 @@ void RemoteControl::start_server()
 /*! \brief Stop the server. */
 void RemoteControl::stop_server()
 {
-	for(auto sock : rc_sockets) {
-		sock->close();
-		sock->deleteLater();
+/*
+	for(auto &sock : rc_sockets) {
+        sock->close();
+        sock->deleteLater();
 	}
-
+*/
 	rc_sockets.clear();
 	
     if (rc_server.isListening())
@@ -214,6 +215,11 @@ void RemoteControl::startRead()
         int     bytes_read;
         QString answer = "";
 
+        bytes_read = rc_socket->readLine(buffer, 1024);
+        if (bytes_read < 2)  // command + '\n'
+            continue;
+
+
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
         QStringList cmdlist = QString(buffer).trimmed().split(" ", QString::SkipEmptyParts);
 #else
@@ -274,9 +280,8 @@ void RemoteControl::startRead()
             rc_sockets.erase(rc_socket);
             rc_socket->close();
             rc_socket->deleteLater();
-            rc_socket = 0;
             
-            QCoreApplication::quit();
+            QCoreApplication::exit();
             return;
         }
         else
