@@ -16,3 +16,5 @@ version.txt
 gqrx.app
 gqrx.app/
 *.plist
+/gqrx.app/Contents
+/gqrx.app
