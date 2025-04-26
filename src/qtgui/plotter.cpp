@@ -2521,8 +2521,6 @@ void CPlotter::setCenterFreq(quint64 f)
     m_histIIRValid = false;
 
     // move waterfall horizontally
-    int w, h;
-    static qint64 old_f=0;      // remember old freq
 
     int    w = m_WaterfallImage.width();
     int    h = m_WaterfallImage.height();
@@ -2546,26 +2544,6 @@ void CPlotter::setCenterFreq(quint64 f)
         m_MinHoldValid = false;
         m_histIIRValid = false;
     }
-     
-    
-    old_f = f;
-    if (abs(deltaX) < w/2)
-    {
-        return;
-    }
-
-    int    w = m_WaterfallImage.width();
-    int    h = m_WaterfallImage.height();
-    static quint64 old_f=0;
-
-    qreal  ratio = (qreal)w / (qreal)m_Span;
-    
-    qint64 deltaf = f - old_f;
-    qreal deltax = deltaf * ratio;
-
-    // Shift left or right
-    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta x " << deltax << "width " << w;
-    m_WaterfallImage = m_WaterfallImage.copy(deltax, 0, w, h);
 
     old_f = f;
     updateOverlay();
