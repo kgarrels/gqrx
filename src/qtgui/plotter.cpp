@@ -138,6 +138,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_BookmarksEnabled = true;
     m_InvertScrolling = false;
     m_DXCSpotsEnabled = true;
+    m_autoRangeActive = false;
 
     m_Span = 96000;
     m_SampleFreq = 96000;
@@ -161,7 +162,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_Percent2DScreen = 35;	//percent of screen used for 2D display
     m_VdivDelta = VDIV_DELTA;
     m_BandPlanHeight = 0.0;
-
+    
     m_FreqDigits = 6;
 
     m_Peaks = QMap<int,qreal>();
@@ -1990,10 +1991,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         // automatic determination of the noise level
         // ignore the first and last offset bins
 
-        // cut away the first/last partsof the waterfall
-        float lowestValue;
-        static float minAvg = 0;
-
+        // cut away the first/last part of the waterfall
         const int offset = (long) size / 8;      // skip the 1st and last eigth of the spectrum
 
         std::vector<float>fftCopy(m_fftIIR.size() -2*offset);                                
@@ -2002,7 +2000,7 @@ void CPlotter::setNewFftData(const float *fftData, int size)
         
         // average the lowest bins
         const int bins = (fftCopy.size()/16);
-        lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
+        float lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
 
         // protect against NaN
         if (lowestValue != lowestValue) {
@@ -2012,22 +2010,18 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
         // do a moving averge
         const float alpha = 0.1f;
-        minAvg = alpha*lowestValue + (1.0f-alpha)* minAvg;
+        m_autoRange_minAvg = alpha*lowestValue + (1.0f-alpha)* m_autoRange_minAvg;
         
-        float mindB = 10*log10f(minAvg);
-        static float mindB_old = 0;
+        float mindB = 10*log10f(m_autoRange_minAvg);
 
         // set the panadapter limits if it changed <0.1dB
-        if (abs(mindB-mindB_old) > 0.1) {
+        if (abs(mindB-m_PandMindB) > 0.1) {
             m_DrawOverlay = true;
-            mindB_old = mindB;
             
-            // set values to new bounds
-            m_Noisefloor = mindB;          // publish the noisefloor to allow meter correction +kai
-           
+            m_autoRange_noiseFloor = mindB;     // publish noise floor
             m_PandMindB = mindB;
             m_PandMaxdB = m_PandMindB   +40;
-            m_WfMindB = mindB            +0;     // give some more blue
+            m_WfMindB = mindB;
             m_WfMaxdB = m_WfMindB       +40;
             //qCDebug(plotter) << "fft min" << mindB;
         }

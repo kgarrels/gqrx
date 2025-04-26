@@ -157,12 +157,10 @@ public:
         WATERFALL_MODE_SYNC = 2
     };
 
-    float   m_Noisefloor;               // noisefloor for auto range
+    float   m_autoRange_noiseFloor;     // noisefloor for auto range
+    float   m_autoRange_minAvg;         // noisefloor for auto range
     bool    m_autoRangeActive=true;     // auto range mode enabled
     bool    m_autoRangeAllowed = false; // only RF plotter can do autorange
-
-
-
 
 signals:
     void newDemodFreq(qint64 freq, qint64 delta); /* delta is the offset from the center */

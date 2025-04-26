@@ -548,6 +548,16 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     //ui->actionLock_Window->setChecked(bool_val);
     //on_actionLock_Window_triggered(bool_val);
     
+    /*
+     * Initialization plotter's auto range mode.
+     */
+    bool_val = m_settings->value("gui/autorange", false).toBool();
+    if (bool_val)
+    {
+       ui->plotter->setAutoRange(bool_val);
+    }
+
+
     QString indev = m_settings->value("input/device", "").toString();
     if (!indev.isEmpty())
     {
@@ -711,6 +721,7 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
 
     iq_tool->readSettings(m_settings);
 
+
     /*
      * Initialization the remote control at the end.
      * We must be sure that all variables initialized before starting RC server.
@@ -798,6 +809,7 @@ void MainWindow::storeSession()
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
         m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
+        m_settings->setValue("gui/autorange", ui->plotter->m_autoRangeActive);      // save status of autorange mode
         
         m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
 
@@ -1497,9 +1509,9 @@ void MainWindow::meterTimeout()
 
     level = rx->get_signal_pwr();
     
-    ui->sMeter->setLevel(level, ui->plotter->m_Noisefloor);
+    ui->sMeter->setLevel(level, ui->plotter->m_autoRange_noiseFloor);
     remote->setSignalLevel(level);
-    remote->setNoisefloor(ui->plotter->m_Noisefloor);
+    remote->setNoisefloor(ui->plotter->m_autoRange_noiseFloor);
 }
 
 /** Baseband FFT plot timeout. */
