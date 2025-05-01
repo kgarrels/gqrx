@@ -2051,8 +2051,6 @@ void CPlotter::setPandapterRange(float min, float max)
 
     m_PandMindB = min;
     m_PandMaxdB = max;
-    m_PandMindBSlider = min;
-    m_PandMaxdBSlider = max;
 
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
@@ -2066,8 +2064,6 @@ void CPlotter::setWaterfallRange(float min, float max)
         return;
     m_WfMindB = min;
     m_WfMaxdB = max;
-    m_WfMindBSlider = min;
-    m_WfMaxdBSlider = max;
   
     qCDebug(plotter) << "new WaterfallRange: " << min << " to " << max;
 
