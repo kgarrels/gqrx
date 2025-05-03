@@ -1,4 +1,4 @@
-/* -*- c++ -*- */
+ /* -*- c++ -*- */
 /* + + +   This Software is released under the "Simplified BSD License"  + + +
  *
  * Copyright 2010 Moe Wheatley. All rights reserved.
@@ -46,17 +46,24 @@ public:
     QSize sizeHint() const;
 
 public slots:
-    void setLevel(float dbfs);
+    void setLevel(float dbfs, float noisefloor);
     void setSqlLevel(float dbfs);
 
 protected:
     void paintEvent(QPaintEvent *event);
+    void mousePressEvent(QMouseEvent *event);
+
 
 private:
     void draw(QPainter &painter);
     void drawOverlay(QPainter &painter);
 
+    qreal   m_dBFSPeak=0;
+    qreal   m_SiglevelPeak;
+    qreal   m_Siglevel;
     float   m_dBFS;
-    float   m_Sql;
     QFont   m_font;
+    float   m_Noisefloor=0;
+    float   m_NoisefloorCorrection=26;  // correction for fft size/sample rate -> 7Hz RBW to 2800Hz demod BW
+    qreal   m_Sql;
 };
