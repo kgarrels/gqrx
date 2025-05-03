@@ -381,27 +381,26 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             // pan viewable range or move center frequency
             int delta_px = m_Xzero - px;
             qint64 delta_hz = qRound64((qreal)delta_px * (qreal)m_Span / (qreal)w);
-            if (delta_hz != 0) // update m_Xzero only on real change
+            if (event->buttons() & Qt::LeftButton)
             {
-                if (event->buttons() & Qt::MiddleButton)
-                {
-                    m_CenterFreq += delta_hz;
-                    m_DemodCenterFreq += delta_hz;
-                    emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
-                }
-                else
-                {
-                    setFftCenterFreq(m_FftCenter + delta_hz);
-                }
-
-                m_MaxHoldValid = false;
-                m_MinHoldValid = false;
-                m_histIIRValid = false;
-
-                m_Xzero = px;
-
-                updateOverlay();
+                m_Running = false;
+                m_CenterFreq += delta_hz;
+                //m_DemodCenterFreq += delta_hz;    // do not move the demod freq, just move the center
+                //qCDebug(plotter) << "mouse drag: " << px << "delta hz: " << delta_hz << "center: " << m_CenterFreq << "demod: " << m_DemodCenterFreq;
+                setCenterFreq(m_CenterFreq);
+                emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
             }
+            else
+            {
+                setFftCenterFreq(m_FftCenter + delta_hz);
+            }
+
+            m_MaxHoldValid = false;
+            m_MinHoldValid = false;
+            m_histIIRValid = false;
+
+            updateOverlay();            
+            m_Xzero = px;
         }
     }
     else if (LEFT == m_CursorCaptured)
@@ -794,6 +793,7 @@ void CPlotter::mouseReleaseEvent(QMouseEvent * event)
     QPoint pt = event->pos();
     int py = qRound((qreal)pt.y() * m_DPR);
 
+    m_Running = true;
     if (py >= m_OverlayPixmap.height())
     {
         // not in Overlay region
@@ -1965,6 +1965,9 @@ void CPlotter::setPandapterRange(float min, float max)
 
     m_PandMindB = min;
     m_PandMaxdB = max;
+
+    m_MaxHoldValid = false;
+    m_MinHoldValid = false;
     m_histIIRValid = false;
     updateOverlay();
 }
@@ -1975,6 +1978,9 @@ void CPlotter::setWaterfallRange(float min, float max)
         return;
     m_WfMindB = min;
     m_WfMaxdB = max;
+  
+    qCDebug(plotter) << "new WaterfallRange: " << min << " to " << max;
+
     // no overlay change is necessary
 }
 
@@ -2212,10 +2218,10 @@ void CPlotter::drawOverlay()
     pixperdiv = h * (qreal) dbstepsize / (qreal) (m_PandMaxdB - m_PandMindB);
     adjoffset = h * (mindbadj - (qreal) m_PandMindB) / (qreal) (m_PandMaxdB - m_PandMindB);
 
-    qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
-                     << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
-                     << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
-
+    // qCDebug(plotter) << "minDb =" << m_PandMindB << "maxDb =" << m_PandMaxdB
+    //                  << "mindbadj =" << mindbadj << "dbstepsize =" << dbstepsize
+    //                  << "pixperdiv =" << pixperdiv << "adjoffset =" << adjoffset;
+    
     // Hairline for grid lines
     painter.setPen(QPen(QColor::fromRgba(PLOTTER_GRID_COLOR), 0.0, Qt::DotLine));
     for (int i = 0; i <= m_VerDivs; i++)
@@ -2416,6 +2422,32 @@ void CPlotter::setCenterFreq(quint64 f)
     m_MinHoldValid = false;
     m_histIIRValid = false;
 
+    // move waterfall horizontally
+
+    int    w = m_WaterfallImage.width();
+    int    h = m_WaterfallImage.height();
+    static quint64 old_f=0;
+
+    qreal  ratio = (qreal)w / (qreal)m_Span;
+    
+    qint64 deltaf = f - old_f;
+    qint64 deltax = qRound(deltaf * ratio);
+
+    // Shift left or right
+    qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta f " << deltaf << " delta x " << deltax << "width " << w;
+    emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
+
+    // scroll waterfall horizontally
+    if (abs(deltax) < w)
+    {
+        m_WaterfallImage = m_WaterfallImage.copy(deltax, 0, w, h);
+
+        m_MaxHoldValid = false;
+        m_MinHoldValid = false;
+        m_histIIRValid = false;
+    }
+
+    old_f = f;
     updateOverlay();
 
 }
@@ -2534,10 +2566,11 @@ void CPlotter::clearWaterfall()
 
 void CPlotter::calcDivSize (qint64 low, qint64 high, int divswanted, qint64 &adjlow, qint64 &step, int& divs)
 {
+/*
     qCDebug(plotter) << "low:" << low;
     qCDebug(plotter) << "high:" << high;
     qCDebug(plotter) << "divswanted:" << divswanted;
-
+*/
     if (divswanted == 0)
         return;
 
@@ -2564,9 +2597,11 @@ void CPlotter::calcDivSize (qint64 low, qint64 high, int divswanted, qint64 &adj
     if (adjlow < low)
         adjlow += step;
 
+/*
     qCDebug(plotter) << "adjlow:" << adjlow;
     qCDebug(plotter) << "step:" << step;
     qCDebug(plotter) << "divs:" << divs;
+*/
 }
 
 void CPlotter::showToolTip(QMouseEvent* event, QString toolTipText)
