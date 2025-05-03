@@ -1508,8 +1508,10 @@ void MainWindow::meterTimeout()
     float level;
 
     level = rx->get_signal_pwr();
-    ui->sMeter->setLevel(level);
+    
+    ui->sMeter->setLevel(level, ui->plotter->m_autoRange_noiseFloor);
     remote->setSignalLevel(level);
+    remote->setNoisefloor(ui->plotter->m_autoRange_noiseFloor);
 }
 
 /** Baseband FFT plot timeout. */

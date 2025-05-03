@@ -93,6 +93,7 @@ public slots:
     void setMode(int mode);
     void setPassband(int passband_lo, int passband_hi);
     void setSquelchLevel(double level);
+    void setNoisefloor(double level);
     void setAudioGain(float gain);
     void setAudioMuted(bool muted);
     void startAudioRecorder(QString unused);
@@ -147,6 +148,7 @@ private:
     bool        rds_status;        /*!< RDS decoder enabled */
     float       signal_level;      /*!< Signal level in dBFS */
     double      squelch_level;     /*!< Squelch level in dBFS */
+    float       noisefloor;        /* noisfloor from plotter */
     float       audio_gain;        /*!< Audio gain in dB */
     QString     rc_program_id;     /*!< RDS Program identification */
     QString     rds_station;       /*!< RDS program service (station) name */
