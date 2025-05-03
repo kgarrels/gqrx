@@ -279,6 +279,8 @@ void RemoteControl::startRead()
             rc_sockets.erase(rc_socket);
             rc_socket->close();
             rc_socket->deleteLater();
+            
+            QCoreApplication::exit();
             return;
         }
         else
