@@ -422,11 +422,6 @@ MainWindow::~MainWindow()
         m_settings->setValue("configversion", 4);
         m_settings->setValue("crashed", false);
 
-        // hide toolbar (default=false)
-        if (ui->mainToolBar->isHidden())
-            m_settings->setValue("gui/hide_toolbar", true);
-        else
-            m_settings->remove("gui/hide_toolbar");
 
         m_settings->setValue("gui/geometry", saveGeometry());
         m_settings->setValue("gui/state", saveState());
