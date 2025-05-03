@@ -233,6 +233,7 @@ private slots:
     void on_actionSaveSettings_triggered();
     void on_actionIqTool_triggered();
     void on_actionFullScreen_triggered(bool checked);
+    void on_actionStatus_Bar_triggered(bool checked);
     void on_actionRemoteControl_triggered(bool checked);
     void on_actionRemoteConfig_triggered();
     void on_actionAFSK1200_triggered();
