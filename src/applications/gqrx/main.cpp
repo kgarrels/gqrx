@@ -158,7 +158,36 @@ int main(int argc, char *argv[])
         if (w.configOk)
         {
             w.show();
+            w.showFullScreen();             // FIXME: does not respect fullscree setting
+
+            w.on_actionDSP_triggered(true); //+kai autostart
+
+            // start node-red for synching with the TRX
+
+            QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+            env.insert("PATH", "/Users/kai/radioconda/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
+           
+            QProcess *nodeProcess = new QProcess();
+            nodeProcess->setProcessEnvironment(env);
+
+            QString program = "/Users/kai/radioconda/bin/node-red";
+            qInfo() << "launch " << program;
+            nodeProcess->startCommand(program);
+            //qInfo() << "result" << nodeProcess->errorString();
+
+            QProcess *ahProcess = new QProcess();
+            ahProcess->setProcessEnvironment(env);
+            program = "open -j \"/Applications/Audio Hijack.app\"";
+            qInfo() << "launch " << program;
+            ahProcess->startCommand(program);
+            //qInfo() << "result" << nodeProcess->errorString();
+
             return_code = QApplication::exec();
+
+            // end node-red
+            nodeProcess->terminate();
+            ahProcess->terminate();
+            ahProcess->startCommand("pkill \"Audio Hijack\"");
         }
         else
         {
