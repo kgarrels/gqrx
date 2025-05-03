@@ -245,6 +245,9 @@ private slots:
     void on_actionAboutQt_triggered();
     void on_actionAddBookmark_triggered();
     void on_actionDX_Cluster_triggered();
+    void on_actionLock_Window_triggered(bool checked);
+
+
 
     /* markers*/
     void on_setMarkerButtonA_clicked();
