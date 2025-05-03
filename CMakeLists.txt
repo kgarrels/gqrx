@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Project name
 project(gqrx)
@@ -63,6 +67,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANGXX)
     add_compile_options(-Wno-unused-parameter)
     add_compile_options(-Wsign-compare)
 endif()
+
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native")
 
 if(MSVC)
     #get math definitions like M_PI
