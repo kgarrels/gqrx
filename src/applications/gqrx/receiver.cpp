@@ -124,11 +124,15 @@ receiver::receiver(const std::string input_device,
     set_af_gain(DEFAULT_AUDIO_GAIN);
 
     audio_udp_sink = make_udp_sink_f();
+    qDebug() << "selected audio_device:" << audio_device;
+
 
 #ifdef WITH_PULSEAUDIO
     audio_snk = make_pa_sink(audio_device, d_audio_rate, "GQRX", "Audio output");
 #elif WITH_PORTAUDIO
     audio_snk = make_portaudio_sink(audio_device, d_audio_rate, "GQRX", "Audio output");
+#elif WITH_NULLAUDIO
+    audio_snk = gr::blocks::null_sink::make(sizeof(float));
 #else
     audio_snk = gr::audio::sink::make(d_audio_rate, audio_device, true);
 #endif
@@ -278,12 +282,15 @@ void receiver::set_output_device(const std::string device)
 
     try {
 #ifdef WITH_PULSEAUDIO
-        audio_snk = make_pa_sink(device, d_audio_rate, "GQRX", "Audio output");
+    audio_snk = make_pa_sink(device, d_audio_rate, "GQRX", "Audio output");
 #elif WITH_PORTAUDIO
-        audio_snk = make_portaudio_sink(device, d_audio_rate, "GQRX", "Audio output");
+    audio_snk = make_portaudio_sink(device, d_audio_rate, "GQRX", "Audio output");
+#elif WITH_NULLAUDIO
+    audio_snk = gr::blocks::null_sink::make(sizeof(float));
 #else
-        audio_snk = gr::audio::sink::make(d_audio_rate, device, true);
+    audio_snk = gr::audio::sink::make(d_audio_rate, device, true);
 #endif
+
 
         if (d_demod != RX_DEMOD_OFF)
         {
