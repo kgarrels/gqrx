@@ -399,6 +399,11 @@ void RemoteControl::setSquelchLevel(double level)
     squelch_level = level;
 }
 
+/*! \brief Set noiseflorr level (from mainwindow). */
+void RemoteControl::setNoisefloor(double level)
+{
+    noisefloor = level;
+}
 /*! \brief Set audio gain (from mainwindow). */
 void RemoteControl::setAudioGain(float gain)
 {
@@ -727,6 +732,10 @@ QString RemoteControl::cmd_get_level(QStringList cmdlist)
     else if (lvl.compare("SQL", Qt::CaseInsensitive) == 0)
     {
         answer = QString("%1\n").arg((double)squelch_level, 0, 'f', 1);
+    }
+    else if (lvl.compare("nf", Qt::CaseInsensitive) == 0)
+    {
+        answer = QString("%1\n").arg(noisefloor, 0, 'f', 1);
     }
     else if (lvl.compare("AF", Qt::CaseInsensitive) == 0)
     {
