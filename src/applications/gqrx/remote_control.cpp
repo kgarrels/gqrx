@@ -58,6 +58,10 @@ RemoteControl::RemoteControl(QObject *parent) :
     rc_port = DEFAULT_RC_PORT;
     rc_allowed_hosts.append(DEFAULT_RC_ALLOWED_HOSTS);
 
+    //rc_sockets = 0;
+    
+    initialized = false;            // we have not yet receveived a valid f telegram
+
     connect(&rc_server, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
 }
 
@@ -86,7 +90,7 @@ void RemoteControl::stop_server()
 	
     if (rc_server.isListening())
         rc_server.close();
-
+    initialized = false;
 }
 
 /*! \brief Read settings. */
@@ -223,8 +227,10 @@ void RemoteControl::startRead()
         QString cmd = cmdlist[0];
         if (cmd == "f")
             answer = cmd_get_freq();
-        else if (cmd == "F")
+        else if (cmd == "F") {
             answer = cmd_set_freq(cmdlist);
+            initialized = true;
+        }
         else if (cmd == "m")
             answer = cmd_get_mode();
         else if (cmd == "M")
@@ -605,6 +611,11 @@ QString RemoteControl::intToModeStr(int mode)
 /* Get frequency */
 QString RemoteControl::cmd_get_freq() const
 {
+    if (!initialized) {
+        // do not accept until 1st tim recevied from remote
+        qWarning() << "remote not initialized";
+        return QString("RPRT 1\n");
+    }
     return QString("%1\n").arg(rc_freq);
 }
 
@@ -626,6 +637,11 @@ QString RemoteControl::cmd_set_freq(QStringList cmdlist)
 /* Get mode and passband */
 QString RemoteControl::cmd_get_mode()
 {
+    if (!initialized) {
+        // do not accept until 1st tim recevied from remote
+        qWarning() << "remote not initialized";
+        return QString("RPRT 1\n");
+    }
     return QString("%1\n%2\n")
                    .arg(intToModeStr(rc_mode))
                    .arg(rc_passband_hi - rc_passband_lo);
