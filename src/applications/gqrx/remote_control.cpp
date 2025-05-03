@@ -32,6 +32,9 @@
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "127.0.0.1"
 
+Q_LOGGING_CATEGORY(remote, "remote")
+
+
 RemoteControl::RemoteControl(QObject *parent) :
     QObject(parent)
 {
@@ -284,7 +287,9 @@ void RemoteControl::startRead()
             qWarning() << "Unknown remote command:" << cmdlist;
             answer = QString("RPRT 1\n");
         }
-
+        
+        rc_socket->write(answer.toLatin1());
+        qCDebug(remote) << "answer: " << answer;
         rc_socket->write(answer.toLatin1());
     }
 }
