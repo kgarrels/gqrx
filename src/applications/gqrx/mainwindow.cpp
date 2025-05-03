@@ -104,6 +104,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     setMarkerA(MARKER_OFF);
     setMarkerB(MARKER_OFF);
     d_show_markers = true;
+    ui->statusBar->hide();
 
     /* frequency control widget */
     ui->freqCtrl->setup(0, 0, 9999e6, 1, FCTL_UNIT_NONE);
@@ -717,6 +718,10 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
        ui->actionRemoteControl->setChecked(true);
     }
 
+    // fullscreen, needs to come late, otherwise, it won't work
+    bool_val = m_settings->value("gui/fullscreen", true).toBool();
+    on_actionFullScreen_triggered(bool_val);
+
     emit m_recent_config->configLoaded(m_settings->fileName());
 
     return conf_ok;
@@ -787,8 +792,17 @@ void MainWindow::storeSession()
     if (m_settings)
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
+        m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
         m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
 
+        // hide toolbar (default=false)
+        if (ui->mainToolBar->isHidden())
+            m_settings->setValue("gui/hide_toolbar", true);
+        else
+            m_settings->remove("gui/hide_toolbar");
+        m_settings->setValue("gui/fullscreen", isFullScreen());         // save status of fullscreen
+        m_settings->setValue("gui/geometry", saveGeometry());
+        m_settings->setValue("gui/state", saveState());
         uiDockInputCtl->saveSettings(m_settings);
         uiDockRxOpt->saveSettings(m_settings);
         uiDockFft->saveSettings(m_settings);
@@ -2130,15 +2144,27 @@ void MainWindow::on_actionFullScreen_triggered(bool checked)
 {
     if (checked)
     {
-        ui->statusBar->hide();
         showFullScreen();
     }
     else
     {
-        ui->statusBar->show();
         showNormal();
     }
 }
+
+/** Full screen button or menu item toggled. */
+void MainWindow::on_actionStatus_Bar_triggered(bool checked)
+{
+    if (!checked)
+    {
+        ui->statusBar->hide();
+    }
+    else
+    {
+        ui->statusBar->show();
+    }
+}
+
 
 /** Remote control button (or menu item) toggled. */
 void MainWindow::on_actionRemoteControl_triggered(bool checked)
