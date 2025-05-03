@@ -25,6 +25,7 @@
 #include <vector>
 #include <volk/volk.h>
 
+#include <QApplication>
 #include <QSettings>
 #include <QByteArray>
 #include <QDateTime>
