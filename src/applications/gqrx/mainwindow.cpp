@@ -820,15 +820,10 @@ void MainWindow::storeSession()
         iq_tool->saveSettings(m_settings);
         dxc_options->saveSettings(m_settings);
 
-        {
-            int     flo, fhi;
-            ui->plotter->getHiLowCutFrequencies(&flo, &fhi);
-            if (flo != fhi)
-            {
-                m_settings->setValue("receiver/filter_low_cut", flo);
-                m_settings->setValue("receiver/filter_high_cut", fhi);
-            }
-        }
+        int     flo, fhi;
+        ui->plotter->getHiLowCutFrequencies(&flo, &fhi);
+        m_settings->setValue("receiver/filter_low_cut", flo);
+        m_settings->setValue("receiver/filter_high_cut", fhi);
     }
 }
 
