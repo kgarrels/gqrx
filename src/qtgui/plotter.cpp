@@ -988,8 +988,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
         numSteps = m_CumWheelDelta / (8.0 * 15.0);
 
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/5);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/5 );
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1095,8 +1095,8 @@ void CPlotter::paintEvent(QPaintEvent *)
         const int plotHeightS = m_2DPixmap.height();
         const QRectF plotRectS(0.0, 0.0, plotWidthS, plotHeightS);
 
-        const int plotWidthT = qRound((qreal)plotWidthS / m_DPR);
-        plotHeightT = qRound((qreal)plotHeightS / m_DPR);
+        const int plotWidthT = plotWidthS / m_DPR;
+        plotHeightT = plotHeightS / m_DPR;
         const QRectF plotRectT(0.0, 0.0, plotWidthT, plotHeightT);
 
         painter.drawPixmap(plotRectT, m_2DPixmap, plotRectS);
@@ -1416,7 +1416,7 @@ void CPlotter::draw(bool newData)
         }
 
         // is it time to update waterfall? msec_per_wfline is 0 in auto mode.
-        if (tnow_ms - wf_epoch > wf_count * msec_per_wfline)
+        if (tnow_ms - tlast_wf_drawn_ms > msec_per_wfline)
         {
             ++wf_count;
 
@@ -1939,7 +1939,6 @@ void CPlotter::setWaterfallRange(float min, float max)
 {
     if (out_of_range(min, max))
         return;
-
     m_WfMindB = min;
     m_WfMaxdB = max;
     // no overlay change is necessary
@@ -2245,7 +2244,7 @@ void CPlotter::makeFrequencyStrs()
 {
     qint64  StartFreq = m_StartFreqAdj;
     double  freq;
-    int     i,j;
+    qint64     i,j;
 
     if ((1 == m_FreqUnits) || (m_FreqDigits == 0))
     {
@@ -2268,14 +2267,14 @@ void CPlotter::makeFrequencyStrs()
     }
     // now find the division text with the longest non-zero digit
     // to the right of the decimal point.
-    int max = 0;
+    qint64 max = 0;
     for (i = 0; i <= m_HorDivs; i++)
     {
-        int dp = m_HDivText[i].indexOf('.');
-        int l = m_HDivText[i].length()-1;
+        qint64 dp = m_HDivText[i].indexOf('.');
+        qint64 l = m_HDivText[i].length()-1;
         for (j = l; j > dp; j--)
         {
-            if (m_HDivText[i][j] != '0')
+            if (m_HDivText[i][(uint)j] != '0')
                 break;
         }
         if ((j - dp) > max)
@@ -2382,9 +2381,9 @@ void CPlotter::setCenterFreq(quint64 f)
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
     m_histIIRValid = false;
-    m_IIRValid = false;
 
     updateOverlay();
+
 }
 
 // Invalidate overlay. If not running, force a redraw.
