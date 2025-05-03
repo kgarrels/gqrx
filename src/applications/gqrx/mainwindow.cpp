@@ -359,6 +359,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
 
     // enable frequency tooltips on FFT plot
     ui->plotter->setTooltipsEnabled(true);
+    ui->plotter->setTooltipsEnabled(false);     // +kai, to nervous on display
 
     // Create list of input devices. This must be done before the configuration is
     // restored because device probing might change the device configuration
@@ -398,6 +399,8 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     }
 
     qsvg_dummy = new QSvgWidget();
+    dxc_options->dxcConnect();          // autostart dxc
+
 }
 
 MainWindow::~MainWindow()

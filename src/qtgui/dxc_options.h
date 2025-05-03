@@ -47,6 +47,8 @@ public:
     void showEvent(QShowEvent * event);
     void saveSettings(QSettings *settings);
     void readSettings(QSettings *settings);
+    void dxcConnect();
+
 
 private slots:
 
