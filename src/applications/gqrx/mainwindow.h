@@ -70,6 +70,8 @@ public slots:
     void setMarkerA(qint64 freq);
     void setMarkerB(qint64 freq);
     void enableMarkers(bool enable);
+    void on_actionDSP_triggered(bool checked);
+
 
 private:
     Ui::MainWindow *ui;
@@ -227,7 +229,6 @@ private slots:
     void updateClusterSpots();
 
     /* menu and toolbar actions */
-    void on_actionDSP_triggered(bool checked);
     int  on_actionIoConfig_triggered();
     void on_actionLoadSettings_triggered();
     void on_actionSaveSettings_triggered();
