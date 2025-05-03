@@ -1019,7 +1019,7 @@ void MainWindow::setLnbLo(double freq_mhz)
     ui->plotter->setCenterFreq(d_lnb_lo + d_hw_freq);
 
     // update LNB LO in settings
-    if (freq_mhz == 0.)
+    if (freq_mhz == 0.f)
         m_settings->remove("input/lnb_lo");
     else
         m_settings->setValue("input/lnb_lo", d_lnb_lo);
@@ -1281,7 +1281,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(-40000, -100, -5000, 0, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_USB:
@@ -1289,7 +1289,7 @@ void MainWindow::selectDemod(int mode_idx)
         rx->set_demod(receiver::RX_DEMOD_SSB);
         ui->plotter->setDemodRanges(0, 5000, 100, 40000, false);
         uiDockAudio->setFftRange(0,3000);
-        click_res = 100;
+        click_res = 1000;
         break;
 
     case DockRxOpt::MODE_CWL:
@@ -1314,7 +1314,7 @@ void MainWindow::selectDemod(int mode_idx)
         qDebug() << "Unsupported mode selection (can't happen!): " << mode_idx;
         flo = -5000;
         fhi = 5000;
-        click_res = 100;
+        click_res = 500;
         break;
     }
 
