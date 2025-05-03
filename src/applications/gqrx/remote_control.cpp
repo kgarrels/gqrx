@@ -76,11 +76,12 @@ void RemoteControl::start_server()
 /*! \brief Stop the server. */
 void RemoteControl::stop_server()
 {
-	for(auto sock : rc_sockets) {
-		sock->close();
-		sock->deleteLater();
+/*
+	for(auto &sock : rc_sockets) {
+        sock->close();
+        sock->deleteLater();
 	}
-
+*/
 	rc_sockets.clear();
 	
     if (rc_server.isListening())
