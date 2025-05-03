@@ -67,6 +67,17 @@ void DXCOptions::showEvent(QShowEvent * event)
     Q_UNUSED(event);
 }
 
+// allow mainwindow to autostart dxc
+void DXCOptions::dxcConnect()
+{
+    DXCSpots::Get().setSpotTimeout(ui->lineEdit_DXCSpottimeout->text().toInt());
+    m_socket->connectToHost(ui->lineEdit_DXCAddress->text(),ui->lineEdit_DXCPort->text().toInt());
+    if(!m_socket->waitForConnected(5000))
+    {
+        ui->plainTextEdit_DXCMonitor->appendPlainText(m_socket->errorString());
+    }
+}
+
 void DXCOptions::on_pushButton_DXCConnect_clicked()
 {
     DXCSpots::Get().setSpotTimeout(ui->lineEdit_DXCSpottimeout->text().toInt());
