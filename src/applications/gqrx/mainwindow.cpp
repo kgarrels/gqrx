@@ -541,6 +541,14 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
         restoreGeometry(m_settings->value("gui/geometry",
                                           saveGeometry()).toByteArray());
         restoreState(m_settings->value("gui/state", saveState()).toByteArray());
+        restoreGeometry(m_settings->value("gui/geometry", saveGeometry()).toByteArray());
+    }
+
+    // locked window
+    //bool_val = m_settings->value("gui/lockedwindow", false).toBool();
+    //ui->actionLock_Window->setChecked(bool_val);
+    //on_actionLock_Window_triggered(bool_val);
+    
     }
 
     QString indev = m_settings->value("input/device", "").toString();
@@ -2567,6 +2575,29 @@ void MainWindow::updateClusterSpots()
 void MainWindow::frequencyFocusShortcut()
 {
     ui->freqCtrl->setFrequencyFocus();
+}
+
+
+void MainWindow::on_actionLock_Window_triggered(bool checked)
+{
+    
+    QRect geometry = this->geometry();
+    
+    if (checked)
+    {
+        this->setWindowFlags(this->windowFlags() | (Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    else
+    {
+        this->setWindowFlags(this->windowFlags() & !(Qt::FramelessWindowHint|Qt::WindowStaysOnTopHint));
+    }
+    m_settings->setValue("gui/lockedwindow", checked);
+    
+    this->setGeometry(geometry);
+    
+    qDebug() << "windows flags" << this->windowFlags();
+    qDebug() << "checked, window geometry:" << checked << geometry;
+    this->show();
 }
 
 void MainWindow::rxOffsetZeroShortcut()
