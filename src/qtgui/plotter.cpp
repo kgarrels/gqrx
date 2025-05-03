@@ -35,6 +35,11 @@
 #include <QPainter>
 #include <QtGlobal>
 #include <QToolTip>
+
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
 #include "plotter.h"
 #include "bandplan.h"
 #include "bookmarks.h"
@@ -133,6 +138,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_BookmarksEnabled = true;
     m_InvertScrolling = false;
     m_DXCSpotsEnabled = true;
+    m_autoRangeActive = false;
 
     m_Span = 96000;
     m_SampleFreq = 96000;
@@ -349,6 +355,7 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
     {
         if (event->buttons() & Qt::LeftButton)
         {
+            if (m_autoRangeActive) return;              // no dragging of  y-axis if autorange is active
             setCursor(QCursor(Qt::ClosedHandCursor));
             // move Y scale up/down
             float delta_px = m_Yzero - py;
@@ -364,7 +371,8 @@ void CPlotter::mouseMoveEvent(QMouseEvent* event)
             else
             {
                 emit pandapterRangeChanged(m_PandMindB, m_PandMaxdB);
-
+                m_MaxHoldValid = false;
+                m_MinHoldValid = false;
                 m_histIIRValid = false;
 
                 m_Yzero = py;
@@ -762,8 +770,14 @@ void CPlotter::mousePressEvent(QMouseEvent * event)
     else
     {
         if (m_CursorCaptured == YAXIS)
+        {
+            // double click toggles autorange of allowed
+            if (event->type() == QEvent::MouseButtonDblClick) {
+                if (m_autoRangeAllowed) m_autoRangeActive = !m_autoRangeActive;
+            }
             // get ready for moving Y axis
             m_Yzero = py;
+        }
         else if (m_CursorCaptured == XAXIS)
         {
             m_Xzero = px;
@@ -988,8 +1002,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
         numSteps = m_CumWheelDelta / (8.0 * 15.0);
 
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution );
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/5);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/5 );
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
@@ -1095,8 +1109,8 @@ void CPlotter::paintEvent(QPaintEvent *)
         const int plotHeightS = m_2DPixmap.height();
         const QRectF plotRectS(0.0, 0.0, plotWidthS, plotHeightS);
 
-        const int plotWidthT = qRound((qreal)plotWidthS / m_DPR);
-        plotHeightT = qRound((qreal)plotHeightS / m_DPR);
+        const int plotWidthT = plotWidthS / m_DPR;
+        plotHeightT = plotHeightS / m_DPR;
         const QRectF plotRectT(0.0, 0.0, plotWidthT, plotHeightT);
 
         painter.drawPixmap(plotRectT, m_2DPixmap, plotRectS);
@@ -1423,7 +1437,7 @@ void CPlotter::draw(bool newData)
         }
 
         // is it time to update waterfall? msec_per_wfline is 0 in auto mode.
-        if (tnow_ms - wf_epoch > wf_count * msec_per_wfline)
+        if (tnow_ms - tlast_wf_drawn_ms > msec_per_wfline)
         {
             ++wf_count;
 
@@ -1873,6 +1887,10 @@ void CPlotter::setNewFftData(const float *fftData, int size)
     {
         // Reallocate and invalidate IIRs
         m_fftData.resize(size);
+
+        const int offset = (long) size / 8;      // for auto mode: offset to skip the 1st and last eigth of the spectrum
+        m_fftCopy.resize(size -2*offset);
+
         m_fftIIR.resize(size);
         m_X.resize(size);
 
@@ -1944,6 +1962,60 @@ void CPlotter::setNewFftData(const float *fftData, int size)
 
     m_IIRValid = true;
 
+    
+    if(m_autoRangeActive)
+    {
+        /*
+            Noise Floor detection a la Simon Brown
+            A few weeks previously a reasonable logic was implemented for measuring the noise floor.
+            Purists will not be happy - they rarely are, but it works for me.
+            Take the output from the SDR radio, ignore 15% of the bandwidth at the high and low end of the output to avoid the ant-alias filtering,
+            and we're left with a healthy 70% of the signal.
+            Now sort the FFT bins by value, take the mean of the lowest 10% and that's the noise floor.
+        */
+        
+        
+        // automatic determination of the noise level
+        // ignore the first and last offset bins
+
+        // cut away the first/last part of the waterfall
+        const int offset = (long) size / 8;      // skip the 1st and last eigth of the spectrum
+
+        std::vector<float>fftCopy(m_fftIIR.size() -2*offset);                                
+        std::copy(m_fftIIR.begin()+offset, m_fftIIR.end()-offset , fftCopy.begin());         // copy from +offset to size-offet
+        std::sort(std::begin(fftCopy), std::end(fftCopy));                                   // sort
+        
+        // average the lowest bins
+        const int bins = (fftCopy.size()/16);
+        float lowestValue = std::accumulate(std::begin(fftCopy), std::begin(fftCopy)+bins, 0.0f) / bins;
+
+        // protect against NaN
+        if (lowestValue != lowestValue) {
+            qCDebug(plotter) << "lowestValue NaN";
+            return;
+        }
+
+        // do a moving averge
+        const float alpha = 0.1f;
+        m_autoRange_minAvg = alpha*lowestValue + (1.0f-alpha)* m_autoRange_minAvg;
+        
+        float mindB = 10*log10f(m_autoRange_minAvg);
+
+        // set the panadapter limits if it changed <0.1dB
+        if (abs(mindB-m_PandMindB) > 0.1) {
+            m_DrawOverlay = true;
+            
+            m_autoRange_noiseFloor = mindB;     // publish noise floor
+            m_PandMindB = mindB;
+            m_PandMaxdB = m_PandMindB   +40;
+            m_WfMindB = mindB;
+            m_WfMaxdB = m_WfMindB       +40;
+            //qCDebug(plotter) << "fft min" << mindB;
+        }
+ 
+    } // m_autorange_active
+
+    m_DrawOverlay = true;
     draw(true);
 }
 
@@ -1956,6 +2028,7 @@ void CPlotter::setFftRange(float min, float max)
 {
     setWaterfallRange(min, max);
     setPandapterRange(min, max);
+
 }
 
 void CPlotter::setPandapterRange(float min, float max)
@@ -1976,7 +2049,6 @@ void CPlotter::setWaterfallRange(float min, float max)
 {
     if (out_of_range(min, max))
         return;
-
     m_WfMindB = min;
     m_WfMaxdB = max;
   
@@ -2068,7 +2140,7 @@ void CPlotter::drawOverlay()
 
             tagEnd[level] = x + nameWidth + slant - 1;
 
-            const auto levelNHeight = level * levelHeight;
+            const auto levelNHeight = level * levelHeight + m_BandPlanHeight;       // we have the bandplan on top
             const auto levelNHeightBottom = levelNHeight + fontHeight;
             const auto levelNHeightBottomSlant = levelNHeightBottom + slant;
 
@@ -2103,15 +2175,22 @@ void CPlotter::drawOverlay()
                                                                 m_CenterFreq + m_FftCenter + m_Span / 2);
 
         m_BandPlanHeight = metrics.height() + VER_MARGIN;
+        int old_right = 0;
         for (auto & band : bands)
         {
             int band_left = std::max(xFromFreq(band.minFrequency), 0);
             int band_right = std::min(xFromFreq(band.maxFrequency), (int)w);
             int band_width = band_right - band_left;
-            QRectF rect(band_left, xAxisTop - m_BandPlanHeight, band_width, m_BandPlanHeight);
+            QRectF rect(band_left, 0, band_width, m_BandPlanHeight);
             painter.fillRect(rect, band.color);
+
+             // draw a line between band borders if they touch
+            painter.setPen(QPen(Qt::green, m_DPR));
+            if (band_left == old_right) painter.drawLine(band_left, 0, band_left, m_BandPlanHeight);         
+            old_right = band_right;
+            
             QString band_label = metrics.elidedText(band.name + " (" + band.modulation + ")", Qt::ElideRight, band_width - 10);
-            QRectF textRect(band_left, xAxisTop - m_BandPlanHeight, band_width, metrics.height());
+            QRectF textRect(band_left, 0, band_width, m_BandPlanHeight);
             painter.setPen(QPen(QColor::fromRgba(PLOTTER_TEXT_COLOR), m_DPR));
             painter.drawText(textRect, Qt::AlignCenter, band_label);
         }
@@ -2247,9 +2326,10 @@ void CPlotter::drawOverlay()
                               m_YAxisWidth - 2 * HOR_MARGIN, th);
             painter.drawText(shadowRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
             // Foreground
-            painter.setPen(QPen(QColor::fromRgba(PLOTTER_TEXT_COLOR)));
+            painter.setPen(QPen(QColor(PLOTTER_TEXT_COLOR)));
             QRectF textRect(HOR_MARGIN, y - th / 2,
                             m_YAxisWidth - 2 * HOR_MARGIN, th);
+            if (m_autoRangeActive) painter.setPen(Qt::darkGreen);
             painter.drawText(textRect, Qt::AlignRight|Qt::AlignVCenter, QString::number(dB));
         }
     }
@@ -2285,7 +2365,7 @@ void CPlotter::makeFrequencyStrs()
 {
     qint64  StartFreq = m_StartFreqAdj;
     double  freq;
-    int     i,j;
+    qint64     i,j;
 
     if ((1 == m_FreqUnits) || (m_FreqDigits == 0))
     {
@@ -2308,14 +2388,14 @@ void CPlotter::makeFrequencyStrs()
     }
     // now find the division text with the longest non-zero digit
     // to the right of the decimal point.
-    int max = 0;
+    qint64 max = 0;
     for (i = 0; i <= m_HorDivs; i++)
     {
-        int dp = m_HDivText[i].indexOf('.');
-        int l = m_HDivText[i].length()-1;
+        qint64 dp = m_HDivText[i].indexOf('.');
+        qint64 l = m_HDivText[i].length()-1;
         for (j = l; j > dp; j--)
         {
-            if (m_HDivText[i][j] != '0')
+            if (m_HDivText[i][(uint)j] != '0')
                 break;
         }
         if ((j - dp) > max)
@@ -2422,7 +2502,6 @@ void CPlotter::setCenterFreq(quint64 f)
     m_MaxHoldValid = false;
     m_MinHoldValid = false;
     m_histIIRValid = false;
-    m_IIRValid = false;
 
     // move waterfall horizontally
 
@@ -2451,6 +2530,7 @@ void CPlotter::setCenterFreq(quint64 f)
 
     old_f = f;
     updateOverlay();
+
 }
 
 // Invalidate overlay. If not running, force a redraw.
@@ -2545,6 +2625,14 @@ void CPlotter::enableMarkers(bool enabled)
 {
     m_MarkersEnabled = enabled;
 }
+
+/** Set auto range on or off. */
+void CPlotter::setAutoRange(bool enabled)
+{
+    m_autoRangeActive = enabled;      
+    qCDebug(plotter) << "plotter auto range: " << m_autoRangeActive;
+}
+
 
 void CPlotter::setMarkers(qint64 a, qint64 b)
 {

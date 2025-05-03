@@ -100,7 +100,7 @@ public:
     /* Determines full bandwidth. */
     void setSampleRate(float rate)
     {
-        if (rate > 0.0f)
+        if (rate > 0.0)
         {
             m_SampleFreq = rate;
             updateOverlay();
@@ -113,7 +113,7 @@ public:
     }
 
     void setFftCenterFreq(qint64 f) {
-        qint64 limit = ((qint64)m_SampleFreq - m_Span) / 2 - 1;
+        qint64 limit = ((qint64)m_SampleFreq - m_Span) / 2;
         m_FftCenter = qBound(-limit, f, limit);
     }
 
@@ -121,11 +121,22 @@ public:
         return m_FftCenter;
     }
 
+    qint64 getMinFrequency() const {
+        return m_CenterFreq + m_FftCenter - m_Span / 2;
+    }
+
+    qint64 getMaxFrequency() const {
+        return m_CenterFreq + m_FftCenter + m_Span / 2;
+    }
+
+
     int     getNearestPeak(QPoint pt);
     void    setWaterfallSpan(quint64 span_ms);
     quint64 getWfTimeRes() const;
     void    setFftRate(int rate_hz);
     void    clearWaterfallBuf();
+    void    clearAllBuf();
+    bool    saveWaterfall(const QString & filename) const;
 
     enum ePlotMode {
         PLOT_MODE_MAX = 0,
@@ -145,6 +156,11 @@ public:
         WATERFALL_MODE_AVG = 1,
         WATERFALL_MODE_SYNC = 2
     };
+
+    float   m_autoRange_noiseFloor;     // noisefloor for auto range
+    float   m_autoRange_minAvg;         // noisefloor for auto range
+    bool    m_autoRangeActive=true;     // auto range mode enabled
+    bool    m_autoRangeAllowed = false; // only RF plotter can do autorange
 
 signals:
     void newDemodFreq(qint64 freq, qint64 delta); /* delta is the offset from the center */
@@ -181,6 +197,7 @@ public slots:
     void enableBandPlan(bool enable);
     void enableMarkers(bool enabled);
     void setMarkers(qint64 a, qint64 b);
+    void setAutoRange(bool enabled);
     void clearWaterfall();
     void updateOverlay();
 
@@ -256,6 +273,7 @@ private:
     float       m_histMaxIIR;
     std::vector<float> m_fftIIR;
     std::vector<float> m_fftData;
+    std::vector<float> m_fftCopy;           // for auto mode
     std::vector<float> m_X;                // scratch array of matching size for local calculation
     float      m_wfbuf[MAX_SCREENSIZE]{}; // used for accumulating waterfall data at high time spans
     float       m_fftMaxHoldBuf[MAX_SCREENSIZE]{};
@@ -267,6 +285,7 @@ private:
     qreal       m_XAxisYCenter{};
     qreal       m_YAxisWidth{};
 
+
     eCapturetype    m_CursorCaptured;
     QPixmap     m_2DPixmap;         // Composite of everything displayed in the 2D plotter area
     QPixmap     m_OverlayPixmap;    // Grid, axes ... things that need to be drawn infrequently
@@ -275,7 +294,7 @@ private:
     int         m_WaterfallOffset;
     QColor      m_ColorTbl[256];
     QSize       m_Size;
-    qreal       m_DPR{};
+    int         m_DPR{};
     QString     m_HDivText[HORZ_DIVS_MAX+1];
     bool        m_Running;
     bool        m_DrawOverlay;
@@ -294,10 +313,10 @@ private:
     bool        m_MarkersEnabled;     /*!< Show/hide markers on spectrum */
     bool        m_InvertScrolling;
     bool        m_DXCSpotsEnabled;    /*!< Show/hide DXC Spots on spectrum */
-    int         m_DemodHiCutFreq;
-    int         m_DemodLowCutFreq;
-    int         m_DemodFreqX{};       //screen coordinate x position
-    int         m_DemodHiCutFreqX{};  //screen coordinate x position
+    float       m_DemodHiCutFreq;
+    float       m_DemodLowCutFreq;
+    float       m_DemodFreqX{};       //screen coordinate x position
+    float       m_DemodHiCutFreqX{};  //screen coordinate x position
     int         m_DemodLowCutFreqX{}; //screen coordinate x position
     int         m_MarkerAX{};
     int         m_MarkerBX{};
