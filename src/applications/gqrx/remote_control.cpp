@@ -27,6 +27,7 @@
 #include <QStringList>
 #include "remote_control.h"
 #include "qtgui/dockrxopt.h"
+#include "qtgui/bookmarks.h"
 
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "127.0.0.1"
@@ -267,6 +268,8 @@ void RemoteControl::startRead()
             answer = cmd_dump_state();
         else if (cmd == "\\get_powerstat")
             answer = QString("1\n");
+        else if (cmd == "bookmark")
+            answer = cmd_bookmark_add(cmdlist);
         else if (cmd == "q" || cmd == "Q")
         {
             // FIXME: for now we assume 'close' command
@@ -992,6 +995,29 @@ QString RemoteControl::cmd_lnb_lo(QStringList cmdlist)
     {
         return QString("%1\n").arg((qint64)(rc_lnb_lo_mhz * 1e6));
     }
+}
+
+/* add a bookmakr */
+QString RemoteControl::cmd_bookmark_add(QStringList cmdlist)
+{
+    auto bookmark = new BookmarkInfo;
+    
+    if(cmdlist.size() == 3)
+    {
+        bookmark->name= cmdlist[1];
+        bookmark->frequency = rc_freq;
+        bookmark->bandwidth = rc_passband_hi -rc_passband_lo;
+        bookmark->modulation = intToModeStr(rc_mode);
+        bookmark->tags.append(Bookmarks::Get().findOrAddTag(cmdlist[2]));
+
+        Bookmarks::Get().add(*bookmark);
+        emit bookmarksChanged(true);
+    }
+    else
+    {
+        return QString("RPRT 1\n");
+    }
+    return QString("RPRT 0\n");
 }
 
 /*
