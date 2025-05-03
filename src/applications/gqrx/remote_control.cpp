@@ -304,8 +304,9 @@ void RemoteControl::startRead()
  */
 void RemoteControl::setNewFrequency(qint64 freq)
 {
+    if (rc_freq == freq) return;        // we are already there
     rc_freq = freq;
-}
+ }
 
 /*! \brief Slot called when the filter offset is changed. */
 void RemoteControl::setFilterOffset(qint64 freq)
@@ -353,23 +354,38 @@ void RemoteControl::setPassband(int passband_lo, int passband_hi)
 void RemoteControl::setNewRemoteFreq(qint64 freq)
 {
     qint64 delta = freq - rc_freq;
-    qint64 bwh_eff = 0.8f * (float)bw_half;
+    qint64 bwh_eff = 0.95f * (float)bw_half;
 
+    if (abs(delta) > bw_half)                // band jump
+    {
+        rc_filter_offset = 0;
+        emit newFilterOffset(rc_filter_offset);
+        emit newFrequency(freq);
+        rc_freq = freq;
+        return;
+    }
+    
     rc_filter_offset += delta;
-    if ((rc_filter_offset > 0 && rc_filter_offset + rc_passband_hi < bwh_eff) ||
-        (rc_filter_offset < 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
+    if ((rc_filter_offset >= 0 && (rc_filter_offset + rc_passband_hi < bwh_eff)) ||
+        (rc_filter_offset <= 0 && rc_filter_offset + rc_passband_lo > -bwh_eff))
     {
         // move filter offset
         emit newFilterOffset(rc_filter_offset);
     }
+    else if (abs(delta) > bwh_eff)
+        {
+        rc_filter_offset = 0;
+        emit newFilterOffset(rc_filter_offset);
+        emit newFrequency(freq);
+        }
     else
     {
         // moving filter offset would push it too close to or beyond the edge
         // move it close to the center and adjust hardware freq
         if (rc_filter_offset < 0)
-            rc_filter_offset = -0.2f * bwh_eff;
+            rc_filter_offset = -0.7f * bwh_eff;
         else
-            rc_filter_offset = 0.2f * bwh_eff;
+            rc_filter_offset = 0.7f * bwh_eff;
         emit newFilterOffset(rc_filter_offset);
         emit newFrequency(freq);
     }
