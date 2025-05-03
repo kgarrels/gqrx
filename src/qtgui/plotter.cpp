@@ -127,7 +127,7 @@ CPlotter::CPlotter(QWidget *parent) : QFrame(parent)
     m_PlotPerHz = false;
 
     m_FilterBoxEnabled = true;
-    m_CenterLineEnabled = true;
+    m_CenterLineEnabled = false;
     m_MarkersEnabled = false;
     m_BandPlanEnabled = true;
     m_BookmarksEnabled = true;
