@@ -88,7 +88,7 @@ fi
 
 echo '---codesign---'
 
-for f in Gqrx.app/Contents/libs/*.dylib Gqrx.app/Contents/Frameworks/*.dylib Gqrx.app/Contents/MacOS/gqrx
+for f in Gqrx.app/Contents/Frameworks/*.dylib Gqrx.app/Contents/MacOS/gqrx
 do
     if [ "$1" = "true" ]; then
         codesign --force --verify --verbose --timestamp --options runtime --entitlements /tmp/Entitlements.plist --sign "${IDENTITY}" "$f"
