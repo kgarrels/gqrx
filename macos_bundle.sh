@@ -5,7 +5,7 @@ IDENTITY=92E4HH2XBG
 #BREW_PREFIX="$(brew --prefix)"
 
 echo $CONDA_PREFIX
-MACDEPLOYQT6=${CONDA_PREFIX}/lib/qt6/bin/macdeployqt6
+MACDEPLOYQT6=${CONDA_PREFIX}/bin/macdeployqt6
 #MACDEPLOYQT6=/Users/runner/micromamba/envs/gqrx/bin/macdeployqt6
 
 echo $MACDEPLOYQT6
