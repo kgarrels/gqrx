@@ -4,10 +4,9 @@ GQRX_VERSION="$(<build/version.txt)"
 IDENTITY=92E4HH2XBG
 #BREW_PREFIX="$(brew --prefix)"
 
-echo $CONDA_PREFIX
+echo ${CONDA_PREFIX}
 MACDEPLOYQT6=${CONDA_PREFIX}/bin/macdeployqt6
 #MACDEPLOYQT6=/Users/runner/micromamba/envs/gqrx/bin/macdeployqt6
-
 echo $MACDEPLOYQT6
 
 #rm -r Gqrx.app
