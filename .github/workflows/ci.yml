@@ -54,8 +54,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Configure
         run: |
-          eval "$(micromamba shell hook --shell bash)" 
-          micromamba activate gqrx 
           mkdir build
           cd build
           cmake -DLINUX_AUDIO_BACKEND:STRING=${{ matrix.backend }} ..
