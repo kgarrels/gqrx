@@ -7,7 +7,7 @@ IDENTITY=92E4HH2XBG
 echo "CONDA_PREFIX: " $CONDA_PREFIX
 
 #macvdeployqt6 for local builds
-MACDEPLOYQT6=${CONDA_PREFIX}/lib/qt6/bin/macdeployqt
+MACDEPLOYQT6=${CONDA_PREFIX}/bin/macdeployqt
 
 # github runner does not have CONDA_PREFIX
 if ! [ -e ${MACDEPLOYQT6} ] ; 
@@ -84,14 +84,13 @@ cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
 #"${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite   # TODO: Remove MACDEPLOYQT6 workaround
 
 echo '---MACDEPLOYQT6 2---'
+VERBOSE=1
 
 if [ "$1" = "true" ]; then
-    "${MACDEPLOYQT6}" Gqrx.app -verbose=2 -no-strip -always-overwrite -sign-for-notarization="${IDENTITY}" -libpath=Gqrx.app/Contents/Frameworks
+    "${MACDEPLOYQT6}" Gqrx.app -verbose=$VERBOSE -no-strip -always-overwrite -sign-for-notarization="${IDENTITY}" -libpath=Gqrx.app/Contents/Frameworks
 else
-    "${MACDEPLOYQT6}" Gqrx.app -verbose=2 -no-strip -always-overwrite -libpath=Gqrx.app/Contents/Frameworks
+    "${MACDEPLOYQT6}" Gqrx.app -verbose=$VERBOSE -no-strip -always-overwrite -libpath=Gqrx.app/Contents/Frameworks
 fi
-
-exit
 
 echo '---codesign---'
 
