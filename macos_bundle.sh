@@ -7,11 +7,11 @@ IDENTITY=92E4HH2XBG
 echo "CONDA_PREFIX: " $CONDA_PREFIX
 
 #macvdeployqt6 for local builds
-MACDEPLOYQT6=${CONDA_PREFIX}/lib/qt6/bin/macdeployqt6
+MACDEPLOYQT6=${CONDA_PREFIX}/lib/qt6/bin/macdeployqt
 
 # github runner does not have CONDA_PREFIX
 if ! [ -e ${MACDEPLOYQT66} ] ; 
-then MACDEPLOYQT6="/Users/runner/micromamba/envs/gqrx/bin/macdeployqt6"
+then MACDEPLOYQT6=/Users/runner/micromamba/envs/gqrx/bin/macdeployqt
 fi
 echo "macdeployqt6: " ${MACDEPLOYQT6}
 
