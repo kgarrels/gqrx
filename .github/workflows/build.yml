@@ -106,9 +106,21 @@ jobs:
             gnuradio-osmosdr
             libboost-devel
             qt6-main
+            soapysdr
             soapysdr-module-lms7
             soapysdr-module-plutosdr
             soapysdr-module-remote
+            soapysdr-module-airspy
+            soapysdr-module-airspyhf
+            soapysdr-module-audio
+            soapysdr-module-bladerf
+            soapysdr-module-hackrf
+            soapysdr-module-netsdr
+            soapysdr-module-plutosdr
+            soapysdr-module-redpitaya
+            soapysdr-module-rtlsdr
+            soapysdr-module-uhd
+            soapysdr-module-volk-converters
             sysroot_linux-64=2.17.*
             volk
       - name: Install dependencies
