@@ -35,7 +35,6 @@ jobs:
             gr-osmosdr \
             liborc-0.4-dev \
             appstream \
-            qt6-base-dev \
             desktop-file-utils
       - name: Install Qt5
         if: matrix.image == 'ubuntu:20.04'
