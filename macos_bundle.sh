@@ -4,13 +4,22 @@ GQRX_VERSION="$(<build/version.txt)"
 IDENTITY=92E4HH2XBG
 #BREW_PREFIX="$(brew --prefix)"
 
-echo $CONDA_PREFIX
+echo "CONDA_PREFIX: " $CONDA_PREFIX
+
+#macvdeployqt6 for local builds
 MACDEPLOYQT6=${CONDA_PREFIX}/lib/qt6/bin/macdeployqt6
-#MACDEPLOYQT6=/Users/runner/micromamba/envs/gqrx/bin/macdeployqt6
 
-echo $MACDEPLOYQT6
+# github runner does not have CONDA_PREFIX
+if ! [ -e ${MACDEPLOYQT66} ] ; 
+then MACDEPLOYQT6="/Users/runner/micromamba/envs/gqrx/bin/macdeployqt6"
+fi
+echo "macdeployqt6: " ${MACDEPLOYQT6}
 
-#rm -r Gqrx.app
+# cleanup and setup
+if [ -e Gqrx.app ] ; 
+then rm -r Gqrx.app
+fi
+
 mkdir -p Gqrx.app/Contents/MacOS
 mkdir -p Gqrx.app/Contents/Resources
 
@@ -71,11 +80,10 @@ cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
 #dylibbundler -s "${CONDA_PREFIX}"/lib -od -b -x Gqrx.app/Contents/MacOS/gqrx -x Gqrx.app/Contents/soapy-modules/libPlutoSDRSupport.so -x Gqrx.app/Contents/soapy-modules/libremoteSupport.so -d Gqrx.app/Contents/libs/
 #dylibbundler -s "${CONDA_PREFIX}"/lib -od -b -x Gqrx.app/Contents/MacOS/gqrx -x Gqrx.app/Contents/PlugIns/platforms/libqcocoa.dylib  -d Gqrx.app/Contents/libs/
 
-# echo '---macdeployqt---'
+#echo '---MACDEPLOYQT6---'
+#"${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite   # TODO: Remove MACDEPLOYQT6 workaround
 
-# "${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite   # TODO: Remove macdeployqt workaround
-
-echo '---macdeployqt 2---'
+echo '---MACDEPLOYQT6 2---'
 
 if [ "$1" = "true" ]; then
     "${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite -sign-for-notarization="${IDENTITY}" -libpath=Gqrx.app/Contents/Frameworks
