@@ -10,7 +10,7 @@ echo "CONDA_PREFIX: " $CONDA_PREFIX
 MACDEPLOYQT6=${CONDA_PREFIX}/lib/qt6/bin/macdeployqt
 
 # github runner does not have CONDA_PREFIX
-if ! [ -e ${MACDEPLOYQT66} ] ; 
+if ! [ -e ${MACDEPLOYQT6} ] ; 
 then MACDEPLOYQT6=/Users/runner/micromamba/envs/gqrx/bin/macdeployqt
 fi
 echo "macdeployqt6: " ${MACDEPLOYQT6}
@@ -86,10 +86,12 @@ cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
 echo '---MACDEPLOYQT6 2---'
 
 if [ "$1" = "true" ]; then
-    "${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite -sign-for-notarization="${IDENTITY}" -libpath=Gqrx.app/Contents/Frameworks
+    "${MACDEPLOYQT6}" Gqrx.app -verbose=2 -no-strip -always-overwrite -sign-for-notarization="${IDENTITY}" -libpath=Gqrx.app/Contents/Frameworks
 else
-    "${MACDEPLOYQT6}" Gqrx.app -no-strip -always-overwrite -libpath=Gqrx.app/Contents/Frameworks
+    "${MACDEPLOYQT6}" Gqrx.app -verbose=2 -no-strip -always-overwrite -libpath=Gqrx.app/Contents/Frameworks
 fi
+
+exit
 
 echo '---codesign---'
 
