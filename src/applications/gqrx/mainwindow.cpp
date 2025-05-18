@@ -362,6 +362,7 @@ MainWindow::MainWindow(const QString& cfgfile, bool edit_conf, QWidget *parent) 
     // enable frequency tooltips on FFT plot
     ui->plotter->setTooltipsEnabled(true);
     ui->plotter->setTooltipsEnabled(false);     // +kai, to nervous on display
+    ui->plotter->m_autoRangeAllowed = true;     // rf plotter can do autorange
 
     // Create list of input devices. This must be done before the configuration is
     // restored because device probing might change the device configuration
@@ -538,8 +539,7 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     // main window settings
     if (restore_mainwindow)
     {
-        restoreGeometry(m_settings->value("gui/geometry",
-                                          saveGeometry()).toByteArray());
+        restoreGeometry(m_settings->value("gui/geometry", saveGeometry()).toByteArray());
         restoreState(m_settings->value("gui/state", saveState()).toByteArray());
         restoreGeometry(m_settings->value("gui/geometry", saveGeometry()).toByteArray());
     }
@@ -549,6 +549,22 @@ bool MainWindow::loadConfig(const QString& cfgfile, bool check_crash,
     //ui->actionLock_Window->setChecked(bool_val);
     //on_actionLock_Window_triggered(bool_val);
     
+    /*
+     * Initialization plotter's auto range mode.
+     */
+    bool_val = m_settings->value("gui/autorange", false).toBool();
+    if (bool_val)
+    {
+       ui->plotter->setAutoRange(bool_val);
+    }
+
+    /*
+     * Initialization plotter's auto range mode.
+     */
+    bool_val = m_settings->value("gui/autorange", false).toBool();
+    if (bool_val)
+    {
+       ui->plotter->setAutoRange(bool_val);
     }
 
     QString indev = m_settings->value("input/device", "").toString();
@@ -801,6 +817,8 @@ void MainWindow::storeSession()
     {
         m_settings->setValue("input/frequency", ui->freqCtrl->getFrequency());
         m_settings->setValue("gui/fullscreen", MainWindow::isFullScreen());         // save status of fullscreen
+        m_settings->setValue("gui/autorange", ui->plotter->m_autoRangeActive);      // save status of autorange mode
+        
         m_settings->setValue("fft/fft_center", ui->plotter->getFftCenterFreq());
 
         // hide toolbar (default=false)
