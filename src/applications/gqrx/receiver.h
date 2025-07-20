@@ -266,6 +266,7 @@ private:
 
     rx_fft_c_sptr             iq_fft;     /*!< Baseband FFT block. */
     rx_fft_f_sptr             audio_fft;  /*!< Audio FFT block. */
+    rx_nb_cc_sptr             fft_nb;        // noise blanker for fft
 
     downconverter_cc_sptr     ddc;        /*!< Digital down-converter for demod chain. */
 

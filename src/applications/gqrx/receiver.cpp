@@ -117,6 +117,9 @@ receiver::receiver(const std::string input_device,
     iq_swap = make_iq_swap_cc(false);
     dc_corr = make_dc_corr_cc(d_decim_rate, 1.0);
     iq_fft = make_rx_fft_c(DEFAULT_FFT_SIZE, d_decim_rate, gr::fft::window::WIN_HANN);
+    fft_nb = make_rx_nb_cc(d_decim_rate, 5.f, 1.f);
+    fft_nb->set_nb1_on(true);
+    fft_nb->set_nb2_on(false);
 
     audio_fft = make_rx_fft_f(DEFAULT_FFT_SIZE, d_audio_rate, gr::fft::window::WIN_HANN);
     audio_gain0 = gr::blocks::multiply_const_ff::make(0);
@@ -248,6 +251,8 @@ void receiver::set_input_device(const std::string device)
     {
         tb->connect(src, 0, iq_swap, 0);
     }
+
+    //tb->connect(iq_swap, 0, fft_nb, 0);
 
     if (d_running)
         tb->start();
@@ -779,6 +784,7 @@ receiver::status receiver::set_nb_on(int nbid, bool on)
     if (rx->has_nb())
         rx->set_nb_on(nbid, on);
 
+    fft_nb->set_nb1_on(on);
     return STATUS_OK; // FIXME
 }
 
@@ -1368,6 +1374,10 @@ void receiver::connect_all(rx_chain type)
         tb->connect(b, 0, dc_corr, 0);
         b = dc_corr;
     }
+
+    // noise blanker for viusalization, 
+    tb->connect(b, 0, fft_nb, 0);
+    b = fft_nb;
 
     // Visualization
     tb->connect(b, 0, iq_fft, 0);
