@@ -530,6 +530,7 @@ void CIoConfig::updateInputSampleRates(int rate)
     }
     else
     {
+        if (rate == 0)rate = 150000;      // make a default value in case rate is not yet set
         if (rate > 0)
             ui->inSrCombo->addItem(QString("%1").arg(rate));
     }
