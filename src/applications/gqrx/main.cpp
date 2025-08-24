@@ -61,8 +61,12 @@ int main(int argc, char *argv[])
 #endif
     QLoggingCategory::setFilterRules("*.debug=false\n""remote.debug=false\n""plotter.debug=false\n""meter.debug=false\n");
 
-    QString plugin_path = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../soapy-modules");
+    
+    // #FIXME, path setup for SoapySDR
+    //QString plugin_path = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../soapy-modules");
+    QString plugin_path = QDir::cleanPath("/Users/kai/radioconda/lib/SoapySDR/modules0.8");
     QFileInfo plugin_path_info(plugin_path);
+
     if (plugin_path_info.isDir())
     {
         qputenv("SOAPY_SDR_PLUGIN_PATH", plugin_path.toUtf8());
