@@ -117,9 +117,9 @@ receiver::receiver(const std::string input_device,
     iq_swap = make_iq_swap_cc(false);
     dc_corr = make_dc_corr_cc(d_decim_rate, 1.0);
     iq_fft = make_rx_fft_c(DEFAULT_FFT_SIZE, d_decim_rate, gr::fft::window::WIN_HANN);
-    fft_nb = make_rx_nb_cc(d_decim_rate, 5.f, 1.f);
+    fft_nb = make_rx_nb_cc(d_decim_rate, 3.f, 3.f);
     fft_nb->set_nb1_on(true);
-    fft_nb->set_nb2_on(false);
+    fft_nb->set_nb2_on(true);
 
     audio_fft = make_rx_fft_f(DEFAULT_FFT_SIZE, d_audio_rate, gr::fft::window::WIN_HANN);
     audio_gain0 = gr::blocks::multiply_const_ff::make(0);
@@ -784,7 +784,8 @@ receiver::status receiver::set_nb_on(int nbid, bool on)
     if (rx->has_nb())
         rx->set_nb_on(nbid, on);
 
-    fft_nb->set_nb1_on(on);
+    if(nbid == 1) fft_nb->set_nb1_on(on);
+    else fft_nb->set_nb2_on(on);
     return STATUS_OK; // FIXME
 }
 
@@ -792,6 +793,9 @@ receiver::status receiver::set_nb_threshold(int nbid, float threshold)
 {
     if (rx->has_nb())
         rx->set_nb_threshold(nbid, threshold);
+
+    if(nbid == 1) fft_nb->set_threshold1(threshold);
+    else fft_nb->set_threshold2(threshold);
 
     return STATUS_OK; // FIXME
 }
