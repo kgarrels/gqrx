@@ -1632,7 +1632,7 @@ void CPlotter::draw(bool newData)
                 }
                 // Highlight the top bin, if it isn't too crowded
                 if (topBin != plotHeight && showHistHighlights) {
-                    painter2.fillRect(QRectF(ixPlot, topBin, 1.0, (qreal)binSizeY), maxLineColor);
+                    //painter2.fillRect(QRectF(ixPlot, topBin, 1.0, (qreal)binSizeY), maxLineColor);        //I don't like the white top clutter
                 }
             }
 
