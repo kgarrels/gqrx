@@ -38,7 +38,7 @@ std::string receiver::get_zero_file(void)
         {
             //static temp file persists until process end
             static QTemporaryFile temp_file;
-            temp_file.open();
+            (void)temp_file.open();
             path = temp_file.fileName().toStdString();
             {
                 QDataStream stream(&temp_file);
