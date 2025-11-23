@@ -142,17 +142,20 @@ void rx_nb_cc::process_nb1(gr_complex *buf, int num)
 void rx_nb_cc::process_nb2(gr_complex *buf, int num)
 {
     float cmag;
-    gr_complex c1(0.75);
-    gr_complex c2(0.25);
+    gr_complex c1(0.99);
+    gr_complex c2(0.01);
 
     for (int i = 0; i < num; i++)
     {
         cmag = abs(buf[i]);
-        d_avgsig = c1*d_avgsig + c2*buf[i];
         d_avgmag_nb2 = 0.999f*d_avgmag_nb2 + 0.001f*cmag;
 
-        if (cmag > d_thld_nb2*d_avgmag_nb2)
+        if (cmag > d_thld_nb2*d_avgmag_nb2) {
             buf[i] = d_avgsig;
+            //std::cout << "fft_nb " << cmag << " avg " << d_avgmag_nb2 << "\n";
+        }
+        d_avgsig = c1*d_avgsig + c2*buf[i];
+
     }
 }
 

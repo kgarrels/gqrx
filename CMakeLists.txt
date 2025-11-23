@@ -113,7 +113,7 @@ endfunction(add_source_files)
 
 
 # 3rd Party Dependency Stuff
-option(FORCE_QT6 "Force Qt6 to be used" OFF)
+option(FORCE_QT6 "Force Qt6 to be used" ON)
 option(FORCE_QT5 "Force Qt5 to be used" OFF)
 message(STATUS "QT version Qt5=" ${FORCE_QT5} " Qt6=" ${FORCE_QT6})
 
