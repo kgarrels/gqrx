@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     
     // #FIXME, path setup for SoapySDR
     //QString plugin_path = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../soapy-modules");
-    QString plugin_path = QDir::cleanPath("/Users/kai/radioconda/lib/SoapySDR/modules0.8");
+    QString plugin_path = QDir::cleanPath("/Users/devel/radioconda/lib/SoapySDR/modules0.8");
     QFileInfo plugin_path_info(plugin_path);
 
     if (plugin_path_info.isDir())
@@ -168,12 +168,12 @@ int main(int argc, char *argv[])
             // start node-red for synching with the TRX
 
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("PATH", "/Users/kai/radioconda/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
+            env.insert("PATH", "/Users/devel/radioconda/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
            
             QProcess *nodeProcess = new QProcess();
             nodeProcess->setProcessEnvironment(env);
 
-            QString program = "/Users/kai/radioconda/bin/node-red";
+            QString program = "/Users/devel/radioconda/bin/node-red";
             qInfo() << "launch " << program;
             nodeProcess->startCommand(program);
             //qInfo() << "result" << nodeProcess->errorString();
