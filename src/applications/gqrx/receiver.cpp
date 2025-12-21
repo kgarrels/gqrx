@@ -1381,10 +1381,10 @@ void receiver::connect_all(rx_chain type)
 
     // noise blanker for viusalization, 
     tb->connect(b, 0, fft_nb, 0);
-    b = fft_nb;
+    //b = fft_nb;
 
     // Visualization
-    tb->connect(b, 0, iq_fft, 0);
+    tb->connect(fft_nb, 0, iq_fft, 0);
 
     // RX demod chain
     switch (type)
