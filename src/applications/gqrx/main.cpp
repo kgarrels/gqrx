@@ -168,12 +168,12 @@ int main(int argc, char *argv[])
             // start node-red for synching with the TRX
 
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-            env.insert("PATH", "/Users/devel/radioconda/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
+            env.insert("PATH", "/Users/devel/radioconda/.pixi/envs/default/bin/:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
            
             QProcess *nodeProcess = new QProcess();
             nodeProcess->setProcessEnvironment(env);
 
-            QString program = "/Users/devel/radioconda/bin/node-red";
+            QString program = "/usr/local/bin/node-red -u /Users/devel/.node-red";
             qInfo() << "launch " << program;
             nodeProcess->startCommand(program);
             //qInfo() << "result" << nodeProcess->errorString();
