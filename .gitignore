@@ -16,3 +16,6 @@ version.txt
 Gqrx.app
 gqrx.app/
 *.plist
+# pixi environments
+.pixi/*
+!.pixi/config.toml
