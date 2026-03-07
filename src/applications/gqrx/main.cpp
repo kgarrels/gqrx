@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
             QProcess *nodeProcess = new QProcess();
             nodeProcess->setProcessEnvironment(env);
 
-            QString program = "/usr/local/bin/node-red -u /Users/devel/.node-red";
+            QString program = "/Users/devel/.pixi/bin/node-red -u /Users/devel/.node-red";
             qInfo() << "launch " << program;
             nodeProcess->startCommand(program);
             //qInfo() << "result" << nodeProcess->errorString();

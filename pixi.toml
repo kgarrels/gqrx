@@ -8,8 +8,7 @@ version = "0.1.0"
 [tasks]
 
 [dependencies]
-cmake = ">=4.2.3,<5"
-git = ">=2.53.0,<3"
-gnuradio-osmosdr = ">=0.2.6,<0.3"
 qt6-main = ">=6.10.2,<7"
+gnuradio-osmosdr = ">=0.2.6,<0.3"
 libboost-devel = ">=1.88.0,<2"
+cmake = ">=4.2.3,<5"
