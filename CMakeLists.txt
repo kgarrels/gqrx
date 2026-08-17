@@ -206,7 +206,7 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     if(NOT OSX_AUDIO_BACKEND)
 #        set(OSX_AUDIO_BACKEND Gr-audio CACHE STRING "Choose the audio backend, options are: Portaudio and Gr-audio" FORCE)
-        set(OSX_AUDIO_BACKEND Portaudio CACHE STRING "Choose the audio backend, options are: Portaudio, Null-audio and Gr-audio" FORCE)
+        set(OSX_AUDIO_BACKEND Null-audio CACHE STRING "Choose the audio backend, options are: Portaudio, Null-audio and Gr-audio" FORCE)
 endif()
 
     if(${OSX_AUDIO_BACKEND} MATCHES "Portaudio")
