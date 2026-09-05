@@ -73,6 +73,24 @@ for lib in ${soapy_module_libs[@]}; do
     linuxdeploy_lib_args+=( "-l" "$lib" )
 done
 
+# force otherwise excluded libraries that we really need because of library
+# dependence on newer versions
+linuxdeploy_lib_args+=(
+    "-l" "$PREFIX"/lib/libasound.so.2
+    "-l" "$PREFIX"/lib/libexpat.so.1
+    "-l" "$PREFIX"/lib/libfontconfig.so.1
+    "-l" "$PREFIX"/lib/libfreetype.so.6
+    "-l" "$PREFIX"/lib/libgcc_s.so.1
+    "-l" "$PREFIX"/lib/libgmp.so.10
+    "-l" "$PREFIX"/lib/libharfbuzz.so.0
+    "-l" "$PREFIX"/lib/libjack.so.0
+    "-l" "$PREFIX"/lib/libstdc++.so.6
+    "-l" "$PREFIX"/lib/libusb-1.0.so.0
+    "-l" "$PREFIX"/lib/libuuid.so.1
+    "-l" "$PREFIX"/lib/libxcb.so.1
+    "-l" "$PREFIX"/lib/libz.so.1
+)
+
 mkdir -p ./AppDir/apprun-hooks
 echo 'export CONDA_PREFIX="$APPDIR/usr"' >./AppDir/apprun-hooks/soapy-hook.sh
 echo 'export UHD_PKG_PATH="$APPDIR/usr"' >./AppDir/apprun-hooks/uhd-hook.sh
