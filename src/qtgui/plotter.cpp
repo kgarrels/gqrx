@@ -1013,8 +1013,8 @@ void CPlotter::wheelEvent(QWheelEvent * event)
         numSteps = m_CumWheelDelta / (8.0 * 15.0);
 
         // inc/dec demod frequency
-        m_DemodCenterFreq += (numSteps * m_ClickResolution/5);
-        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/5 );
+        m_DemodCenterFreq += (numSteps * m_ClickResolution/10);
+        m_DemodCenterFreq = roundFreq(m_DemodCenterFreq, m_ClickResolution/10 );
         emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq-m_CenterFreq);
     }
 
