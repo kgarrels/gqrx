@@ -1,12 +1,14 @@
 #!/bin/bash -e
 
-GQRX_VERSION="$(<build/version.txt)"
-IDENTITY=Y3GC27WZ4S
+GQRX_VERSION="$(<version.txt)"
+IDENTITY=92E4HH2XBG
 
 echo "CONDA_PREFIX: " $CONDA_PREFIX
 
 MACDEPLOYQT6=${CONDA_PREFIX}/bin/macdeployqt6
 echo "macdeployqt6: " ${MACDEPLOYQT6}
+
+cd ..
 
 # cleanup and setup
 if [ -e Gqrx.app ] ;
@@ -57,9 +59,12 @@ EOM
 </plist>
 EOM
 
-cp build/src/gqrx Gqrx.app/Contents/MacOS
-cp resources/icons/gqrx.icns Gqrx.app/Contents/Resources
+cp ./build/src/gqrx Gqrx.app/Contents/MacOS
+cp ./resources/icons/gqrx.icns Gqrx.app/Contents/Resources
 cp "$CONDA_PREFIX"/lib/SoapySDR/modules*/* Gqrx.app/Contents/soapy-modules
+# skip codesigning for local use
+exit
+
 
 if [ "$1" = "true" ]; then
     "${MACDEPLOYQT6}" Gqrx.app -verbose=1 -no-strip -always-overwrite -sign-for-notarization="${IDENTITY}" -libpath=Gqrx.app/Contents/Frameworks

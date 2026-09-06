@@ -63,8 +63,8 @@ int main(int argc, char *argv[])
 
     
     // #FIXME, path setup for SoapySDR
-    //QString plugin_path = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../soapy-modules");
-    QString plugin_path = QDir::cleanPath("/Users/devel/radioconda/lib/SoapySDR/modules0.8");
+    QString plugin_path = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../soapy-modules");
+    //QString plugin_path = QDir::cleanPath("/Users/devel/radioconda/lib/SoapySDR/modules0.8");
     QFileInfo plugin_path_info(plugin_path);
 
     if (plugin_path_info.isDir())

@@ -302,6 +302,6 @@ add_custom_target(uninstall
 
 #add_custom_target(App ALL DEPENDS ./scr/gqrx)
 add_custom_target(app ALL
-    COMMAND ../mp_macosbundle.sh
+    COMMAND ../macos_bundle.sh
     DEPENDS ./scr/gqrx
 )
