@@ -2525,7 +2525,7 @@ void CPlotter::setCenterFreq(quint64 f)
     int    h = m_WaterfallImage.height();
     static quint64 old_f=0;
 
-    qreal  ratio = (qreal)w / (qreal)m_Span;
+    //qreal  ratio = (qreal)w / (qreal)m_Span;
     
     qint64 deltaf = f - old_f;
     qint64 deltax = xFromFreq(f)-xFromFreq(old_f);
