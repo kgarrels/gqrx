@@ -2528,13 +2528,13 @@ void CPlotter::setCenterFreq(quint64 f)
     qreal  ratio = (qreal)w / (qreal)m_Span;
     
     qint64 deltaf = f - old_f;
-    qint64 deltax = qRound(deltaf * ratio);
+    qint64 deltax = xFromFreq(f)-xFromFreq(old_f);
 
-    // Shift left or right
+    // Shift left or right 
     qCDebug(plotter) << "new center freq:" << f << "was " << old_f << " delta f " << deltaf << " delta x " << deltax << "width " << w;
     emit newDemodFreq(m_DemodCenterFreq, m_DemodCenterFreq - m_CenterFreq);
 
-    // scroll waterfall horizontally
+    // scroll waterfall image horizontally
     if (abs(deltax) < w)
     {
         m_WaterfallImage = m_WaterfallImage.copy(deltax, 0, w, h);
