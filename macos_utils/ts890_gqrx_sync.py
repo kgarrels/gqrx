@@ -15,6 +15,8 @@ How it works
 * The program exits (code 0) when the TS-890 is turned off: PS0;, a serial
   error, or no answer for a few seconds. With --quit-gqrx it also tells gqrx
   to exit (remote command Q).
+* When a quick memory is stored on the TS-890 (Q-M.IN, reported as QI;), a
+  bookmark named "Q" with tag "temp" is added in gqrx ("bookmark Q temp").
 
 What is synchronised
 --------------------
@@ -328,6 +330,10 @@ class GqrxLink:
             mode = "CW"                  # older gqrx versions
         self._set("M %s %d" % (mode, passband) if passband else "M %s" % mode)
 
+    def add_bookmark(self, name, tag):
+        """Bookmark gqrx's current frequency / mode / passband."""
+        self._set("bookmark %s %s" % (name, tag))
+
     def quit_app(self):
         """Tell gqrx to exit ("Q"). gqrx may close the socket without a reply."""
         self.stop()
@@ -399,6 +405,7 @@ class Synchroniser:
         self.next_ts_poll = 0.0
         self.last_ts_rx = time.monotonic()
         self.memory_warned = False
+        self.qm_stored = False       # radio reported QI; (quick memory store) -> bookmark in gqrx
 
     # ---------------------------------------------------------------- TS state
     @property
@@ -497,6 +504,12 @@ class Synchroniser:
     def _on_ai(self, state):
         self.ai = int(state)
 
+    def _on_quick_memory(self):
+        log.info("TS-890: quick memory stored")
+        self.qm_stored = True
+
+    QM_BOOKMARK = ("Q", "temp")     # gqrx bookmark name and tag for quick memories
+
     TS_MESSAGES = [
         (re.compile(r"F([AB])(\d{11})"), _on_vfo_freq),
         (re.compile(r"FR(\d)"), _on_rx_vfo),
@@ -505,6 +518,7 @@ class Synchroniser:
         (re.compile(r"EX006(\d\d) ?(\d+)"), _on_menu),
         (re.compile(r"PS(\d)"), _on_power),
         (re.compile(r"AI(\d)"), _on_ai),
+        (re.compile(r"QI"), _on_quick_memory),
     ]
 
     # --------------------------------------------------------- incoming gqrx state
@@ -558,6 +572,9 @@ class Synchroniser:
         ts_mode = before[1] != after[1]
         ts_bw = before[2:] != after[2:] and not ts_mode
         if not self.g_up:
+            if self.qm_stored:
+                log.warning("gqrx not connected - quick memory not bookmarked")
+                self.qm_stored = False
             return
 
         # TS-890 wins if both sides changed at once.
@@ -574,6 +591,18 @@ class Synchroniser:
             self.push_bw_to_gq()
         elif "bw" in gq_changed:
             self.push_bw_to_ts()
+
+        if self.qm_stored:              # after the pushes, so gqrx is on the stored frequency
+            self.qm_stored = False
+            self.bookmark_quick_memory()
+
+    def bookmark_quick_memory(self):
+        if self.rx_freq is not None and self.rx_freq != self.g_freq:
+            self.push_freq_to_gq()
+        name, tag = self.QM_BOOKMARK
+        if self.gq_call("add bookmark", self.gq.add_bookmark, name, tag):
+            log.info("sync TS-890 -> gqrx: quick memory bookmarked as %r (tag %r) at %s",
+                     name, tag, fmt_hz(self.g_freq))
 
     # ------------------------------------------------------------ TS-890 -> gqrx
     def gq_call(self, what, func, *args):
