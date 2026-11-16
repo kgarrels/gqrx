@@ -5,7 +5,7 @@
 # ---- Edit these ----------------------------------------------------------
 PYTHON_BIN="/usr/bin/python3"              # or /opt/homebrew/bin/python3, or a venv's bin/python
 PYTHON_SCRIPT="ts890_gqrx_sync.py"
-PYTHON_ARGS="--ts-port /dev/tty.usbserial-83410 --baud 115200 --gqrx-host 127.0.0.1 --poll 0.1 --log-level INFO --poll 0.1"
+PYTHON_ARGS="--ts-port /dev/tty.usbserial-83410 --baud 115200 --gqrx-host 127.0.0.1 --poll 0.1 --log-level INFO --quit-gqrx"
 
 GQRX_APP="Gqrx"                            # name of the app in /Applications
 AUDIO_HIJACK_APP="Audio Hijack"

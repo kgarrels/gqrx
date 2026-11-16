@@ -13,7 +13,8 @@ How it works
   forwarded back, so there is no ping-pong.
 * If both sides change at the same instant, the TS-890 wins.
 * The program exits (code 0) when the TS-890 is turned off: PS0;, a serial
-  error, or no answer for a few seconds.
+  error, or no answer for a few seconds. With --quit-gqrx it also tells gqrx
+  to exit (remote command Q).
 
 What is synchronised
 --------------------
@@ -326,6 +327,16 @@ class GqrxLink:
         if mode == "CWU" and self.modes and "CWU" not in self.modes and "CW" in self.modes:
             mode = "CW"                  # older gqrx versions
         self._set("M %s %d" % (mode, passband) if passband else "M %s" % mode)
+
+    def quit_app(self):
+        """Tell gqrx to exit ("Q"). gqrx may close the socket without a reply."""
+        self.stop()
+        with self.lock:
+            if not self.connected:
+                self.connect()
+            log.debug("gqrx <- Q")
+            self.sock.sendall(b"Q\n")
+            self.close()
 
     # ---- polling thread --------------------------------------------------------------
     def _poller(self):
@@ -774,6 +785,8 @@ def main(argv=None, serial_port=None):
     ap.add_argument("--poll-interval", type=float, default=0.03, help="gqrx polling interval [s]")
     ap.add_argument("--ssb-filter", choices=("auto", "cut", "width"), default="auto",
                     help="TS-890 SSB filter control (menu 0-06-11/12); default: detect")
+    ap.add_argument("--quit-gqrx", action="store_true",
+                    help="exit gqrx (remote command Q) when the TS-890 is turned off")
     ap.add_argument("--log-level", choices=("INFO", "DEBUG", "NONE"), default="INFO")
     args = ap.parse_args(argv)
     setup_logging(args.log_level)
@@ -798,7 +811,14 @@ def main(argv=None, serial_port=None):
         sync.g_up = True
         sync.push_all_to_gq()
         gq.start()
-        return sync.run()
+        result = sync.run()
+        if args.quit_gqrx:
+            try:
+                gq.quit_app()
+                log.info("gqrx: sent quit command")
+            except (OSError, GqrxError) as exc:
+                log.error("gqrx: could not send quit command: %s", exc)
+        return result
     except OSError as exc:
         log.error("%s", exc)
         return 1
