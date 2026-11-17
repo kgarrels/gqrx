@@ -17,6 +17,9 @@ How it works
   to exit (remote command Q).
 * When a quick memory is stored on the TS-890 (Q-M.IN, reported as QI;), a
   bookmark named "Q" with tag "temp" is added in gqrx ("bookmark Q temp").
+* Other programs (e.g. the logger RUMlog) can share the radio through a TCP
+  CAT port (default 127.0.0.1:8888, --cat-port 0 to disable). Their commands
+  are passed to the radio and they receive everything the radio sends.
 
 What is synchronised
 --------------------
@@ -167,6 +170,7 @@ class Ts890Link:
     def __init__(self, port, events):
         self.port = port                 # pyserial-like object: read(n), write(bytes)
         self.events = events
+        self.listeners = []              # called with every message from the radio (CAT server)
         self._write_lock = threading.Lock()
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._reader, name="ts-reader", daemon=True)
@@ -195,9 +199,111 @@ class Ts890Link:
                     text = msg.decode("latin-1").strip("\r\n \x00")
                     log.debug("TS-890 -> %s;", text)
                     self.events.put(("ts", text))
+                    for listener in self.listeners:
+                        listener(text)
         except Exception as exc:                                # noqa: BLE001
             if not self._stop.is_set():
                 self.events.put(("ts_error", exc))
+
+
+# ==========================================================================
+# CAT pass-through for logging programs (RUMlog, ...)
+# ==========================================================================
+class CatServer:
+    """
+    TCP port that shares the TS-890 with other programs. Commands from a client
+    are forwarded to the radio one whole command at a time, so they never mix
+    with the sync's own traffic; everything the radio sends goes to every
+    client. Clients therefore also see Auto Information output and the replies
+    to the sync's status polls - all of it is real radio state.
+    AI set commands (AI0; AI2; ...) are dropped: the sync needs Auto
+    Information on.
+    """
+
+    SEND_TIMEOUT = 1.0     # a client that does not take data for this long is dropped
+
+    def __init__(self, ts, host, port):
+        self.ts, self.addr = ts, (host, port)
+        self.clients = set()
+        self.lock = threading.Lock()
+        self.sock = None
+        self._stop = threading.Event()
+
+    def start(self):
+        self.sock = socket.create_server(self.addr)
+        self.addr = self.sock.getsockname()[:2]
+        self.ts.listeners.append(self.broadcast)
+        threading.Thread(target=self._accept, name="cat-accept", daemon=True).start()
+        log.info("CAT server listening on %s:%d", *self.addr)
+
+    def stop(self):
+        self._stop.set()
+        if self.sock:
+            self.sock.close()
+        with self.lock:
+            clients, self.clients = list(self.clients), set()
+        for conn in clients:
+            conn.close()
+
+    def _accept(self):
+        while not self._stop.is_set():
+            try:
+                conn, peer = self.sock.accept()
+            except OSError:
+                return
+            conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            conn.settimeout(self.SEND_TIMEOUT)
+            with self.lock:
+                self.clients.add(conn)
+            log.info("CAT client connected from %s:%d", *peer[:2])
+            threading.Thread(target=self._client, args=(conn, peer), name="cat-client", daemon=True).start()
+
+    def _client(self, conn, peer):
+        buf = b""
+        try:
+            while not self._stop.is_set():
+                try:
+                    chunk = conn.recv(1024)
+                except socket.timeout:
+                    continue
+                if not chunk:
+                    break
+                buf += chunk
+                while b";" in buf:
+                    cmd, buf = buf.split(b";", 1)
+                    text = cmd.decode("latin-1").strip("\r\n \x00")
+                    if not text:
+                        continue
+                    if re.fullmatch(r"AI\d", text):
+                        log.debug("CAT client: dropped %s; (the sync needs Auto Information on)", text)
+                        continue
+                    log.debug("CAT client -> TS-890: %s;", text)
+                    self.ts.send(text + ";")
+        except OSError:
+            pass
+        finally:
+            if self._drop(conn):
+                log.info("CAT client %s:%d disconnected", *peer[:2])
+
+    def broadcast(self, text):
+        if not text:
+            return
+        data = (text + ";").encode("latin-1")
+        with self.lock:
+            clients = list(self.clients)
+        for conn in clients:
+            try:
+                conn.sendall(data)
+            except OSError:
+                if self._drop(conn):
+                    log.warning("CAT client not reading - disconnected")
+
+    def _drop(self, conn):
+        with self.lock:
+            known = conn in self.clients
+            self.clients.discard(conn)
+        conn.close()
+        return known
 
 
 # ==========================================================================
@@ -359,8 +465,10 @@ class GqrxLink:
                     self._stop.wait(0.1)
                     continue
                 gen, freq, mode, passband = state
-                if (freq, mode, passband) != last:
-                    last = (freq, mode, passband)
+                # gen is part of the key: a result read before a write is dropped by
+                # the synchroniser, so the first one read after it must always be sent.
+                if (gen, freq, mode, passband) != last:
+                    last = (gen, freq, mode, passband)
                     self.events.put(("gq", gen, freq, mode, passband))
                 down_reported = False
             except (OSError, GqrxError) as exc:
@@ -425,20 +533,28 @@ class Synchroniser:
 
     # ------------------------------------------------------------ echo handling
     def expect_echo(self, key, value):
-        self.pending[key].append((value, time.monotonic() + self.ECHO_TTL))
+        """Call before updating our copy of `key`: remembers the value it replaces too."""
+        previous = getattr(self, key.lower())
+        self.pending[key].append((value, previous, time.monotonic() + self.ECHO_TTL))
 
     def is_echo(self, key, value):
-        """True if `value` is the (possibly delayed) echo of something we wrote.
-        Older, never-echoed writes up to that point are forgotten as well."""
+        """True if `value` is the (possibly delayed) echo of something we wrote,
+        or a stale report of the value one of those writes replaced: the radio
+        answers in order, so a status query sent just before our write is
+        answered with the old value. Forwarding that would make gqrx jump back.
+        Older, never-echoed writes up to an echo are forgotten as well."""
         queue_, now = self.pending[key], time.monotonic()
-        while queue_ and queue_[0][1] < now:
+        while queue_ and queue_[0][2] < now:
             queue_.popleft()
-        for i, (expected, _) in enumerate(queue_):
+        for i, (expected, _, _) in enumerate(queue_):
             if expected == value:
                 for _ in range(i + 1):
                     queue_.popleft()
                 log.debug("ignoring echo of our own write: %s=%s", key, value)
                 return True
+        if any(previous == value for _, previous, _ in queue_):
+            log.debug("ignoring stale report from before our write: %s=%s", key, value)
+            return True
         return False
 
     # ---------------------------------------------------- incoming TS-890 messages
@@ -814,6 +930,10 @@ def main(argv=None, serial_port=None):
     ap.add_argument("--poll-interval", type=float, default=0.03, help="gqrx polling interval [s]")
     ap.add_argument("--ssb-filter", choices=("auto", "cut", "width"), default="auto",
                     help="TS-890 SSB filter control (menu 0-06-11/12); default: detect")
+    ap.add_argument("--cat-host", default="127.0.0.1",
+                    help="address of the CAT port for logging programs (0.0.0.0: all interfaces)")
+    ap.add_argument("--cat-port", type=int, default=8888,
+                    help="TCP port giving other programs (RUMlog, ...) access to the TS-890; 0 = off")
     ap.add_argument("--quit-gqrx", action="store_true",
                     help="exit gqrx (remote command Q) when the TS-890 is turned off")
     ap.add_argument("--log-level", choices=("INFO", "DEBUG", "NONE"), default="INFO")
@@ -821,7 +941,7 @@ def main(argv=None, serial_port=None):
     setup_logging(args.log_level)
 
     events = queue.Queue()
-    ts = gq = None
+    ts = gq = cat = None
     try:
         ts = Ts890Link(serial_port or open_serial(args.ts_port, args.baud, args.rtscts), events)
         ts.start()
@@ -837,6 +957,14 @@ def main(argv=None, serial_port=None):
 
         sync = Synchroniser(ts, gq, events, args.ssb_filter)
         sync.read_initial_ts_state()
+        if args.cat_port:
+            cat = CatServer(ts, args.cat_host, args.cat_port)
+            try:
+                cat.start()
+            except OSError as exc:
+                log.error("cannot open the CAT port %s:%d (%s) - continuing without it",
+                          args.cat_host, args.cat_port, exc)
+                cat = None
         sync.g_up = True
         sync.push_all_to_gq()
         gq.start()
@@ -855,7 +983,7 @@ def main(argv=None, serial_port=None):
         log.info("interrupted")
         return 0
     finally:
-        for link in (ts, gq):
+        for link in (cat, ts, gq):
             if link:
                 link.stop()
         if gq:
