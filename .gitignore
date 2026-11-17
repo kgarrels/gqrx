@@ -20,3 +20,4 @@ gqrx.app/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+macos_utils/TS-890_PC_Commands_en_rev1.pdf
