@@ -29,6 +29,21 @@
 #include "qtgui/dockrxopt.h"
 #include "qtgui/bookmarks.h"
 
+#ifdef WITH_RIG_SYNC
+#include "rig_sync.h"
+
+/* RigSync uses gqrx's mode numbers without depending on the GUI */
+static_assert((int)RigSync::GQ_AM == (int)DockRxOpt::MODE_AM &&
+              (int)RigSync::GQ_AM_SYNC == (int)DockRxOpt::MODE_AM_SYNC &&
+              (int)RigSync::GQ_LSB == (int)DockRxOpt::MODE_LSB &&
+              (int)RigSync::GQ_USB == (int)DockRxOpt::MODE_USB &&
+              (int)RigSync::GQ_CWL == (int)DockRxOpt::MODE_CWL &&
+              (int)RigSync::GQ_CWU == (int)DockRxOpt::MODE_CWU &&
+              (int)RigSync::GQ_NFM == (int)DockRxOpt::MODE_NFM &&
+              (int)RigSync::GQ_WFM_MONO == (int)DockRxOpt::MODE_WFM_MONO,
+              "RigSync::GqMode must match DockRxOpt::rxopt_mode_idx");
+#endif
+
 #define DEFAULT_RC_PORT            7356
 #define DEFAULT_RC_ALLOWED_HOSTS   "127.0.0.1"
 
@@ -67,6 +82,11 @@ RemoteControl::RemoteControl(QObject *parent) :
     initialized = false;            // we have not yet receveived a valid f telegram
 
     connect(&rc_server, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
+
+    rig_sync = nullptr;
+#ifdef WITH_RIG_SYNC
+    rig_sync = new RigSync(*this, this);    // changes gqrx through the rig*() functions below
+#endif
 }
 
 RemoteControl::~RemoteControl()
@@ -114,6 +134,22 @@ void RemoteControl::readSettings(QSettings *settings)
         setHosts(settings->value("allowed_hosts").toStringList());
 
     settings->endGroup();
+
+    RigSyncConfig cfg;
+    settings->beginGroup("rig_sync");
+    cfg.enabled = settings->value("enabled", cfg.enabled).toBool();
+    cfg.port = settings->value("port", cfg.port).toString();
+    cfg.baud = settings->value("baud", cfg.baud).toInt();
+    cfg.rtscts = settings->value("rtscts", cfg.rtscts).toBool();
+    cfg.ssbFilter = settings->value("ssb_filter", cfg.ssbFilter).toString();
+    // power = linked | wait; older configs had on_power_off = quit | wait
+    const QString legacy = settings->value("on_power_off", "wait").toString() == "quit" ? "linked" : "wait";
+    cfg.linkPower = settings->value("power", legacy).toString() == "linked";
+    cfg.quickMemoryBookmark = settings->value("quick_memory_bookmark", cfg.quickMemoryBookmark).toBool();
+    cfg.catPort = settings->value("cat_port", cfg.catPort).toInt();
+    cfg.catHost = settings->value("cat_host", cfg.catHost).toString();
+    settings->endGroup();
+    setRigSyncConfig(cfg);
 }
 
 void RemoteControl::saveSettings(QSettings *settings) const
@@ -139,6 +175,54 @@ void RemoteControl::saveSettings(QSettings *settings) const
         settings->remove("allowed_hosts");
 
     settings->endGroup();
+
+    const RigSyncConfig &cfg = rig_sync_cfg;
+    if (cfg == RigSyncConfig())
+    {
+        settings->remove("rig_sync");
+        return;
+    }
+    settings->beginGroup("rig_sync");
+    settings->setValue("enabled", cfg.enabled);
+    settings->setValue("port", cfg.port);
+    settings->setValue("baud", cfg.baud);
+    settings->setValue("rtscts", cfg.rtscts);
+    settings->setValue("ssb_filter", cfg.ssbFilter);
+    settings->setValue("power", cfg.linkPower ? "linked" : "wait");
+    settings->remove("on_power_off");
+    settings->setValue("quick_memory_bookmark", cfg.quickMemoryBookmark);
+    settings->setValue("cat_port", cfg.catPort);
+    settings->setValue("cat_host", cfg.catHost);
+    settings->endGroup();
+}
+
+bool RemoteControl::rigSyncAvailable()
+{
+#ifdef WITH_RIG_SYNC
+    return true;
+#else
+    return false;
+#endif
+}
+
+void RemoteControl::setRigSyncConfig(const RigSyncConfig &config)
+{
+    rig_sync_cfg = config;
+#ifdef WITH_RIG_SYNC
+    rig_sync->setConfig(config);
+#else
+    if (config.enabled)
+        qWarning() << "TS-890 sync is enabled, but gqrx was built without QtSerialPort";
+#endif
+}
+
+QString RemoteControl::rigSyncStatus() const
+{
+#ifdef WITH_RIG_SYNC
+    return rig_sync->statusText();
+#else
+    return "unavailable (gqrx was built without QtSerialPort)";
+#endif
 }
 
 /*! \brief Set new network port.
@@ -273,6 +357,8 @@ void RemoteControl::startRead()
             answer = QString("1\n");
         else if (cmd == "bookmark")
             answer = cmd_bookmark_add(cmdlist);
+        else if (cmd == "rigsync")
+            answer = cmd_rigsync(cmdlist);
         else if (cmd == "q" || cmd == "Q")
         {
             // FIXME: for now we assume 'close' command
@@ -290,7 +376,6 @@ void RemoteControl::startRead()
             answer = QString("RPRT 1\n");
         }
         
-        rc_socket->write(answer.toLatin1());
         qCDebug(remote) << "answer: " << answer;
         rc_socket->write(answer.toLatin1());
     }
@@ -306,7 +391,10 @@ void RemoteControl::setNewFrequency(qint64 freq)
 {
     if (rc_freq == freq) return;        // we are already there
     rc_freq = freq;
- }
+#ifdef WITH_RIG_SYNC
+    rig_sync->gqrxFrequencyChanged(freq);
+#endif
+}
 
 /*! \brief Slot called when the filter offset is changed. */
 void RemoteControl::setFilterOffset(qint64 freq)
@@ -341,6 +429,9 @@ void RemoteControl::setMode(int mode)
 
     if (rc_mode == 0)
         audio_recorder_status = false;
+#ifdef WITH_RIG_SYNC
+    rig_sync->gqrxModeChanged(mode);
+#endif
 }
 
 /*! \brief Set passband (from mainwindow). */
@@ -348,6 +439,44 @@ void RemoteControl::setPassband(int passband_lo, int passband_hi)
 {
     rc_passband_lo = passband_lo;
     rc_passband_hi = passband_hi;
+#ifdef WITH_RIG_SYNC
+    rig_sync->gqrxPassbandChanged(passband_hi - passband_lo);
+#endif
+}
+
+/* RigSyncGqrx: changes from the TS-890 take the same paths as the F / M / bookmark commands. */
+void RemoteControl::rigTune(qint64 hz)
+{
+    setNewRemoteFreq(hz);
+}
+
+/*! \brief Mode and passband from the TS-890 sync (like the M command, but
+ *  the mode is only re-selected when it changes, so gqrx keeps its filter). */
+void RemoteControl::rigSetMode(int mode, int passband)
+{
+    if (mode != rc_mode)
+    {
+        rc_mode = mode;
+        emit newMode(rc_mode);
+        if (rc_mode == 0)
+            audio_recorder_status = false;
+    }
+    if (passband > 0)
+        emit newPassband(passband);
+}
+
+void RemoteControl::rigQuickMemory()
+{
+    addBookmark("Q", "temp");
+}
+
+void RemoteControl::rigPoweredOff()
+{
+    if (rig_sync_cfg.linkPower)
+    {
+        qInfo() << "TS-890 turned off - quitting gqrx";
+        QCoreApplication::exit();
+    }
 }
 
 /*! \brief New remote frequency received. */
@@ -1032,24 +1161,41 @@ QString RemoteControl::cmd_lnb_lo(QStringList cmdlist)
 /* add a bookmakr */
 QString RemoteControl::cmd_bookmark_add(QStringList cmdlist)
 {
-    auto bookmark = new BookmarkInfo;
-    
-    if(cmdlist.size() == 3)
-    {
-        bookmark->name= cmdlist[1];
-        bookmark->frequency = rc_freq;
-        bookmark->bandwidth = rc_passband_hi -rc_passband_lo;
-        bookmark->modulation = intToModeStr(rc_mode);
-        bookmark->tags.append(Bookmarks::Get().findOrAddTag(cmdlist[2]));
-
-        Bookmarks::Get().add(*bookmark);
-        emit bookmarksChanged(true);
-    }
-    else
-    {
+    if(cmdlist.size() != 3)
         return QString("RPRT 1\n");
-    }
+
+    addBookmark(cmdlist[1], cmdlist[2]);
     return QString("RPRT 0\n");
+}
+
+/*! \brief Bookmark the current frequency, passband and mode. */
+void RemoteControl::addBookmark(QString name, QString tag)
+{
+    BookmarkInfo bookmark;
+    bookmark.name = name;
+    bookmark.frequency = rc_freq;
+    bookmark.bandwidth = rc_passband_hi - rc_passband_lo;
+    bookmark.modulation = intToModeStr(rc_mode);
+    bookmark.tags.append(Bookmarks::Get().findOrAddTag(tag));
+
+    Bookmarks::Get().add(bookmark);
+    emit bookmarksChanged(true);
+}
+
+/*! \brief TS-890 sync: rigsync [status|on|off] */
+QString RemoteControl::cmd_rigsync(QStringList cmdlist)
+{
+    const QString arg = cmdlist.value(1, "status").toLower();
+    if (arg == "status")
+        return rigSyncStatus() + "\n";
+    if ((arg == "on" || arg == "off") && rigSyncAvailable())
+    {
+        RigSyncConfig cfg = rig_sync_cfg;
+        cfg.enabled = (arg == "on");
+        setRigSyncConfig(cfg);
+        return QString("RPRT 0\n");
+    }
+    return QString("RPRT 1\n");
 }
 
 /*

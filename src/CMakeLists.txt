@@ -93,6 +93,10 @@ else()
     )
 endif()
 
+if(RIG_SYNC_FOUND)
+    target_link_libraries(${PROJECT_NAME} Qt6::SerialPort)
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     ${PULSEAUDIO_LIBRARY}
     ${PULSE-SIMPLE}

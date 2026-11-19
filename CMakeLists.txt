@@ -128,6 +128,18 @@ else()
     endif()
 endif()
 
+# TS-890 sync in the remote control (src/applications/gqrx/rig_sync.cpp)
+option(ENABLE_RIG_SYNC "Build the TS-890 sync (needs Qt6 SerialPort)" ON)
+set(RIG_SYNC_FOUND FALSE)
+if(ENABLE_RIG_SYNC AND Qt6_FOUND)
+    find_package(Qt6 QUIET COMPONENTS SerialPort)
+    if(Qt6SerialPort_FOUND)
+        set(RIG_SYNC_FOUND TRUE)
+        add_definitions(-DWITH_RIG_SYNC)
+    endif()
+endif()
+message(STATUS "TS-890 sync: ${RIG_SYNC_FOUND}")
+
 include(FindPkgConfig)
 
 

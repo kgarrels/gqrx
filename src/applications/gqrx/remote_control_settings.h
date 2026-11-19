@@ -27,6 +27,8 @@
 #include <QSettings>
 #include <QStringList>
 
+#include "rig_sync_config.h"
+
 namespace Ui {
 class RemoteControlSettings;
 }
@@ -45,6 +47,10 @@ public:
 
     void setHosts(QStringList hosts);
     QStringList getHosts(void) const;
+
+    /* TS-890 sync; the group is hidden when gqrx is built without it */
+    void setRigSyncConfig(const RigSyncConfig &config, bool available, const QString &status);
+    RigSyncConfig getRigSyncConfig(void) const;
 
 private slots:
     void on_hostAddButton_clicked(void);

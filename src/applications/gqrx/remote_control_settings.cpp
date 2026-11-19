@@ -20,11 +20,18 @@
  * the Free Software Foundation, Inc., 51 Franklin Street,
  * Boston, MA 02110-1301, USA.
  */
+#include <algorithm>
 #include <QList>
 #include <QListWidgetItem>
 
 #include "remote_control_settings.h"
 #include "ui_remote_control_settings.h"
+
+#ifdef WITH_RIG_SYNC
+#include <QSerialPortInfo>
+#endif
+
+static const QStringList SSB_FILTER_VALUES = { "auto", "cut", "width" };  // rigSsbFilterCombo order
 
 RemoteControlSettings::RemoteControlSettings(QWidget *parent) :
     QDialog(parent),
@@ -104,3 +111,50 @@ void RemoteControlSettings::on_hostDelButton_clicked(void)
 }
 
 
+
+/*! \brief Show the TS-890 sync settings.
+ *  \param available False if gqrx was built without the sync: the group is hidden.
+ *  \param status    Current state of the sync, shown below the settings.
+ */
+void RemoteControlSettings::setRigSyncConfig(const RigSyncConfig &config, bool available,
+                                             const QString &status)
+{
+    ui->rigSyncGroup->setVisible(available);
+    ui->rigSyncGroup->setChecked(config.enabled);
+
+    ui->rigPortCombo->clear();
+#ifdef WITH_RIG_SYNC
+    for (const auto &info : QSerialPortInfo::availablePorts())
+        ui->rigPortCombo->addItem(info.systemLocation());
+#endif
+    ui->rigPortCombo->setCurrentText(config.port);
+
+    ui->rigBaudCombo->setCurrentText(QString::number(config.baud));
+    ui->rigRtsctsCheck->setChecked(config.rtscts);
+    ui->rigSsbFilterCombo->setCurrentIndex(std::max(0, (int)SSB_FILTER_VALUES.indexOf(config.ssbFilter)));
+    ui->rigPowerCombo->setCurrentIndex(config.linkPower ? 1 : 0);
+    ui->rigQmBookmarkCheck->setChecked(config.quickMemoryBookmark);
+    ui->rigCatPortSpinBox->setValue(config.catPort);
+    ui->rigCatHostEdit->setText(config.catHost);
+    ui->rigStatusLabel->setText(tr("Status: %1").arg(status));
+}
+
+RigSyncConfig RemoteControlSettings::getRigSyncConfig(void) const
+{
+    RigSyncConfig config;
+    config.enabled = ui->rigSyncGroup->isChecked();
+    config.port = ui->rigPortCombo->currentText().trimmed();
+    bool ok;
+    const int baud = ui->rigBaudCombo->currentText().toInt(&ok);
+    if (ok && baud > 0)
+        config.baud = baud;
+    config.rtscts = ui->rigRtsctsCheck->isChecked();
+    config.ssbFilter = SSB_FILTER_VALUES.value(ui->rigSsbFilterCombo->currentIndex(), "auto");
+    config.linkPower = ui->rigPowerCombo->currentIndex() == 1;
+    config.quickMemoryBookmark = ui->rigQmBookmarkCheck->isChecked();
+    config.catPort = ui->rigCatPortSpinBox->value();
+    const QString host = ui->rigCatHostEdit->text().trimmed();
+    if (!host.isEmpty())
+        config.catHost = host;
+    return config;
+}

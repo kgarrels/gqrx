@@ -2205,11 +2205,13 @@ void MainWindow::on_actionRemoteConfig_triggered()
 
     rcs->setPort(remote->getPort());
     rcs->setHosts(remote->getHosts());
+    rcs->setRigSyncConfig(remote->rigSyncConfig(), RemoteControl::rigSyncAvailable(), remote->rigSyncStatus());
 
     if (rcs->exec() == QDialog::Accepted)
     {
         remote->setPort(rcs->getPort());
         remote->setHosts(rcs->getHosts());
+        remote->setRigSyncConfig(rcs->getRigSyncConfig());
     }
 
     delete rcs;

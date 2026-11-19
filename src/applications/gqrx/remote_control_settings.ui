@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>314</width>
-    <height>269</height>
+    <width>380</width>
+    <height>520</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -138,6 +138,226 @@
       </spacer>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="rigSyncGroup">
+     <property name="title">
+      <string>TS-890 sync</string>
+     </property>
+     <property name="toolTip">
+      <string>Keep frequency, mode and bandwidth of a Kenwood TS-890 in step with gqrx</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QGridLayout" name="rigSyncLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="rigPortLabel">
+        <property name="text">
+         <string>Serial port</string>
+        </property>
+        <property name="toolTip">
+         <string>Serial port of the TS-890 (USB), e.g. /dev/cu.usbserial-…</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="rigPortCombo">
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Serial port of the TS-890 (USB), e.g. /dev/cu.usbserial-…</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="rigBaudLabel">
+        <property name="text">
+         <string>Baud rate</string>
+        </property>
+        <property name="toolTip">
+         <string>Must match the TS-890 menu setting for the USB COM port</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="rigBaudCombo">
+        <property name="editable">
+         <bool>true</bool>
+        </property>
+        <property name="toolTip">
+         <string>Must match the TS-890 menu setting for the USB COM port</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>4800</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>9600</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>19200</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>38400</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>57600</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>115200</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QCheckBox" name="rigRtsctsCheck">
+        <property name="text">
+         <string>RTS/CTS flow control</string>
+        </property>
+        <property name="toolTip">
+         <string>Hardware flow control on the serial port</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="rigSsbFilterLabel">
+        <property name="text">
+         <string>SSB filter control</string>
+        </property>
+        <property name="toolTip">
+         <string>How the TS-890 describes SSB filters (menu 0-06-11/12)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QComboBox" name="rigSsbFilterCombo">
+        <property name="toolTip">
+         <string>How the TS-890 describes SSB filters (menu 0-06-11/12)</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>Detect</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>High/low cut</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Shift/width</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="rigPowerLabel">
+        <property name="text">
+         <string>Radio power</string>
+        </property>
+        <property name="toolTip">
+         <string>Switch together: gqrx turns the TS-890 on when it starts, and quits when the TS-890 is turned off. Wait: gqrx stays open and waits for the radio.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QComboBox" name="rigPowerCombo">
+        <property name="toolTip">
+         <string>Switch together: gqrx turns the TS-890 on when it starts, and quits when the TS-890 is turned off. Wait: gqrx stays open and waits for the radio.</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>gqrx waits for the radio</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Switch gqrx and radio together</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QCheckBox" name="rigQmBookmarkCheck">
+        <property name="text">
+         <string>Bookmark quick memories (Q / temp)</string>
+        </property>
+        <property name="toolTip">
+         <string>Add a gqrx bookmark named Q with tag temp whenever a quick memory is stored on the radio (Q-M.IN)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="rigCatPortLabel">
+        <property name="text">
+         <string>CAT port</string>
+        </property>
+        <property name="toolTip">
+         <string>TCP port for loggers such as RUMlog to share the radio (Off = 0)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QSpinBox" name="rigCatPortSpinBox">
+        <property name="toolTip">
+         <string>TCP port for loggers such as RUMlog to share the radio (Off = 0)</string>
+        </property>
+        <property name="specialValueText">
+         <string>Off</string>
+        </property>
+        <property name="maximum">
+         <number>65535</number>
+        </property>
+        <property name="value">
+         <number>8888</number>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="rigCatHostLabel">
+        <property name="text">
+         <string>CAT address</string>
+        </property>
+        <property name="toolTip">
+         <string>Address the CAT port listens on: 127.0.0.1 for this Mac only, 0.0.0.0 for all</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QLineEdit" name="rigCatHostEdit">
+        <property name="toolTip">
+         <string>Address the CAT port listens on: 127.0.0.1 for this Mac only, 0.0.0.0 for all</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QLabel" name="rigStatusLabel">
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="textInteractionFlags">
+         <set>Qt::TextSelectableByMouse</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="Line" name="line">

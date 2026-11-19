@@ -3,6 +3,7 @@
 /.config/
 /build/
 /build-release/
+/build-rigsync/
 /xcode/
 /*.AppImage
 /*.dmg

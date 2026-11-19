@@ -34,6 +34,9 @@
 
 /* For gain_t and gain_list_t */
 #include "qtgui/dockinputctl.h"
+#include "rig_sync_config.h"
+
+class RigSync;
 
 /*! \brief Simple TCP server for remote control.
  *
@@ -53,11 +56,12 @@
  * We also have some gqrx specific commands:
  *
  *  close: Close connection (useful for interactive telnet sessions).
+ *  rigsync [status|on|off]: TS-890 sync (see RigSync), if built with QtSerialPort.
  *
  *
  * FIXME: The server code is very minimalistic and probably not very robust.
  */
-class RemoteControl : public QObject
+class RemoteControl : public QObject, private RigSyncGqrx
 {
     Q_OBJECT
 public:
@@ -83,6 +87,15 @@ public:
     }
     void setReceiverStatus(bool enabled);
     void setGainStages(gain_list_t &gain_list);
+
+    /* TS-890 sync. The config is kept even when gqrx is built without it. */
+    static bool   rigSyncAvailable();
+    RigSyncConfig rigSyncConfig() const
+    {
+        return rig_sync_cfg;
+    }
+    void          setRigSyncConfig(const RigSyncConfig &config);
+    QString       rigSyncStatus() const;
 
 public slots:
     void setNewFrequency(qint64 freq);
@@ -160,7 +173,17 @@ private:
     gain_list_t gains;             /*!< Possible and current gain settings */
     bool        is_audio_muted;
 
+    RigSyncConfig rig_sync_cfg;    /*!< TS-890 sync settings */
+    RigSync      *rig_sync;        /*!< TS-890 sync, nullptr if not built in */
+
     void        setNewRemoteFreq(qint64 freq);
+    void        addBookmark(QString name, QString tag);
+
+    /* RigSyncGqrx: the TS-890 sync changes gqrx through these */
+    void        rigTune(qint64 hz) override;
+    void        rigSetMode(int mode, int passband) override;
+    void        rigQuickMemory() override;
+    void        rigPoweredOff() override;
     int         modeStrToInt(QString mode_str);
     QString     intToModeStr(int mode);
 
@@ -184,6 +207,7 @@ private:
     QString     cmd_lnb_lo(QStringList cmdlist);
     QString     cmd_dump_state() const;
     QString     cmd_bookmark_add(QStringList cmdlist);
+    QString     cmd_rigsync(QStringList cmdlist);
 
 };
 
