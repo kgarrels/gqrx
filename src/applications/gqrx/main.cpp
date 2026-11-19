@@ -170,28 +170,14 @@ int main(int argc, char *argv[])
             QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
             env.insert("PATH", "$/Users/kai/.pixi/bin/:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"); 
            
-
-            QProcess *nodeProcess = new QProcess();
-            nodeProcess->setProcessEnvironment(env);
-
-            QString program = "/Users/kai/.pixi/bin/node-red -u /Users/kai/.node-red";
-/*
-            qInfo() << "launch " << program;
-            nodeProcess->startCommand(program);
-            //qInfo() << "result" << nodeProcess->errorString();
-*/
-
             QProcess *ahProcess = new QProcess();
             ahProcess->setProcessEnvironment(env);
-            program = "open -j \"/Applications/Audio Hijack.app\"";
+            QString program = "open -j \"/Applications/Audio Hijack.app\"";
             qInfo() << "launch " << program;
             ahProcess->startCommand(program);
-            //qInfo() << "result" << nodeProcess->errorString();
 
             return_code = QApplication::exec();
 
-            // end node-red
-            nodeProcess->terminate();
             ahProcess->terminate();
             ahProcess->startCommand("pkill \"Audio Hijack\"");
 
