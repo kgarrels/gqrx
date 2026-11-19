@@ -1,6 +1,8 @@
 #!/bin/bash -e
 
+# run from the build directory, e.g.  cd build-release && pixi run ../macos_bundle.sh
 GQRX_VERSION="$(<version.txt)"
+BUILD_DIR="$(basename "$PWD")"
 IDENTITY=92E4HH2XBG
 
 echo "CONDA_PREFIX: " $CONDA_PREFIX
@@ -59,7 +61,7 @@ EOM
 </plist>
 EOM
 
-cp ./build/src/gqrx Gqrx.app/Contents/MacOS
+cp "./$BUILD_DIR/src/gqrx" Gqrx.app/Contents/MacOS
 cp ./resources/icons/gqrx.icns Gqrx.app/Contents/Resources
 cp "$CONDA_PREFIX"/lib/SoapySDR/modules*/* Gqrx.app/Contents/soapy-modules
 # skip codesigning for local use
