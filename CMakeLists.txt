@@ -132,7 +132,19 @@ endif()
 option(ENABLE_RIG_SYNC "Build the TS-890 sync (needs Qt6 SerialPort)" ON)
 set(RIG_SYNC_FOUND FALSE)
 if(ENABLE_RIG_SYNC AND Qt6_FOUND)
-    find_package(Qt6 QUIET COMPONENTS SerialPort)
+    # Qt6 SerialPort is not in the pixi env; default to the local build in
+    # ../qtserialport (next to this repo) if present. Override with
+    # -DQt6SerialPort_DIR=... on the command line.
+    set(_default_serialport_dir
+        "${CMAKE_SOURCE_DIR}/../qtserialport/install-pixi/lib/cmake/Qt6SerialPort")
+    if(NOT Qt6SerialPort_DIR AND EXISTS "${_default_serialport_dir}/Qt6SerialPortConfig.cmake")
+        get_filename_component(_default_serialport_dir "${_default_serialport_dir}" ABSOLUTE)
+        # FORCE replaces a cached Qt6SerialPort_DIR-NOTFOUND from an earlier run.
+        set(Qt6SerialPort_DIR "${_default_serialport_dir}" CACHE PATH "Qt6 SerialPort CMake config dir" FORCE)
+    endif()
+    # Look up the module on its own: a failed find_package(Qt6 COMPONENTS ...)
+    # would reset Qt6_FOUND and send src/ down the Qt5 code path.
+    find_package(Qt6SerialPort QUIET)
     if(Qt6SerialPort_FOUND)
         set(RIG_SYNC_FOUND TRUE)
         add_definitions(-DWITH_RIG_SYNC)
