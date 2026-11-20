@@ -17,6 +17,8 @@ Supported commands:
     Get signal strength [dBFS]
  l SQL
     Get squelch threshold [dBFS]
+ l NF
+    Get noise floor level [dBFS]
  L SQL <sql>
     Set squelch threshold to <sql> [dBFS]
  l AF
@@ -53,8 +55,10 @@ Supported commands:
     Get audio mute status
  U MUTE <status>
     Set audio mute to <status>
- q|Q
+ q
     Close connection
+ Q
+    Close connection and quit gqrx
  AOS
     Acquisition of signal (AOS) event, start audio recording
  LOS
@@ -62,6 +66,14 @@ Supported commands:
  LNB_LO [frequency]
     If frequency [Hz] is specified set the LNB LO frequency used for
     display. Otherwise print the current LNB LO frequency [Hz].
+ bookmark <name> <tag>
+    Add a bookmark named <name> with tag <tag> for the current frequency,
+    mode and passband. The tag is created if it does not exist.
+    Name and tag must not contain spaces.
+ rigsync [status|on|off]
+    Print the rig sync status (default if no argument is given), or
+    enable (on) / disable (off) rig sync. on/off returns RPRT 1 if gqrx
+    was built without rig sync support.
  \chk_vfo
     Get VFO option status (only usable for hamlib compatibility)
  \dump_state

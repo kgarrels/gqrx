@@ -361,12 +361,13 @@ void RemoteControl::startRead()
             answer = cmd_rigsync(cmdlist);
         else if (cmd == "q" || cmd == "Q")
         {
-            // FIXME: for now we assume 'close' command
+            // q: close this connection, Q: also quit gqrx
             rc_sockets.erase(rc_socket);
             rc_socket->close();
             rc_socket->deleteLater();
-            
-            QCoreApplication::exit();
+
+            if (cmd == "Q")
+                QCoreApplication::exit();
             return;
         }
         else
